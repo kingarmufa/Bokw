@@ -1,0 +1,712 @@
+<%
+const _isAdmin = (typeof user !== 'undefined' && user && user.role === 'admin');
+const _isMerchant = (typeof user !== 'undefined' && user && user.role === 'merchant');
+const _isVip = (typeof user !== 'undefined' && user && user.role === 'vip');
+const _isLoggedIn = (typeof user !== 'undefined' && user);
+const _activePath = (typeof currentPath !== 'undefined') ? currentPath : '';
+%>
+<% if (_isLoggedIn) { %>
+<% const _hideNav = (typeof hideBottomNav !== 'undefined' && hideBottomNav); %>
+<% if (!_hideNav) { %>
+<nav class="comic-bottom-nav" aria-label="Navigasi utama" data-comic-owned>
+  <div class="comic-bottom-nav-inner" id="comicNavInner">
+    <% if (_isAdmin) { %>
+      <a href="/admin/dashboard" data-nav-index="0" class="comic-nav-item <%= _activePath === '/admin/dashboard' ? 'active' : '' %>">
+        <i class="fa-solid fa-house"></i> Dashboard
+      </a>
+      <button type="button" onclick="toggleComicMenu()" data-nav-index="1" class="comic-nav-item <%= ['/admin/scripts','/admin/maintenance','/admin/users','/admin/withdraw','/admin/transactions','/admin/chat','/admin/announcements','/admin/banners','/admin/promos','/admin/tickets','/admin/pterodactyl','/admin/role-panel','/admin/produk','/admin/paket','/admin/setting-nokos','/admin/setting-fixno','/admin/setting-referral','/admin/seo','/admin/tagar','/admin/social','/social','/admin/game-store','/game-store'].includes(_activePath) ? 'active' : '' %>" id="comicMenuBtn" aria-haspopup="dialog" aria-controls="comicMenuSheet" aria-expanded="false">
+        <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Menu
+      </button>
+      <a href="/admin/account" data-nav-index="2" class="comic-nav-item <%= (_activePath === '/admin/account' || _activePath === '/admin/settings') ? 'active' : '' %>">
+        <i class="fa-solid fa-user"></i> Akun
+      </a>
+    <% } else { %>
+      <a href="/dashboard" data-nav-index="0" class="comic-nav-item <%= _activePath === '/dashboard' ? 'active' : '' %>">
+        <i class="fa-solid fa-house"></i> Home
+      </a>
+      <button type="button" onclick="toggleComicMenu()" data-nav-index="1" class="comic-nav-item" id="comicMenuBtn" aria-haspopup="dialog" aria-controls="comicMenuSheet" aria-expanded="false">
+        <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Menu
+      </button>
+      <a href="/profile" data-nav-index="2" class="comic-nav-item <%= _activePath === '/profile' ? 'active' : '' %>">
+        <i class="fa-solid fa-user"></i> Profil
+      </a>
+    <% } %>
+  </div>
+</nav>
+<% } %>
+
+<% if (_isLoggedIn) { %>
+<!-- ===================== COMIC MENU SHEET ===================== -->
+<dialog id="comicMenuSheet" class="comic-menu-sheet cm-screen-dialog" aria-labelledby="comicMenuTitle" data-comic-owned>
+  <div class="comic-menu-handle"></div>
+  <div class="comic-menu-header">
+    <div>
+      <h3 id="comicMenuTitle">Jelajah menu</h3>
+      <p><%= settings.name %> · Semua kebutuhan, satu tempat</p>
+    </div>
+    <button type="button" onclick="closeComicMenu()" class="comic-menu-close" autofocus aria-label="Tutup menu">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="comic-menu-search">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <input id="comicMenuSearch" type="search" placeholder="Cari layanan atau menu…" aria-label="Cari layanan atau menu" autocomplete="off">
+  </div>
+  <div class="comic-menu-body" data-dialog-scroll>
+
+    <a href="/game-store" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#ffda24">
+        <i class="fa-solid fa-star" style="color:#121713;font-size:18px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Game Store</strong>
+        <small>Jual beli akun game &amp; kelola postingan</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% if (typeof socialCfg !== 'undefined' && socialCfg && (socialCfg.enabled || _isAdmin)) { %>
+    <a href="/social" class="comic-menu-item" style="border:3px solid #171717;box-shadow:3px 3px 0 #171717">
+      <span class="comic-menu-icon" style="background:linear-gradient(135deg,#f59e0b,#ec4899)">
+        <i class="fa-solid fa-camera-retro" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong><%= socialCfg.title %><%= (_isAdmin && !socialCfg.enabled) ? ' (nonaktif)' : '' %></strong>
+        <small><%= _isAdmin ? 'Posting foto, story, like & komentar sebagai admin' : (socialCfg.subtitle || 'Postingan, story, like & komentar') %></small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } %>
+
+    <div class="comic-menu-section-title">Akun</div>
+
+    <% if (_isAdmin) { %>
+    <a href="/admin/account" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#3b82f6">
+        <i class="fa-solid fa-user" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Profil Admin</strong>
+        <small>Kelola akun &amp; pengaturan admin</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/tickets" class="comic-menu-item">
+      <span class="comic-menu-icon comic-help-icon" style="position:relative">
+        <i class="fa-solid fa-headset" style="color:#fff;font-size:17px"></i>
+        <% if (typeof ticketUnreadCount !== 'undefined' && ticketUnreadCount > 0) { %>
+          <span class="cs-badge"><%= ticketUnreadCount > 9 ? '9+' : ticketUnreadCount %></span>
+        <% } %>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Tiket</strong>
+        <small>Kelola tiket bantuan dari user</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } else { %>
+    <a href="/profile" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#3b82f6">
+        <i class="fa-solid fa-user" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Profil Saya</strong>
+        <small>Kelola akun &amp; data profil</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/bantuan" class="comic-menu-item">
+      <span class="comic-menu-icon comic-help-icon" style="position:relative">
+        <i class="fa-solid fa-headset" style="color:#fff;font-size:17px"></i>
+        <% if (typeof ticketUnreadCount !== 'undefined' && ticketUnreadCount > 0) { %>
+          <span class="cs-badge"><%= ticketUnreadCount > 9 ? '9+' : ticketUnreadCount %></span>
+        <% } %>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>CS Bantuan</strong>
+        <small>Buat &amp; pantau tiket bantuan</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% if (settings.aiBubbleEnabled) { %>
+    <a href="/ai" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#7c3aed">
+        <i class="fa-solid fa-robot" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>AI Assistant</strong>
+        <small>Tanya AI, upload ZIP &amp; gambar</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } %>
+
+    <a href="/docs" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-solid fa-bars-staggered" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>API Docs</strong>
+        <small>Dokumentasi integrasi API</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% if (settings.appDownloadEnabled && settings.appDownloadUrl) { %>
+    <a href="<%= settings.appDownloadUrl %>" target="_blank" rel="noopener noreferrer" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#16a34a">
+        <i class="fa-solid fa-mobile-screen-button" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Download Aplikasi</strong>
+        <small>Pasang aplikasi di HP kamu</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } %>
+    <% } %>
+
+    <% if (_isAdmin) { %>
+
+    <div class="comic-menu-section-title">Kelola</div>
+
+    <a href="/admin/game-store" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#087443">
+        <i class="fa-solid fa-gamepad" style="color:#fff;font-size:18px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Pengaturan Game Store</strong>
+        <small>Kategori game, nama aplikasi &amp; admin penengah</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/users" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#22c55e">
+        <i class="fa-solid fa-users" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>User</strong>
+        <small>Kelola akun pengguna</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/withdraw" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#f97316">
+        <i class="fa-solid fa-circle-arrow-down" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Withdraw</strong>
+        <small>Kelola permintaan penarikan</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/transactions" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-solid fa-money-bill-1" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Transaksi</strong>
+        <small>Riwayat &amp; status transaksi</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <div class="comic-menu-section-title">Komunikasi</div>
+
+    <a href="/admin/chat" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#14b8a6">
+        <i class="fa-solid fa-comments" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Room Chat</strong>
+        <small>Pesan &amp; diskusi dengan user</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/chat/private" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-solid fa-lock" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Chat Private</strong>
+        <small>Chat berdua dengan user &amp; admin</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/vouchers" class="comic-menu-item"><span class="comic-menu-icon" style="background:var(--comic-yellow)"><i class="fa-solid fa-ticket"></i></span><span class="comic-menu-item-text"><strong>Setting Kode Voucher</strong><small>Kode, diskon, layanan &amp; masa berlaku</small></span><i class="fa-solid fa-chevron-right"></i></a>
+
+    <a href="/admin/scripts" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:var(--comic-yellow)">
+        <i class="fa-solid fa-code"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Script Gratis</strong>
+        <small>Kelola koleksi script gratis</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/announcements" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:var(--comic-yellow-dark)">
+        <i class="fa-solid fa-circle-info" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Pengumuman</strong>
+        <small>Kelola pengumuman &amp; info</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/banners" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#a855f7">
+        <i class="fa-solid fa-image" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Banner</strong>
+        <small>Kelola banner tampilan</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/promos" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#f97316">
+        <i class="fa-solid fa-window-restore" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Promosi Pop Up</strong>
+        <small>Pop up promo + masa expired</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/pterodactyl" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#334155">
+        <i class="fa-solid fa-server" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Pterodactyl</strong>
+        <small>Kelola server panel, paket &amp; garansi</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/role-panel" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#1d4ed8">
+        <i class="fa-solid fa-store" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Setting Role Panel</strong>
+        <small>Harga, status &amp; server Reseller / Admin Panel</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/produk" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#f59e0b">
+        <i class="fa-solid fa-box-open" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Produk</strong>
+        <small>Kelola produk digital, Full Up &amp; link download</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/paket" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#16a34a">
+        <i class="fa-solid fa-gem" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Paket</strong>
+        <small>Biaya admin, harga layanan &amp; role per paket</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/setting-nokos" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#7c3aed">
+        <i class="fa-solid fa-dice" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Setting Nokos</strong>
+        <small>API Gacha Nokos, jeda pendaftaran &amp; ACC/Tolak member</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/setting-fixno" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#ef4444">
+        <i class="fa-solid fa-wrench" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Setting Fix No</strong>
+        <small>Sender email, target Gmail, template &amp; paket global</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/setting-referral" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-solid fa-user-plus" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Setting Kode Referral</strong>
+        <small>Aktif/nonaktif &amp; saldo bonus daftar pakai kode</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/seo" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#22c55e">
+        <i class="fa-brands fa-google" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>SEO Pencarian</strong>
+        <small>Meta, sitemap, robots &amp; verifikasi Google</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/tagar" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#8b5cf6">
+        <i class="fa-solid fa-hashtag" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Tagar</strong>
+        <small>Kata kunci &amp; #hashtag untuk SEO</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <div class="comic-menu-section-title">Lainnya</div>
+
+    <a href="/admin/social" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#ec4899">
+        <i class="fa-solid fa-camera-retro" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Pengaturan <%= (typeof socialCfg !== 'undefined' && socialCfg) ? socialCfg.title : 'Sosial' %></strong>
+        <small>Judul fitur &amp; penyimpanan Supabase</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin/maintenance" class="comic-menu-item"><span class="comic-menu-icon" style="background:var(--comic-yellow)"><i class="fa-solid fa-screwdriver-wrench"></i></span><span class="comic-menu-item-text"><strong>Pengaturan Maintenance</strong><small>Jeda website &amp; layanan terpilih</small></span><i class="fa-solid fa-chevron-right"></i></a>
+    <a href="/admin/settings" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#64748b">
+        <i class="fa-solid fa-gear" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Pengaturan</strong>
+        <small>Konfigurasi aplikasi</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% } else { %>
+
+    <div class="comic-menu-section-title">Tools</div>
+
+    <a href="/tools" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#6366f1">
+        <i class="fa-solid fa-screwdriver-wrench" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Tools</strong>
+        <small>Kumpulan tools &amp; utilitas (segera hadir)</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <div class="comic-menu-section-title">Transaksi</div>
+
+    <a href="/deposit?buat=1" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#22c55e">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Buat Transaksi</strong>
+        <small>Generate QRIS untuk deposit saldo</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/deposit" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#a855f7">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Riwayat Transaksi</strong>
+        <small>Mutasi &amp; histori pembayaran</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% if (!_isMerchant) { %>
+    <div class="comic-menu-section-title">Penarikan</div>
+
+    <a href="/withdraw?buka=instant" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#f97316">
+        <svg viewBox="0 0 24 24" fill="#ffffff"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Penarikan Instan</strong>
+        <small>Tarik otomatis, langsung cair</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/withdraw?buka=manual" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:var(--comic-yellow-dark)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7.5 9.5h9M7.5 13.5h5.5"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Penarikan Manual</strong>
+        <small>Tarik dengan verifikasi CS</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/withdraw" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="11"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Riwayat &amp; Analisis Penarikan</strong>
+        <small>Status &amp; kapan penarikan cair</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } %>
+
+    <% if (!_isVip && !_isMerchant) { %>
+    <div class="comic-menu-section-title">Paket</div>
+
+    <a href="/paket" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#2563eb">
+        <i class="fa-solid fa-tags" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Daftar Paket</strong>
+        <small>Lihat paket &amp; biaya admin dari admin</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    <% } %>
+
+    <div class="comic-menu-section-title" id="menuLayananSection">Layanan</div>
+
+    <a href="/voucher" class="comic-menu-item"><span class="comic-menu-icon" style="background:var(--comic-yellow)"><i class="fa-solid fa-ticket"></i></span><span class="comic-menu-item-text"><strong>Voucher Publik</strong><small>Lihat promo &amp; kode diskon layanan</small></span><i class="fa-solid fa-chevron-right"></i></a>
+
+    
+
+    <a href="/nokos" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#22c55e">
+        <i class="fa-solid fa-sim-card" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Nokos</strong>
+        <small>Sewa nomor virtual buat terima OTP</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/gacha-nokos" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#7c3aed">
+        <i class="fa-solid fa-dice" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Gacha Nokos</strong>
+        <small>Tarik nomor virtual acak (perlu ACC admin)</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/fix-no" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#ef4444">
+        <i class="fa-solid fa-wrench" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Fix No / Unban WA</strong>
+        <small>Permohonan fix nomor merah atau unban akun</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/paket" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#2563eb">
+        <i class="fa-solid fa-tags" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Paket Akun</strong>
+        <small>Beli paket pakai saldo, benefit &amp; role aktif otomatis</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/panel" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#334155">
+        <i class="fa-solid fa-server" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Panel</strong>
+        <small>Beli panel hosting otomatis pakai saldo</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/reseller" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#1d4ed8">
+        <i class="fa-solid fa-store" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Reseller Panel</strong>
+        <small>Beli role Reseller Panel (1 Bulan/5 Bulan/Permanen)</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/admin-panel" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#dc2626">
+        <i class="fa-solid fa-user-shield" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Admin Panel</strong>
+        <small>Beli role Admin Panel &amp; buat akun Admin Pterodactyl</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/premium" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#a855f7">
+        <i class="fa-solid fa-crown" style="color:#fff;font-size:17px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Aplikasi Premium</strong>
+        <small>Beli akun Capcut, Netflix, dll otomatis</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/sosmed" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#ec4899">
+        <i class="fa-solid fa-bullhorn" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Suntik Sosmed</strong>
+        <small>Followers, Likes, Views IG/TikTok/dll</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/produk" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#f59e0b">
+        <i class="fa-solid fa-box-open" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Produk</strong>
+        <small>Produk digital, Full Up dapat link Group</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <div class="comic-menu-section-title">Bantuan Lainnya</div>
+
+    <a href="<%= settings.channelInformation %>" target="_blank" rel="noopener noreferrer" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-brands fa-telegram" style="color:#fff;font-size:19px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Channel</strong>
+        <small>Info &amp; update terbaru</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/chat/room" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#14b8a6">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Room Chat</strong>
+        <small>Pesan &amp; diskusi</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <a href="/chat/private" class="comic-menu-item">
+      <span class="comic-menu-icon" style="background:#0ea5e9">
+        <i class="fa-solid fa-lock" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="comic-menu-item-text">
+        <strong>Chat Private</strong>
+        <small>Chat berdua dengan user &amp; admin</small>
+      </span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+
+    <% } %>
+
+  </div>
+</dialog>
+<script>
+  (function () {
+    const sheet = document.getElementById('comicMenuSheet');
+    const search = document.getElementById('comicMenuSearch');
+    const items = Array.from(sheet.querySelectorAll('.comic-menu-item'));
+    const titles = Array.from(sheet.querySelectorAll('.comic-menu-section-title'));
+    const empty = document.createElement('p');
+    empty.className = 'comic-menu-empty'; empty.textContent = 'Menu tidak ditemukan. Coba kata lain.';
+    empty.hidden = true; empty.setAttribute('role', 'status');
+    sheet.querySelector('.comic-menu-body').appendChild(empty);
+    function filter() {
+      const q = search.value.trim().toLocaleLowerCase('id-ID');
+      items.forEach(item => { item.hidden = !item.textContent.toLocaleLowerCase('id-ID').includes(q); });
+      titles.forEach(title => {
+        let next = title.nextElementSibling, visible = false;
+        while (next && !next.classList.contains('comic-menu-section-title')) {
+          if (next.classList.contains('comic-menu-item') && !next.hidden) visible = true;
+          next = next.nextElementSibling;
+        }
+        title.hidden = !visible;
+      });
+      empty.hidden = items.some(item => !item.hidden);
+    }
+    search.addEventListener('input', filter);
+    const path = location.pathname;
+    items.forEach(item => {
+      if (new URL(item.href, location.href).pathname === path) item.setAttribute('aria-current', 'page');
+    });
+    const nav = document.getElementById('comicNavInner');
+    if (nav) {
+      const active = nav.querySelector('.comic-nav-item.active');
+      if (active && active.tagName === 'A') active.setAttribute('aria-current', 'page');
+      if (!active) document.getElementById('comicMenuBtn').classList.add('active');
+    }
+    function expanded(value) {
+      document.querySelectorAll('#comicMenuBtn, .menu-toggle-btn').forEach(btn => {
+        btn.setAttribute('aria-expanded', String(value));
+        btn.setAttribute('aria-controls', 'comicMenuSheet');
+        btn.setAttribute('aria-haspopup', 'dialog');
+      });
+    }
+    window.openComicMenu = function () {
+      search.value = ''; filter(); ComicDialog.open(sheet); expanded(true);
+    };
+    window.closeComicMenu = function () { ComicDialog.close(sheet); };
+    window.toggleComicMenu = function () { sheet.open ? closeComicMenu() : openComicMenu(); };
+    sheet.addEventListener('close', () => expanded(false));
+    expanded(false);
+  })();
+</script>
+<% } %>
+<% } %>
