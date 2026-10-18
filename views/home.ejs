@@ -1,0 +1,170 @@
+<%- include('partials/header', { hideChrome: true }) %>
+<link rel="stylesheet" href="/home-ui.css?v=4" data-comic-owned>
+
+<main class="hm" id="hmRoot">
+
+  <!-- ========== HERO ========== -->
+  <section class="hm-hero hm-rv">
+    <span class="hm-blob hm-blob-a"></span>
+    <span class="hm-blob hm-blob-b"></span>
+
+    <div class="hm-logo">
+      <% if (settings.logoUrl) { %>
+        <img src="<%= settings.logoUrl %>" alt="Logo <%= settings.name %>">
+      <% } else { %>
+        <i class="fa-solid fa-wallet"></i>
+      <% } %>
+    </div>
+
+    <span class="hm-pill"><i class="fa-solid fa-qrcode"></i> QRIS Payment Gateway</span>
+
+    <h1 class="hm-title"><%= settings.title || 'Platform Pembayaran QRIS Payment Gateway' %></h1>
+    <p class="hm-sub"><%= settings.description || 'Payment gateway otomatis untuk bisnis digital. Cepat, aman, dan biaya rendah.' %></p>
+
+    <div class="hm-cta">
+      <a href="/register" class="hm-btn hm-btn-main">Mulai Sekarang <i class="fa-solid fa-arrow-right"></i></a>
+      <% if (settings.appDownloadEnabled && settings.appDownloadUrl) { %>
+      <a href="<%= settings.appDownloadUrl %>" target="_blank" rel="noopener noreferrer" class="hm-btn hm-btn-dl"><i class="fa-solid fa-mobile-screen-button"></i> Download Aplikasi</a>
+      <% } %>
+      <a href="/script-gratis" class="hm-btn hm-btn-sc"><i class="fa-solid fa-code"></i> LIHAT SC FREE <span class="hm-sc-tag">GRATIS</span></a>
+      <a href="/docs" class="hm-btn hm-btn-ghost"><i class="fa-solid fa-book"></i> Panduan API</a>
+    </div>
+    <style data-comic-owned>
+      .hm-btn-sc{position:relative;background:#22c55e!important;--cm-fg:#171717!important;--cm-edge:#171717!important;border:3px solid #171717!important;border-radius:9px!important;box-shadow:5px 5px 0 #171717!important;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:19px;letter-spacing:.8px;color:#171717!important;-webkit-text-fill-color:#171717!important}
+      .hm-btn-sc i{color:#171717!important;-webkit-text-fill-color:#171717!important}
+      .hm-btn-sc:hover{box-shadow:7px 7px 0 #171717!important;transform:translate(-1px,-1px)}
+      .hm-btn-sc:active{transform:translate(3px,3px)!important;box-shadow:2px 2px 0 #171717!important}
+      .hm-sc-tag{position:absolute;right:-6px;top:-13px;padding:1px 8px 0;background:#facc15;border:2.5px solid #171717;border-radius:8px;font-size:13px;letter-spacing:.6px;transform:rotate(7deg);color:#171717!important;-webkit-text-fill-color:#171717!important}
+    </style>
+
+    <ul class="hm-trust">
+      <li><i class="fa-solid fa-circle-check"></i> Tanpa biaya bulanan</li>
+      <li><i class="fa-solid fa-circle-check"></i> Daftar instan</li>
+      <li><i class="fa-solid fa-circle-check"></i> Cair 1-5 menit</li>
+    </ul>
+
+    <%- include('partials/home_clock') %>
+
+    <%- include('partials/hud_status') %>
+  </section>
+
+  <!-- ========== METODE ========== -->
+  <section class="hm-strip hm-rv" aria-label="Metode pembayaran">
+    <span><i class="fa-solid fa-qrcode"></i> QRIS</span>
+    <span><i class="fa-solid fa-wallet"></i> E-Wallet</span>
+    <span><i class="fa-solid fa-building-columns"></i> Bank</span>
+    <span><i class="fa-solid fa-code"></i> API</span>
+  </section>
+
+  <!-- ========== KEUNGGULAN ========== -->
+  <section class="hm-sec">
+    <h2 class="hm-h2 hm-rv"><span>Mengapa Pakai <%= settings.name %>?</span></h2>
+    <div class="hm-grid">
+      <article class="hm-card hm-rv">
+        <span class="hm-ico hm-ico-1"><i class="fa-solid fa-bolt"></i></span>
+        <h3>Pendaftaran Instan</h3>
+        <p>Kamu bisa langsung terima pembayaran setelah registrasi tanpa harus menunggu berhari-hari.</p>
+      </article>
+      <article class="hm-card hm-rv">
+        <span class="hm-ico hm-ico-2"><i class="fa-solid fa-plug"></i></span>
+        <h3>Integrasi Mudah</h3>
+        <p>Satu halaman dokumentasi yang lengkap dan sangat mudah dipahami untuk pemula.</p>
+      </article>
+      <article class="hm-card hm-rv">
+        <span class="hm-ico hm-ico-3"><i class="fa-solid fa-coins"></i></span>
+        <h3>Biaya Rendah</h3>
+        <p>Biaya yang sangat rendah untuk memaksimalkan keuntungan bisnis kamu.</p>
+      </article>
+      <article class="hm-card hm-rv">
+        <span class="hm-ico hm-ico-4"><i class="fa-solid fa-money-bill-transfer"></i></span>
+        <h3>Penarikan Instan</h3>
+        <p>Penarikan diproses cepat hanya hitungan detik tanpa menunggu lama.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ========== CARA KERJA ========== -->
+  <section class="hm-sec">
+    <h2 class="hm-h2 hm-rv"><span>Cara Mulai</span></h2>
+    <ol class="hm-steps">
+      <li class="hm-step hm-rv">
+        <span class="hm-num">1</span>
+        <div><h3>Buat Akun</h3><p>Daftar gratis, tanpa biaya pendaftaran dan tanpa langganan.</p></div>
+      </li>
+      <li class="hm-step hm-rv">
+        <span class="hm-num">2</span>
+        <div><h3>Hubungkan API</h3><p>Ikuti panduan API, pasang ke aplikasi atau platform bisnis kamu.</p></div>
+      </li>
+      <li class="hm-step hm-rv">
+        <span class="hm-num">3</span>
+        <div><h3>Terima &amp; Cairkan</h3><p>Pembayaran QRIS masuk otomatis, cairkan manual atau instan.</p></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="hm-sec">
+    <h2 class="hm-h2 hm-rv"><span>Pertanyaan Umum (F.A.Q)</span></h2>
+    <div class="hm-faq">
+      <details class="hm-q hm-rv" open>
+        <summary>Apa itu <%= settings.name %>? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p><%= settings.name %> adalah platform QRIS Payment Gateway yang memudahkan bisnis atau aplikasi menerima pembayaran dari berbagai Ewallet atau Bank secara otomatis, cepat, dan aman dalam satu QRIS.</p>
+      </details>
+      <details class="hm-q hm-rv">
+        <summary>Apakah ada biaya pendaftaran atau berlangganan? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p>Tidak ada. Biaya hanya ada saat melakukan transaksi saja.</p>
+      </details>
+      <details class="hm-q hm-rv">
+        <summary>Apakah <%= settings.name %> aman? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p>Payment Gateway yang kami gunakan telah terdaftar secara resmi sebagai Penyedia Jasa Pembayaran (PJP) yang diawasi oleh Bank Indonesia (BI).</p>
+      </details>
+      <details class="hm-q hm-rv">
+        <summary>Apakah setelah transaksi berhasil bisa langsung dicairkan? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p>Bisa. Pencairan bisa langsung dicairkan dengan 2 pilihan instan atau manual.</p>
+      </details>
+      <details class="hm-q hm-rv">
+        <summary>Apakah ada biaya pencairan? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p>Untuk pencairan manual tidak akan dikenakan biaya (gratis).</p>
+      </details>
+      <details class="hm-q hm-rv">
+        <summary>Berapa lama proses pencairan? <i class="fa-solid fa-chevron-down"></i></summary>
+        <p>Pencairan manual akan di proses 1x24 jam, dan untuk pencairan instan hanya memerlukan waktu 1-5 menit.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ========== TAGAR (diatur admin di menu Tagar) ========== -->
+  <% if (typeof seo !== 'undefined' && seo && seo.showTags && seo.tags && seo.tags.length) { %>
+  <section class="hm-rv" aria-label="Tagar populer" style="text-align:center;padding:8px 16px 20px">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+      <% seo.tags.forEach(function (t) { %>
+        <span style="display:inline-block;padding:4px 12px;border:2px solid currentColor;border-radius:999px;font-size:12px;font-weight:700"><%= '#' + t.replace(/[\s-]+/g, '') %></span>
+      <% }); %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- ========== CTA AKHIR ========== -->
+  <section class="hm-final hm-rv">
+    <span class="hm-blob hm-blob-c"></span>
+    <h2>Siap Menerima Pembayaran QRIS?</h2>
+    <p>Gabung sekarang dan integrasikan pembayaran QRIS Payment otomatis ke dalam aplikasi kamu.</p>
+    <a href="/register" class="hm-btn hm-btn-main">Buat Akun Gratis <i class="fa-solid fa-arrow-right"></i></a>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var root = document.getElementById('hmRoot');
+  if (!root || !('IntersectionObserver' in window)) return;
+  root.classList.add('hm-js');
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  var i = 0;
+  root.querySelectorAll('.hm-rv').forEach(function (el) { el.style.transitionDelay = ((i++ % 4) * 70) + 'ms'; io.observe(el); });
+})();
+</script>
+
+<%- include('partials/footer2', { hideChrome: true }) %>
