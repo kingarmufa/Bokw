@@ -1,0 +1,293 @@
+<%- include('partials/header', { title: 'Admin Panel' }) %>
+
+<%
+  const isHolder = user.panelRole === 'adminpanel';
+  const fmt = (n) => (n || 0).toLocaleString('id-ID');
+  const panelLabel = { user: 'User (belum punya role panel)', reseller: 'Seller (Reseller Panel)', adminpanel: 'Admin Panel' }[user.panelRole || 'user'];
+%>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/dashboard" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Role Panel</h1>
+  </div>
+
+  <!-- Tab: Reseller | Admin Panel -->
+  <div class="flex items-center gap-2 mb-4 bg-white border-2 border-black rounded-2xl p-1 shadow-[2px_2px_0_#14120f]">
+    <a href="/reseller" class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold text-gray-500"><i class="fa-solid fa-store"></i> Reseller</a>
+    <a href="/admin-panel" class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold bg-[#ffd23f] border-2 border-black"><i class="fa-solid fa-user-shield"></i> Admin Panel</a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <!-- ===== STATUS AKUN ===== -->
+  <div class="ap-panel mb-4">
+    <div class="ap-panel-head"><i class="fa-solid fa-user-shield text-base"></i><span>Status Akun</span></div>
+    <div class="p-4">
+      <div class="flex items-center gap-3">
+        <span class="w-11 h-11 rounded-xl <%= isHolder ? 'bg-red-600' : 'bg-gray-400' %> flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-user-shield text-white text-base"></i>
+        </span>
+        <div class="min-w-0">
+          <% if (isHolder) { %>
+            <p class="text-[13.5px] font-extrabold text-gray-800">Admin Panel Aktif</p>
+            <% if (user.adminPanelExpiresAt) { %>
+              <p class="text-[11.5px] text-gray-500">Berlaku sampai <b><%= new Date(user.adminPanelExpiresAt).toLocaleString('id-ID') %></b></p>
+            <% } else { %>
+              <p class="text-[11.5px] text-green-600 font-bold"><i class="fa-solid fa-infinity mr-1"></i>Permanen (tidak akan expired)</p>
+            <% } %>
+          <% } else { %>
+            <p class="text-[13.5px] font-extrabold text-gray-800">Belum Menjadi Admin Panel</p>
+            <p class="text-[11.5px] text-gray-500">Role panel saat ini: <b><%= panelLabel %></b></p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AKUN ADMIN PTERODACTYL ===== -->
+  <% if (account && account.status === 'ready') { %>
+    <div class="ap-panel mb-4">
+      <div class="ap-panel-head"><i class="fa-solid fa-server text-base"></i><span>Akun Admin Panel Kamu</span></div>
+      <div class="p-4 flex flex-col gap-2.5">
+        <% const rows = [
+          ['Domain', account.domain, true],
+          ['Server', account.serverName, false],
+          ['Username', account.username, true],
+          ['Password', account.password, true],
+          ['Email', account.email, true],
+          ['ID Akun', String(account.pteroUserId || '-'), false],
+          ['PTLA', account.ptla || '', true],
+          ['PTLC', account.ptlc || '', true]
+        ]; %>
+        <% rows.forEach(function(r) { %>
+          <div>
+            <p class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide"><%= r[0] %></p>
+            <div class="flex items-center gap-2">
+              <code class="flex-1 min-w-0 text-[12px] font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 break-all"><%= r[1] ? r[1] : '— belum ter-generate —' %></code>
+              <% if (r[2] && r[1]) { %>
+                <button type="button" onclick="apCopy(this, <%= JSON.stringify(r[1]) %>)" class="shrink-0 w-8 h-8 rounded-lg border-2 border-black bg-white shadow-[1.5px_1.5px_0_#14120f] text-xs"><i class="fa-regular fa-copy"></i></button>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+
+        <% if (account.keyStatus !== 'ok') { %>
+          <div class="bg-yellow-50 border-2 border-black rounded-xl px-3 py-2.5 text-[11.5px] text-yellow-800">
+            <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>PTLA/PTLC belum lengkap</p>
+            <% if (account.keyError) { %><p class="break-words"><%= account.keyError %></p><% } %>
+            <form method="POST" action="/admin-panel/regenerate-keys" class="mt-2">
+              <button type="submit" class="w-full comic-btn-primary px-4 py-2.5 rounded-xl text-[13px] font-bold"><i class="fa-solid fa-rotate"></i> Generate Ulang PTLA/PTLC</button>
+            </form>
+            <p class="mt-1.5 text-[10.5px]">Ini tidak membuat akun baru.</p>
+          </div>
+        <% } %>
+
+        <form method="POST" action="/admin-panel/delete" onsubmit="return confirm('Hapus akun Admin Panel <%= account.username %>? Akun di panel Pterodactyl ikut dihapus dan tidak bisa dikembalikan.');">
+          <button type="submit" class="w-full px-4 py-2.5 rounded-xl border-2 border-black bg-red-100 text-red-700 text-[13px] font-bold shadow-[2px_2px_0_#14120f]"><i class="fa-solid fa-trash"></i> Hapus Akun Admin Panel</button>
+        </form>
+
+        <p class="text-[10.5px] text-gray-400 mt-1"><i class="fa-solid fa-lock mr-1"></i>Simpan data ini dengan aman. Hanya 1 akun aktif; hapus akun ini kalau mau membuat yang baru.</p>
+      </div>
+    </div>
+
+  <% } else if (isHolder) { %>
+    <!-- Form create (1x) -->
+    <div class="ap-panel mb-4">
+      <div class="ap-panel-head"><i class="fa-solid fa-plus text-base"></i><span>Create Admin Panel</span></div>
+      <div class="p-4">
+        <% if (!servers.length) { %>
+          <p class="text-center text-[12px] text-gray-500 py-2">Belum ada server yang aktif. Hubungi admin.</p>
+        <% } else { %>
+          <form method="POST" action="/admin-panel/create" class="flex flex-col gap-3" onsubmit="return confirm('Buat akun Admin Panel? Hanya 1 akun aktif; kalau mau buat baru, akun lama harus dihapus dulu.');">
+            <div>
+              <label class="block text-[12px] font-bold mb-1">Server</label>
+              <select name="slot" required class="w-full bg-white border-2 border-black rounded-xl px-3 py-2.5 text-[13px] font-semibold">
+                <% servers.forEach(function(s) { %>
+                  <option value="<%= s.slot %>" <%= s.full ? 'disabled' : '' %>><%= s.name %><%= s.full ? ' (penuh)' : '' %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[12px] font-bold mb-1">Username Panel</label>
+              <input name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" placeholder="cth: budiadmin"
+                class="w-full bg-white border-2 border-black rounded-xl px-3 py-2.5 text-[13px] font-semibold">
+            </div>
+            <div>
+              <label class="block text-[12px] font-bold mb-1">Email Panel</label>
+              <input name="email" type="email" required maxlength="100" value="<%= user.email %>"
+                class="w-full bg-white border-2 border-black rounded-xl px-3 py-2.5 text-[13px] font-semibold">
+            </div>
+            <button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold"><i class="fa-solid fa-user-shield"></i> Buat Akun Admin Panel</button>
+            <p class="text-[10.5px] text-gray-400">Password, PTLA, dan PTLC dibuat otomatis. 1 akun aktif = 1 server. Kalau akunnya dihapus, kamu bisa membuat lagi.</p>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ===== BELI ROLE ===== -->
+  <% if (isHolder && !user.adminPanelExpiresAt) { %>
+    <div class="ap-panel">
+      <div class="p-6 text-center">
+        <i class="fa-solid fa-circle-check text-3xl text-green-500 mb-2"></i>
+        <p class="text-xs font-medium text-gray-600">Akun kamu sudah menjadi Admin Panel Permanen. Tidak perlu membeli lagi.</p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="ap-panel mb-4">
+      <div class="ap-panel-head">
+        <i class="fa-solid fa-cart-shopping text-base"></i>
+        <span><%= isHolder ? 'Perpanjang Role Admin Panel' : (user.panelRole === 'reseller' ? 'Upgrade Seller ke Admin Panel' : 'Beli Role Admin Panel') %></span>
+        <% if (avail.saleMode === 'terbatas') { %>
+          <span class="ml-auto text-[10.5px] font-extrabold px-2 py-0.5 rounded-full border-2 border-black bg-white">LIMITED</span>
+        <% } else if (avail.saleMode === 'bebas') { %>
+          <span class="ml-auto text-[10.5px] font-extrabold px-2 py-0.5 rounded-full border-2 border-black bg-green-200">DIBUKA</span>
+        <% } else { %>
+          <span class="ml-auto text-[10.5px] font-extrabold px-2 py-0.5 rounded-full border-2 border-black bg-red-200">DITUTUP</span>
+        <% } %>
+      </div>
+      <div class="p-3 flex flex-col gap-2.5">
+
+        <% if (!avail.open) { %>
+          <div class="text-center py-5">
+            <i class="fa-solid fa-lock text-2xl text-gray-400 mb-2"></i>
+            <p class="text-[12.5px] font-bold text-gray-700"><%= avail.reason %></p>
+            <p class="text-[11px] text-gray-400 mt-1">Coba lagi nanti atau hubungi admin.</p>
+          </div>
+        <% } else { %>
+          <% if (avail.saleMode === 'terbatas') { %>
+            <p class="text-center text-[11.5px] font-bold text-orange-600"><i class="fa-solid fa-fire mr-1"></i>Sisa slot: <%= avail.remaining %> dari <%= avail.quota %></p>
+          <% } %>
+
+          <% const confirmNote = user.panelRole === 'reseller' ? ' Ini UPGRADE: role Seller kamu diganti menjadi Admin Panel, jadi akses Create Panel dan Add Server tidak berlaku lagi.' : ''; %>
+
+          <% if (setting.mode !== 'separate') { %>
+            <% const permPrice = setting.permanentPrice || 0; %>
+            <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+              <span class="flex items-center gap-2.5 min-w-0">
+                <span class="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-infinity text-white text-sm"></i></span>
+                <span class="min-w-0">
+                  <span class="block text-[13px] font-bold text-gray-800">Admin Panel Permanen</span>
+                  <span class="block text-[12.5px] font-extrabold text-blue-600">Rp <%= fmt(permPrice) %></span>
+                </span>
+              </span>
+            </div>
+            <% if (permPrice > 0) { %>
+              <form id="<%= 'admin-permanent' %>" method="POST" action="/admin-panel/beli" onsubmit="return window.VoucherUI.confirm(this);">
+                <%- include('partials/voucher_checkout', { formId: 'admin-permanent', service: 'admin_panel', amount: permPrice }) %>
+<button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold"><i class="fa-solid fa-bolt"></i> Beli Sekarang</button>
+              </form>
+            <% } else { %>
+              <p class="text-center text-[11.5px] text-gray-400 py-1">Harga belum diatur admin.</p>
+            <% } %>
+          <% } else { %>
+            <% (setting.packages || []).forEach(function(pkg) { %>
+              <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+                <span class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-10 h-10 rounded-lg <%= pkg.key === 'permanen' ? 'bg-green-600' : (pkg.key === '5bulan' ? 'bg-purple-600' : 'bg-blue-600') %> flex items-center justify-center shrink-0">
+                    <i class="fa-solid <%= pkg.key === 'permanen' ? 'fa-infinity' : 'fa-calendar-days' %> text-white text-sm"></i>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-[13px] font-bold text-gray-800"><%= pkg.label %></span>
+                    <span class="block text-[12.5px] font-extrabold text-blue-600">Rp <%= fmt(pkg.price) %></span>
+                    <span class="block text-[10.5px] text-gray-400"><%= pkg.durationDays > 0 ? ('Aktif ' + pkg.durationDays + ' hari sejak dibeli') : 'Permanen, tidak expired' %></span>
+                  </span>
+                </span>
+              </div>
+              <% if ((pkg.price || 0) > 0) { %>
+                <form id="<%= 'admin-' + pkg.key %>" method="POST" action="/admin-panel/beli" class="-mt-1.5 mb-1" onsubmit="return window.VoucherUI.confirm(this);">
+                  <input type="hidden" name="packageKey" value="<%= pkg.key %>">
+                  <%- include('partials/voucher_checkout', { formId: 'admin-' + pkg.key, service: 'admin_panel', amount: pkg.price }) %>
+<button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold"><i class="fa-solid fa-bolt"></i> Beli <%= pkg.label %></button>
+                </form>
+              <% } else { %>
+                <p class="text-center text-[11.5px] text-gray-400 -mt-1.5 mb-1">Harga belum diatur admin.</p>
+              <% } %>
+            <% }); %>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+    <p class="text-[11px] text-gray-400 text-center px-4 mb-4">Saldo terpotong saat pembelian. Setelah berhasil, role panel akun menjadi Admin Panel (role User/VIP/Merchant tidak berubah) dan kamu bisa membuat 1 akun Admin Pterodactyl.</p>
+  <% } %>
+
+  <!-- ===== RIWAYAT AKUN ADMIN PANEL ===== -->
+  <% { %>
+    <div class="ap-panel mb-4">
+      <div class="ap-panel-head"><i class="fa-solid fa-user-clock text-base"></i><span>Riwayat Akun Admin Panel</span></div>
+      <div class="p-3 flex flex-col gap-2">
+        <% if (!history || !history.length) { %>
+          <p class="text-center text-[12px] text-gray-500 py-3">Belum ada riwayat akun Admin Panel. Akun yang kamu buat akan tercatat di sini.</p>
+        <% } %>
+        <% (history || []).forEach(function(h) { const active = h.status === 'active'; %>
+          <div class="px-3 py-2.5 rounded-xl border-2 border-black bg-white">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[12.5px] font-bold text-gray-800 truncate"><%= h.username %></span>
+              <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-black <%= active ? 'bg-green-200' : 'bg-gray-200' %>"><%= active ? 'AKTIF' : 'DIHAPUS' %></span>
+            </div>
+            <p class="text-[10.5px] text-gray-500 break-all"><%= h.serverName || ('Server ' + h.slot) %> · <%= h.domain %></p>
+            <p class="text-[10.5px] text-gray-500">Dibuat <%= new Date(h.createdAt).toLocaleString('id-ID') %><%= (!active && h.deletedAt) ? (' · Dihapus ' + new Date(h.deletedAt).toLocaleString('id-ID')) : '' %></p>
+            <% if (!active && h.deleteNote) { %><p class="text-[10.5px] text-gray-400"><%= h.deleteNote %></p><% } %>
+            <% if (active) { %>
+              <form method="POST" action="/admin-panel/delete" class="mt-2" onsubmit="return confirm('Hapus akun Admin Panel <%= h.username %>? Akun di panel Pterodactyl ikut dihapus.');">
+                <button type="submit" class="w-full px-3 py-2 rounded-lg border-2 border-black bg-red-100 text-red-700 text-[12px] font-bold"><i class="fa-solid fa-trash"></i> Hapus Akun</button>
+              </form>
+            <% } else { %>
+              <form method="POST" action="/admin-panel/history/<%= h._id %>/hapus" class="mt-2" onsubmit="return confirm('Hapus baris riwayat ini?');">
+                <button type="submit" class="w-full px-3 py-2 rounded-lg border-2 border-black bg-white text-gray-600 text-[12px] font-bold"><i class="fa-solid fa-xmark"></i> Hapus Riwayat</button>
+              </form>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ===== RIWAYAT ===== -->
+  <% if (orders.length) { %>
+    <div class="ap-panel">
+      <div class="ap-panel-head"><i class="fa-solid fa-clock-rotate-left text-base"></i><span>Riwayat Pembelian</span></div>
+      <div class="p-3 flex flex-col gap-2">
+        <% orders.forEach(function(o) { %>
+          <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border-2 border-black bg-white">
+            <span class="min-w-0">
+              <span class="block text-[12.5px] font-bold text-gray-800 truncate"><%= o.packageLabel || 'Admin Panel' %></span>
+              <span class="block text-[10.5px] text-gray-500"><%= o.expiresAt ? ('Sampai ' + new Date(o.expiresAt).toLocaleDateString('id-ID')) : 'Permanen' %> · <%= new Date(o.createdAt).toLocaleDateString('id-ID') %></span>
+            </span>
+            <span class="shrink-0 text-[12.5px] font-extrabold">Rp <%= fmt(o.price) %></span>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+
+</div>
+
+<style>
+  .ap-panel { border: 2.5px solid #14120f; border-radius: 18px; background:#fffdf7; box-shadow: 3px 3px 0 #14120f; overflow: hidden; }
+  .ap-panel-head { display:flex; align-items:center; gap:8px; padding:10px 14px; background: var(--comic-yellow, #ffd23f); border-bottom: 2.5px solid #14120f; font-weight:800; font-size:13px; }
+</style>
+
+<script>
+  function apCopy(btn, text) {
+    const done = () => { const i = btn.querySelector('i'); const old = i.className; i.className = 'fa-solid fa-check'; setTimeout(() => { i.className = old; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done).catch(() => {}); return; }
+    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(t);
+  }
+</script>
+
+<%- include('partials/footer') %>
