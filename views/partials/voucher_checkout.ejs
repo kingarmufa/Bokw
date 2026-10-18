@@ -1,0 +1,7 @@
+<section class="vc-checkout" data-voucher data-comic-owned data-form="<%= formId %>" data-service="<%= service %>" data-amount="<%= Number(amount) || 0 %>">
+  <label for="voucher-<%= formId %>">Punya kode voucher?</label>
+  <div class="vc-input-row"><input id="voucher-<%= formId %>" name="voucherCode" form="<%= formId %>" placeholder="Contoh: VOCHER10" autocomplete="off" autocapitalize="characters" maxlength="32" aria-describedby="voucher-status-<%= formId %>"><button type="button" data-voucher-apply>Terapkan</button></div>
+  <div class="vc-recommend" aria-label="Rekomendasi voucher"><span class="vc-note">Memuat rekomendasi…</span></div>
+  <p class="vc-status" id="voucher-status-<%= formId %>" aria-live="polite">Kode opsional. Diskon diperiksa saat pembelian.</p>
+  <div class="vc-summary" hidden><div><span>Harga awal</span><span data-original></span></div><div><span>Potongan voucher</span><strong data-discount></strong></div><div class="vc-total"><span>Total bayar</span><strong data-total></strong></div></div>
+</section>
