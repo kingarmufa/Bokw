@@ -1,0 +1,49 @@
+<%# Widget Jam & Tanggal (live, mengikuti zona waktu perangkat: WIB/WITA/WIT). Gaya: public/glass-ui.css (.gl-clock) %>
+<section class="gl-clock comic-anim" id="glClock" aria-label="Jam dan tanggal">
+  <div class="gl-clock-l">
+    <span class="gl-clock-hi"><i class="fa-solid fa-sun" id="glClockIco"></i><span><span id="glClockGreet">Halo</span>, <b><%= (typeof user !== 'undefined' && user && user.username) ? user.username : 'Admin' %></b></span></span>
+    <span class="gl-clock-date"><i class="fa-regular fa-calendar"></i><span id="glClockDate">—</span></span>
+  </div>
+  <div class="gl-clock-r">
+    <div class="gl-clock-time" id="glClockTime" aria-live="off">--<span class="c">:</span>--<span class="c">:</span>--</div>
+    <span class="gl-clock-tz" id="glClockTz">WIB</span>
+  </div>
+</section>
+<script>
+(function () {
+  var elT = document.getElementById('glClockTime');
+  if (!elT) return;
+  var elD = document.getElementById('glClockDate'), elG = document.getElementById('glClockGreet'),
+      elI = document.getElementById('glClockIco'), elZ = document.getElementById('glClockTz');
+  var fmtDate;
+  try { fmtDate = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { fmtDate = null; }
+  var HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+      BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  function p2(n) { return n < 10 ? '0' + n : '' + n; }
+  function tzLabel(d) {
+    var off = -d.getTimezoneOffset() / 60;
+    if (off === 7) return 'WIB';
+    if (off === 8) return 'WITA';
+    if (off === 9) return 'WIT';
+    return 'GMT' + (off >= 0 ? '+' : '') + off;
+  }
+  var lastDay = -1, lastGreet = '';
+  function tick() {
+    var d = new Date();
+    elT.innerHTML = p2(d.getHours()) + '<span class="c">:</span>' + p2(d.getMinutes()) + '<span class="c">:</span>' + p2(d.getSeconds());
+    if (d.getDate() !== lastDay) {
+      lastDay = d.getDate();
+      elD.textContent = fmtDate ? fmtDate.format(d) : (HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear());
+      elZ.textContent = tzLabel(d);
+    }
+    var h = d.getHours(), g, ic;
+    if (h >= 4 && h < 11) { g = 'Selamat pagi'; ic = 'fa-sun'; }
+    else if (h >= 11 && h < 15) { g = 'Selamat siang'; ic = 'fa-sun'; }
+    else if (h >= 15 && h < 18) { g = 'Selamat sore'; ic = 'fa-cloud-sun'; }
+    else { g = 'Selamat malam'; ic = 'fa-moon'; }
+    if (g !== lastGreet) { lastGreet = g; elG.textContent = g; elI.className = 'fa-solid ' + ic; }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
