@@ -1,0 +1,112 @@
+<%# Loading intro bertema komik: tampil ~5 detik setelah login / registrasi %>
+<div id="cmLoader" class="cm-loader" role="status" aria-live="polite" aria-label="Memuat">
+  <style>
+    .cm-loader{
+      position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; overflow:hidden; background:#ffd400;
+      background-image:radial-gradient(#14120f 18%, transparent 20%), radial-gradient(#14120f 18%, transparent 20%);
+      background-size:22px 22px; background-position:0 0, 11px 11px;
+      animation:cmFadeOut .5s ease 4.5s forwards;
+    }
+    .cm-loader::before{ /* overlay kuning supaya dot halus */
+      content:""; position:absolute; inset:0; background:radial-gradient(circle at center, #ffe45c 0%, rgba(255,212,0,.88) 55%, rgba(255,183,3,.94) 100%);
+    }
+    .cm-rays{
+      position:absolute; width:190vmax; height:190vmax; left:50%; top:50%; margin:-95vmax 0 0 -95vmax;
+      background:repeating-conic-gradient(from 0deg, rgba(20,18,15,.10) 0deg 8deg, transparent 8deg 16deg);
+      animation:cmSpin 9s linear infinite; pointer-events:none;
+    }
+    .cm-stage{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding:0 20px; }
+    .cm-burst-wrap{ position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; }
+    .cm-burst{ position:absolute; inset:0; animation:cmSpin 5s linear infinite; filter:drop-shadow(6px 6px 0 #14120f); }
+    .cm-burst svg{ width:100%; height:100%; display:block; }
+    .cm-burst-inner{ position:absolute; inset:0; animation:cmSpin 7s linear infinite reverse; opacity:.95; transform:scale(.78); }
+    .cm-logo{
+      position:relative; width:112px; height:112px; border-radius:26px; background:#fff;
+      border:5px solid #14120f; box-shadow:5px 5px 0 #14120f; object-fit:cover; overflow:hidden;
+      animation:cmPop .6s cubic-bezier(.2,1.6,.4,1) both, cmBounce 0.9s ease-in-out .6s infinite;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .cm-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .cm-fx{
+      position:absolute; font-family:'Bangers','Baloo 2',cursive; letter-spacing:1.5px; color:#fff; background:var(--comic-red,#ef2b2d);
+      border:3.5px solid #14120f; box-shadow:3px 3px 0 #14120f; padding:1px 10px; border-radius:10px; font-size:22px;
+      opacity:0; z-index:3; white-space:nowrap;
+    }
+    .cm-fx.f1{ top:2px; left:-14px; transform:rotate(-12deg); animation:cmFx 1.8s ease-out .15s infinite; }
+    .cm-fx.f2{ top:28px; right:-26px; background:#12a4ff; transform:rotate(10deg); animation:cmFx 1.8s ease-out .6s infinite; }
+    .cm-fx.f3{ bottom:6px; left:-24px; background:#14120f; color:#ffd400; transform:rotate(8deg); animation:cmFx 1.8s ease-out 1.05s infinite; }
+    .cm-title{
+      margin-top:14px; font-family:'Bangers','Baloo 2',cursive; font-size:44px; line-height:1; letter-spacing:2px;
+      color:var(--comic-red,#ef2b2d); -webkit-text-stroke:2px #14120f; text-shadow:3px 3px 0 #14120f; display:flex; gap:1px;
+    }
+    .cm-title span{ display:inline-block; animation:cmLetter .9s ease-in-out infinite; }
+    .cm-title span:nth-child(1){animation-delay:0s}.cm-title span:nth-child(2){animation-delay:.07s}
+    .cm-title span:nth-child(3){animation-delay:.14s}.cm-title span:nth-child(4){animation-delay:.21s}
+    .cm-title span:nth-child(5){animation-delay:.28s}.cm-title span:nth-child(6){animation-delay:.35s}
+    .cm-title span:nth-child(7){animation-delay:.42s}
+    .cm-title span.dot{ color:#12a4ff; }
+    .cm-bar{
+      margin-top:16px; width:min(260px,74vw); height:24px; background:#fff; border:4px solid #14120f;
+      border-radius:999px; box-shadow:4px 4px 0 #14120f; overflow:hidden; position:relative;
+    }
+    .cm-bar i{
+      display:block; height:100%; width:0; border-radius:999px;
+      background:repeating-linear-gradient(-45deg,var(--comic-red,#ef2b2d) 0 10px,var(--comic-red-light,#ff6a6c) 10px 20px); background-size:28px 28px;
+      animation:cmFill 4.7s cubic-bezier(.4,.1,.3,1) forwards, cmStripe .5s linear infinite;
+    }
+    .cm-sub{
+      margin-top:12px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#14120f;
+      background:#fff; border:3px solid #14120f; border-radius:999px; padding:2px 14px; box-shadow:3px 3px 0 #14120f;
+    }
+    .cm-sub b{ display:inline-block; animation:cmBlink 1s steps(1) infinite; }
+    @keyframes cmSpin{to{transform:rotate(360deg)}}
+    @keyframes cmPop{0%{transform:scale(0) rotate(-25deg)}100%{transform:scale(1) rotate(0)}}
+    @keyframes cmBounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+    @keyframes cmLetter{0%,100%{transform:translateY(0)}40%{transform:translateY(-9px) scale(1.12)}}
+    @keyframes cmFx{0%{opacity:0;transform:scale(.2) rotate(-12deg)}15%{opacity:1;transform:scale(1.15) rotate(-6deg)}45%{opacity:1;transform:scale(1) rotate(-6deg)}60%,100%{opacity:0;transform:scale(.8) rotate(-6deg)}}
+    @keyframes cmFill{0%{width:0}60%{width:72%}100%{width:100%}}
+    @keyframes cmStripe{to{background-position:28px 0}}
+    @keyframes cmBlink{50%{opacity:0}}
+    @keyframes cmFadeOut{to{opacity:0;visibility:hidden;transform:scale(1.06)}}
+    @media (prefers-reduced-motion:reduce){ .cm-rays,.cm-burst,.cm-burst-inner{animation-duration:20s} }
+  </style>
+
+  <div class="cm-rays"></div>
+  <div class="cm-stage">
+    <div class="cm-burst-wrap">
+      <div class="cm-burst">
+        <svg viewBox="0 0 200 200"><polygon style="fill:var(--comic-red,#ef2b2d)" stroke="#14120f" stroke-width="5" stroke-linejoin="round"
+          points="100,4 118,38 152,16 152,58 192,56 172,92 196,116 158,128 168,168 128,158 116,196 100,164 84,196 72,158 32,168 42,128 4,116 28,92 8,56 48,58 48,16 82,38"/></svg>
+      </div>
+      <div class="cm-burst cm-burst-inner" style="filter:none">
+        <svg viewBox="0 0 200 200"><polygon fill="#12a4ff" stroke="#14120f" stroke-width="5" stroke-linejoin="round"
+          points="100,4 118,38 152,16 152,58 192,56 172,92 196,116 158,128 168,168 128,158 116,196 100,164 84,196 72,158 32,168 42,128 4,116 28,92 8,56 48,58 48,16 82,38"/></svg>
+      </div>
+      <div class="cm-logo"><img src="<%= (typeof settings !== 'undefined' && settings.logoUrl) ? settings.logoUrl : '/icon.png' %>" alt="Logo" onerror="this.onerror=null;this.src='/icon.png'"></div>
+      <span class="cm-fx f1">POW!</span>
+      <span class="cm-fx f2">ZAP!</span>
+      <span class="cm-fx f3">BOOM!</span>
+    </div>
+    <div class="cm-title"><span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span class="dot">G</span></div>
+    <div class="cm-bar"><i></i></div>
+    <div class="cm-sub">Menyiapkan akunmu<b>...</b></div>
+  </div>
+
+  <script>
+    (function () {
+      var el = document.getElementById('cmLoader');
+      if (!el) return;
+      var root = document.documentElement;
+      root.style.overflow = 'hidden';
+      window.__cmLoaderDone = false;
+      setTimeout(function () {
+        root.style.overflow = '';
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+        // Beri tahu halaman: loading selesai -> popup (promo, dll) baru boleh muncul.
+        window.__cmLoaderDone = true;
+        try { document.dispatchEvent(new CustomEvent('cmloader:done')); } catch (e) {}
+      }, 5150);
+    })();
+  </script>
+</div>
