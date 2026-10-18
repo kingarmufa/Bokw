@@ -1,0 +1,85 @@
+</main>
+
+<!-- ========== FOOTER PROFESIONAL ========== -->
+<footer class="bg-gray-50/60 border-t border-gray-100 mt-10">
+  <div class="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    
+    <!-- Kolom 1: Logo & Deskripsi -->
+    <div>
+      <% if (settings.logoUrl) { %>
+        <div class="comic-logo-frame-thin mb-3">
+          <img src="<%= settings.logoUrl %>" alt="<%= settings.name %>" />
+        </div>
+      <% } else { %>
+        <div class="comic-logo-frame-thin mb-3 text-blue-500 text-[13.5px]">
+          <%= settings.name.charAt(0).toUpperCase() %>
+        </div>
+      <% } %>
+      <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed">
+        <%= settings.description %>
+      </p>
+    </div>
+
+    <!-- Kolom 2: Navigasi & Legal (berdampingan) -->
+    <div>
+      <div class="flex flex-row gap-6">
+        <!-- Sub: Navigasi -->
+        <div class="flex-1">
+          <h5 class="text-[13.5px] font-semibold text-gray-700">Navigasi</h5>
+          <ul class="space-y-1.5 mt-2">
+            <li><a href="/" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">Beranda</a></li>
+            <li><a href="/docs" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">API Docs</a></li>
+            <li><a href="/register" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">Daftar</a></li>
+            <li><a href="/login" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">Masuk</a></li>
+          </ul>
+        </div>
+        <!-- Sub: Legal -->
+        <div class="flex-1">
+          <h5 class="text-[13.5px] font-semibold text-gray-800">Syarat & Ketentuan</h5>
+          <ul class="space-y-1.5 mt-2">
+            <li><a href="/privacy-policy" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+            <li><a href="/terms-of-service" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom 3: Kontak & Bantuan -->
+    <div class="flex-1">
+      <h4 class="text-[13.5px] font-semibold text-gray-800 mb-1">Pusat Bantuan</h4>
+      <ul class="space-y-1">
+        <% if (settings.contactGmail) { %>
+        <li>
+          <a href="mailto:<%= settings.contactGmail %>" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-1.5">
+            <i class="fas fa-envelope text-[13.5px]"></i> <%= settings.contactGmail %>
+          </a>
+        </li>
+        <% } %>
+        <li>
+          <a href="<%= settings.contactDeveloper || '#' %>" target="_blank" rel="noopener noreferrer" class="text-[13.5px] font-medium text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-1.5">
+            <i class="fa-brands fa-telegram text-[13.5px]"></i> Telegram Support
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Copyright -->
+  <div class="border-t border-gray-100 py-5 px-6">
+    <p class="text-center font-medium text-[13.5px] text-gray-700">
+      &copy; 2026 <%= settings.name %>. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<%- include('credit') %>
+<% if (typeof hideChrome === 'undefined' || !hideChrome) { %>
+<%- include('bottomnav') %>
+<% } %>
+
+<% if (typeof settings !== 'undefined' && settings && settings.aiBubbleEnabled) { %>
+<%- include('ai_bubble') %>
+<% } %>
+
+</body>
+</html>
