@@ -1,0 +1,27 @@
+<%
+  const mine = String(m.userId) === currentUserId;
+  const avatar = (m.avatarUrl && m.avatarUrl.trim()) ? m.avatarUrl : ('https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.username));
+  const badgeCls = { admin: 'admin', vip: 'vip', merchant: 'merchant' }[m.role] || 'user';
+  const time = new Date(m.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+%>
+<div class="rc-msg <%= mine ? 'me' : '' %>">
+  <img class="rc-avatar" src="<%= avatar %>">
+  <div class="rc-bubble-wrap">
+    <div class="rc-meta">
+      <span class="rc-name"><%= m.username %></span>
+      <span class="rc-badge <%= badgeCls %>"><%= m.role %></span>
+      <span class="rc-time"><%= time %></span>
+    </div>
+    <div class="rc-bubble"><% if (m.text) { %><span class="rc-text"><%= m.text %></span><% } %>
+      <% if (m.fileUrl) { %>
+        <% if (m.fileType === 'image') { %>
+          <div class="rc-attach"><img src="<%= m.fileUrl %>" loading="lazy"></div>
+        <% } else if (m.fileType === 'video') { %>
+          <div class="rc-attach"><video src="<%= m.fileUrl %>" controls></video></div>
+        <% } else { %>
+          <a class="rc-file-link" href="<%= m.fileUrl %>" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> <%= m.fileName || 'File' %></a>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+</div>
