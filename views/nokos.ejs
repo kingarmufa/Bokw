@@ -1,0 +1,18 @@
+<%- include('partials/header', { title: 'Nokos • Dibanana' }) %>
+<link rel="stylesheet" href="/nokos-dibanana.css?v=3">
+<main class="bn-page" data-comic-owned>
+  <header class="bn-hero"><span class="bn-tag">NOMOR OTP • RUPIAH</span><h1>Satu nomor.<br>Banyak pilihan!</h1><p>Pilih server, cari aplikasi, lalu ambil nomor yang kamu butuhkan.</p><a class="bn-btn" href="/nokos/riwayat">↗ Riwayat Nokos</a></header>
+  <p id="bn-error" role="status" aria-live="polite"></p>
+  <section class="bn-panel"><h2><b>01</b> Pilih server</h2><div class="bn-grid" id="bn-servers">
+    <% [['ekonomi','Ekonomi','Pilihan hemat'],['premium','Premium','Bisa pilih operator'],['khusus','Khusus','Layanan khusus'],['wa_luar','WA Luar','Pilihan nomor luar']].forEach(s=>{ %>
+    <button type="button" data-server="<%= s[0] %>" class="bn-server" aria-pressed="false"><strong><%= s[1] %></strong><small><%= s[2] %></small></button>
+    <% }) %>
+  </div></section>
+  <section class="bn-panel" id="bn-app-panel" hidden><h2><b>02</b> Pilih layanan</h2><label for="bn-service">Aplikasi tujuan</label><select data-nokos-search="layanan" id="bn-service"><option value="">Pilih layanan</option></select></section>
+  <section class="bn-panel" id="bn-country-panel" hidden><h2><b>03</b> Negara & operator</h2><label for="bn-country">Pilih negara</label><select data-nokos-search="negara" id="bn-country"><%- include('partials/nokos_country_options') %></select><p class="bn-note">Pilih nama negara tanpa mengetik kode. Stok mengikuti server dan layanan.</p><div id="bn-operator-wrap" hidden><label for="bn-operator">Operator (Premium)</label><select data-nokos-search="operator" id="bn-operator"><% ['any','telkomsel','indosat','axis','three','smartfren','byu'].forEach(o=>{ %><option value="<%= o %>"><%= o === 'any' ? 'Acak / Semua operator' : o %></option><% }) %></select></div><button class="bn-btn" type="button" id="bn-prices-btn">Cari harga & stok →</button></section>
+  <section class="bn-panel" id="bn-price-panel" hidden><h2><b>04</b> Pilih harga</h2><p class="bn-note">Harga sudah termasuk biaya layanan. Penawaran berlaku 5 menit.</p><div id="bn-products" class="bn-grid"></div></section>
+  <form id="orderForm" class="bn-panel" hidden><h2>Nomor pilihanmu</h2><p id="bn-summary"></p><input type="hidden" name="quote_id" id="bn-quote"><input type="hidden" name="operator" id="bn-chosen-operator" value="any"><%- include('partials/voucher_checkout', { formId: 'orderForm', service: 'nokos', amount: 0 }) %><button class="bn-btn bn-buy" type="submit">Beli nomor sekarang →</button><p class="bn-note">Cancel minimal 120 detik dan sebelum OTP masuk. OTP kedua bisa diminta satu kali.</p></form>
+</main>
+<script src="/nokos-search.js?v=1" defer></script>
+<script src="/nokos-dibanana.js?v=2" defer></script>
+<%- include('partials/footer') %>
