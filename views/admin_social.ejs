@@ -1,0 +1,214 @@
+<%- include('partials/header', { title: 'Pengaturan ' + cfg.title }) %>
+<style data-comic-owned>
+.as-wrap{max-width:560px;margin:0 auto;padding:6px 16px 110px;font-family:'Comic Neue',Arial,sans-serif;color:#171717}
+.as-wrap *{box-sizing:border-box}
+.as-h1{font-family:Bangers,Impact,sans-serif;font-size:1.8rem;letter-spacing:.06em;margin:4px 0 2px}
+.as-p{font-size:12.5px;font-weight:700;opacity:.75;margin:0 0 14px}
+.as-card{background:#fff;--cm-fg:#171717;color:#171717;border:3px solid #171717;border-radius:16px;box-shadow:4px 4px 0 #171717;padding:14px;margin:0 0 16px}
+.as-card h2{font-family:Bangers,Impact,sans-serif;font-size:1.3rem;letter-spacing:.05em;margin:0 0 10px}
+.as-l{display:block;font-size:12px;font-weight:900;margin:10px 0 4px}
+.as-i{width:100%;padding:9px 11px;border:3px solid #171717;border-radius:11px;font-family:inherit;font-weight:700;font-size:14px;background:#fff;--cm-fg:#171717;color:#171717}
+.as-h{font-size:11px;font-weight:700;opacity:.65;margin:3px 0 0}
+.as-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:2px dashed rgba(23,23,23,.25);font-weight:800;font-size:13.5px}
+.as-row:first-of-type{border-top:0}
+.as-row input[type=checkbox]{width:22px;height:22px;accent-color:#171717}
+.as-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.as-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 14px;border:3px solid #171717;border-radius:11px;background:#edc531;--cm-fg:#171717;color:#171717;font-family:Bangers,Impact,sans-serif;letter-spacing:.05em;font-size:1.05rem;cursor:pointer;box-shadow:3px 3px 0 #171717;text-decoration:none}
+.as-b:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #171717}
+.as-b.w{background:#fff}.as-b.r{background:#dc2626;--cm-fg:#fff;color:#fff}.as-b.s{min-height:34px;font-size:.95rem;padding:3px 10px}
+.as-flash{padding:10px 12px;border:3px solid #171717;border-radius:12px;font-weight:800;font-size:13px;margin:0 0 12px}
+.as-ok{background:#dcfce7}.as-er{background:#fee2e2}
+.as-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 16px}
+.as-stat{background:#fffbe8;--cm-fg:#171717;color:#171717;border:3px solid #171717;border-radius:12px;padding:8px 4px;text-align:center}
+.as-stat b{display:block;font-family:Bangers,Impact,sans-serif;font-size:1.4rem;line-height:1}.as-stat span{font-size:10.5px;font-weight:900;opacity:.7}
+.as-pj{border:3px solid #171717;border-radius:14px;padding:12px;margin:0 0 12px;background:#fffbe8;--cm-fg:#171717;color:#171717}
+.as-pj.off{opacity:.6}
+.as-pj-t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.as-pj-t b{font-family:Bangers,Impact,sans-serif;font-size:1.15rem;letter-spacing:.04em}
+.as-tag{display:inline-block;padding:1px 8px;border:2px solid #171717;border-radius:7px;font-size:10.5px;font-weight:900;background:#bbf7d0}
+.as-tag.full{background:#fecaca}.as-tag.err{background:#fde68a}.as-tag.dis{background:#e5e5e5}
+.as-bar{height:14px;border:3px solid #171717;border-radius:8px;background:#fff;overflow:hidden;margin:8px 0 4px}
+.as-bar i{display:block;height:100%;background:#22c55e}.as-bar i.mid{background:#f59e0b}.as-bar i.hi{background:#dc2626}
+.as-mini{font-size:11.5px;font-weight:800;opacity:.75;overflow-wrap:anywhere}
+.as-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.as-det{margin-top:8px}.as-det summary{cursor:pointer;font-weight:900;font-size:12.5px}
+.as-post{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:2px dashed rgba(23,23,23,.25)}
+.as-post:first-of-type{border-top:0}
+.as-post img,.as-post video{width:52px;height:52px;object-fit:cover;border:3px solid #171717;border-radius:9px;background:#111;flex:0 0 auto}
+.as-post-t{flex:1;min-width:0;font-size:12.5px;font-weight:800}.as-post-t small{display:block;opacity:.65;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-guide ol{margin:6px 0 0 18px;padding:0;font-size:12.5px;font-weight:700;line-height:1.55}
+.as-guide code{background:#eee;--cm-fg:#171717;color:#171717;padding:0 5px;border-radius:5px;font-size:11.5px}
+</style>
+
+<div class="as-wrap">
+  <% if (typeof success !== 'undefined' && success) { %><div class="as-flash as-ok"><%= success %></div><% } %>
+  <% if (typeof error !== 'undefined' && error) { %><div class="as-flash as-er"><%= error %></div><% } %>
+
+  <h1 class="as-h1">PENGATURAN <%= cfg.title.toUpperCase() %></h1>
+  <p class="as-p">Atur judul fitur sosial ala Instagram dan kelola penyimpanan foto/video di Supabase.</p>
+
+  <div class="as-stats">
+    <div class="as-stat"><b><%= stats.posts %></b><span>Postingan</span></div>
+    <div class="as-stat"><b><%= stats.comments %></b><span>Komentar</span></div>
+    <div class="as-stat"><b><%= stats.files %></b><span>File</span></div>
+    <div class="as-stat"><b><%= stats.localFiles %></b><span>Di server</span></div>
+  </div>
+  <p class="as-p" style="margin-top:-6px"><a class="as-b s w" href="/social"><i class="fa-solid fa-eye"></i> Buka halaman</a></p>
+
+  <form class="as-card" method="POST" action="/admin/social/config">
+    <h2>UMUM</h2>
+    <label class="as-l" for="asTitle">Judul / nama fitur</label>
+    <input class="as-i" id="asTitle" name="title" maxlength="30" required value="<%= cfg.title %>" placeholder="mis. AverGram">
+    <p class="as-h">Tampil di judul halaman dan menu. Maksimal 30 huruf.</p>
+    <label class="as-l" for="asSub">Sub judul</label>
+    <input class="as-i" id="asSub" name="subtitle" maxlength="80" value="<%= cfg.subtitle || '' %>" placeholder="Kalimat singkat di bawah judul">
+    <div class="as-grid">
+      <div><label class="as-l" for="asMm">Maks foto/video per post</label><input class="as-i" id="asMm" type="number" name="maxMediaPerPost" min="1" max="8" value="<%= cfg.maxMediaPerPost %>"></div>
+      <div><label class="as-l" for="asMp">Maks post per user / hari</label><input class="as-i" id="asMp" type="number" name="maxPostsPerDay" min="1" max="500" value="<%= cfg.maxPostsPerDay %>"></div>
+    </div>
+    <div style="margin-top:8px">
+      <label class="as-row"><span>Fitur aktif</span><input type="checkbox" name="enabled" value="on" <%= cfg.enabled ? 'checked' : '' %>></label>
+      <label class="as-row"><span>Izinkan komentar</span><input type="checkbox" name="allowComments" value="on" <%= cfg.allowComments ? 'checked' : '' %>></label>
+      <label class="as-row"><span>Izinkan share</span><input type="checkbox" name="allowShare" value="on" <%= cfg.allowShare ? 'checked' : '' %>></label>
+    </div>
+    <div style="margin-top:12px"><button class="as-b" type="submit"><i class="fa-solid fa-floppy-disk"></i> SIMPAN</button></div>
+  </form>
+
+  <div class="as-card">
+    <h2>PENYIMPANAN (SUPABASE &amp; GITHUB)</h2>
+    <p class="as-p" style="margin-bottom:10px">Foto profil, banner, promo, story, dan postingan disimpan di sini. Foto otomatis ke GitHub, video otomatis ke Supabase (video jauh lebih besar dari foto). Kalau satu penuh atau error, otomatis pindah ke yang lain. Kalau semua bermasalah, file sementara disimpan di server sehingga user tidak melihat error, lalu dipindah otomatis nanti.</p>
+
+    <% if (!projects.length) { %>
+      <div class="as-flash as-er">Belum ada penyimpanan cloud (Supabase / GitHub). File saat ini disimpan di server lokal. Tambahkan di bawah.</div>
+    <% } %>
+
+    <% projects.forEach(function (p) { %>
+    <div class="as-pj <%= p.enabled ? '' : 'off' %>" data-pj="<%= p.id %>">
+      <div class="as-pj-t">
+        <div><b>#<%= p.order %> <%= p.name %></b> <span class="as-tag" style="margin-left:4px"><%= p.provider === 'github' ? 'GITHUB' : 'SUPABASE' %></span><div class="as-mini"><%= p.provider === 'github' ? ('GitHub · ' + p.owner + '/' + p.repo + ' · branch ' + p.branch) : (p.url + ' · bucket ' + p.bucket) %></div></div>
+        <span class="as-tag <%= !p.enabled ? 'dis' : (p.full ? 'full' : (p.lastError ? 'err' : '')) %>"><%= !p.enabled ? 'NONAKTIF' : (p.full ? 'PENUH' : (p.lastError ? 'ERROR' : 'AKTIF')) %></span>
+      </div>
+      <div class="as-bar"><i class="<%= p.percent >= 90 ? 'hi' : (p.percent >= 70 ? 'mid' : '') %>" style="width:<%= p.percent %>%"></i></div>
+      <div class="as-mini"><%= p.usedMB %> MB dari <%= p.maxMB %> MB (<%= p.percent %>%) · key <%= p.keyMask %></div>
+      <% if (p.lastError) { %><div class="as-mini" style="color:#b91c1c">Error terakhir: <%= p.lastError %></div><% } %>
+      <div class="as-act">
+        <button type="button" class="as-b s w" data-test="<%= p.id %>"><i class="fa-solid fa-plug"></i> Tes</button>
+        <form method="POST" action="/admin/social/projects/<%= p.id %>/reset"><button class="as-b s w" type="submit" title="Hitung ulang pemakaian & bersihkan status penuh"><i class="fa-solid fa-rotate"></i> Reset</button></form>
+        <form method="POST" action="/admin/social/projects/<%= p.id %>/delete" onsubmit="return confirm('Hapus project ini dari daftar? File di Supabase tidak ikut terhapus.')"><button class="as-b s r" type="submit"><i class="fa-solid fa-trash"></i></button></form>
+      </div>
+      <details class="as-det"><summary>Ubah pengaturan</summary>
+        <form method="POST" action="/admin/social/projects/<%= p.id %>/update">
+          <label class="as-l">Nama</label><input class="as-i" name="name" maxlength="40" value="<%= p.name %>">
+          <% if (p.provider === 'github') { %>
+          <div class="as-grid">
+            <div><label class="as-l">Owner</label><input class="as-i" name="owner" value="<%= p.owner %>"></div>
+            <div><label class="as-l">Repo</label><input class="as-i" name="repo" value="<%= p.repo %>"></div>
+          </div>
+          <label class="as-l">Token baru <small>(kosongkan jika tidak diganti)</small></label><input class="as-i" name="key" type="password" autocomplete="off" placeholder="ghp_... / github_pat_...">
+          <div class="as-grid">
+            <div><label class="as-l">Branch</label><input class="as-i" name="branch" value="<%= p.branch %>"></div>
+            <div><label class="as-l">Urutan</label><input class="as-i" type="number" name="order" value="<%= p.order %>"></div>
+          </div>
+          <% } else { %>
+          <label class="as-l">URL project</label><input class="as-i" name="url" value="<%= p.url %>">
+          <label class="as-l">Key baru <small>(kosongkan jika tidak diganti)</small></label><input class="as-i" name="key" type="password" autocomplete="off" placeholder="service_role / secret key">
+          <div class="as-grid">
+            <div><label class="as-l">Bucket</label><input class="as-i" name="bucket" value="<%= p.bucket %>"></div>
+            <div><label class="as-l">Urutan</label><input class="as-i" type="number" name="order" value="<%= p.order %>"></div>
+          </div>
+          <% } %>
+          <label class="as-l">Batas pakai (MB)</label><input class="as-i" type="number" name="maxMB" min="10" value="<%= p.maxMB %>">
+          <label class="as-row"><span>Aktif</span><input type="checkbox" name="enabled" value="on" <%= p.enabled ? 'checked' : '' %>></label>
+          <button class="as-b s" type="submit">SIMPAN</button>
+        </form>
+      </details>
+    </div>
+    <% }) %>
+
+    <details class="as-det" <%= projects.length ? '' : 'open' %>><summary style="font-size:14px"><i class="fa-solid fa-plus"></i> Tambah project Supabase</summary>
+      <form method="POST" action="/admin/social/projects" autocomplete="off">
+        <label class="as-l">Nama</label><input class="as-i" name="name" maxlength="40" placeholder="Supabase 2">
+        <label class="as-l">URL project</label><input class="as-i" name="url" required placeholder="https://abcdxyz.supabase.co">
+        <label class="as-l">Key (service_role / secret)</label><input class="as-i" name="key" type="password" required placeholder="eyJ... atau sb_secret_...">
+        <p class="as-h">Jangan pakai anon/publishable key. Key hanya disimpan di server dan tidak pernah tampil lagi.</p>
+        <div class="as-grid">
+          <div><label class="as-l">Bucket</label><input class="as-i" name="bucket" value="averpay"></div>
+          <div><label class="as-l">Batas pakai (MB)</label><input class="as-i" type="number" name="maxMB" min="10" value="900"></div>
+        </div>
+        <div style="margin-top:12px"><button class="as-b" type="submit"><i class="fa-solid fa-plus"></i> TAMBAH</button></div>
+      </form>
+    </details>
+
+    <details class="as-det"><summary style="font-size:14px"><i class="fa-brands fa-github"></i> Tambah repo GitHub</summary>
+      <form method="POST" action="/admin/social/github" autocomplete="off">
+        <label class="as-l">Nama <small>(opsional)</small></label><input class="as-i" name="name" maxlength="40" placeholder="GitHub 1">
+        <div class="as-grid">
+          <div><label class="as-l">Owner</label><input class="as-i" name="owner" required placeholder="username-github"></div>
+          <div><label class="as-l">Repo</label><input class="as-i" name="repo" required placeholder="nama-repo"></div>
+        </div>
+        <label class="as-l">Token (Personal Access Token)</label><input class="as-i" name="token" type="password" required placeholder="ghp_... atau github_pat_...">
+        <div class="as-grid">
+          <div><label class="as-l">Branch</label><input class="as-i" name="branch" value="main"></div>
+          <div><label class="as-l">Batas pakai (MB)</label><input class="as-i" type="number" name="maxMB" min="10" value="900"></div>
+        </div>
+        <p class="as-h">Repo <b>disarankan private</b>: foto/video tetap tampil karena dilayani lewat server ini (token tidak pernah dikirim ke pengunjung). Token butuh izin <b>Contents: Read and write</b> untuk repo itu. Token hanya disimpan di server. GitHub dipakai untuk foto (maks. 25 MB per file); video otomatis diarahkan ke Supabase. Bisa tambah beberapa repo.</p>
+        <div style="margin-top:12px"><button class="as-b" type="submit"><i class="fa-solid fa-plus"></i> TAMBAH REPO</button></div>
+      </form>
+    </details>
+
+    <div class="as-act" style="margin-top:14px">
+      <button type="button" class="as-b s w" id="asMigrate"><i class="fa-solid fa-cloud-arrow-up"></i> Pindahkan file server ke cloud</button>
+      <button type="button" class="as-b s w" id="asRecover"><i class="fa-solid fa-life-ring"></i> Pulihkan postingan dari file terupload</button>
+    </div>
+    <p class="as-h" id="asMsg" role="status"></p>
+
+    <div class="as-guide" style="margin-top:14px"><b style="font-size:12.5px">Cara menambah project baru</b>
+      <ol>
+        <li>Buat project di supabase.com (gratis 1 GB storage).</li>
+        <li>Buka <code>Project Settings → API</code>, salin <code>Project URL</code> dan key <code>service_role</code> (atau <code>secret</code>).</li>
+        <li>Tempel di form di atas, klik <b>Tambah</b>, lalu <b>Tes</b>. Bucket dibuat otomatis.</li>
+        <li>Project lain yang ditambah nanti otomatis dipakai saat project sebelumnya penuh.</li>
+        <li>Pembagian otomatis: foto → GitHub, video → Supabase. Nomor urutan (#) hanya dipakai kalau ada beberapa repo / project sejenis.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="as-card" id="posts">
+    <h2>POSTINGAN TERBARU</h2>
+    <% if (!posts.length) { %><p class="as-p">Belum ada postingan.</p><% } %>
+    <% posts.forEach(function (p) { const m = p.media[0]; %>
+    <div class="as-post">
+      <% if (m && m.kind === 'video') { %><video src="<%= m.url %>#t=0.1" muted preload="metadata"></video><% } else if (m) { %><img src="<%= m.url %>" alt="" loading="lazy"><% } %>
+      <div class="as-post-t"><%= p.user.displayName %> <%= p.hidden ? '(disembunyikan)' : '' %><small><%= p.caption || '(tanpa keterangan)' %></small><small>♥ <%= p.likeCount %> · 💬 <%= p.commentCount %> · ↗ <%= p.shareCount %></small></div>
+      <form method="POST" action="/admin/social/posts/<%= p.id %>/hide"><button class="as-b s w" type="submit" title="<%= p.hidden ? 'Tampilkan' : 'Sembunyikan' %>"><i class="fa-solid fa-<%= p.hidden ? 'eye' : 'eye-slash' %>"></i></button></form>
+      <form method="POST" action="/admin/social/posts/<%= p.id %>/delete" onsubmit="return confirm('Hapus postingan ini beserta komentarnya?')"><button class="as-b s r" type="submit"><i class="fa-solid fa-trash"></i></button></form>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<script>
+(function () {
+  function post(url) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).catch(function () { return { success: false, message: 'Koneksi bermasalah.' }; }); }
+  document.querySelectorAll('[data-test]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var old = b.innerHTML; b.disabled = true; b.textContent = 'Menguji...';
+      post('/admin/social/projects/' + b.getAttribute('data-test') + '/test').then(function (j) {
+        b.disabled = false; b.innerHTML = old;
+        alert((j.success ? '✅ ' : '❌ ') + (j.message || ''));
+      });
+    });
+  });
+  var rc = document.getElementById('asRecover');
+  if (rc) rc.addEventListener('click', function () {
+    var msg = document.getElementById('asMsg'); rc.disabled = true; msg.textContent = 'Memindai file...';
+    post('/admin/social/recover').then(function (j) { rc.disabled = false; msg.textContent = j.message || (j.success ? 'Selesai.' : 'Gagal.'); if (j.created) setTimeout(function () { location.reload(); }, 1200); });
+  });
+  var mg = document.getElementById('asMigrate');
+  if (mg) mg.addEventListener('click', function () {
+    var msg = document.getElementById('asMsg'); mg.disabled = true; msg.textContent = 'Memindahkan...';
+    post('/admin/social/migrate').then(function (j) { mg.disabled = false; msg.textContent = j.message || (j.success ? 'Selesai.' : 'Gagal.'); });
+  });
+})();
+</script>
+<%- include('partials/footer') %>
