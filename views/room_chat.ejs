@@ -1,0 +1,31 @@
+<%- include('partials/header', { title: 'Room Chat' }) %>
+<link rel="stylesheet" href="/chat-ui.css?v=4" data-comic-owned>
+<%
+  const cfg = {
+    mode: 'room', admin: false, unread: unread || 0,
+    me: { id: String(user._id), username: user.username, role: user.role, avatarUrl: user.avatarUrl || '' },
+    messages: messages, hasMore: messages.length >= 60
+  };
+%>
+<div class="cu-wrap">
+  <%- include('partials/chat_tabs', { active: 'room', unread: unread, user: user }) %>
+
+  <div class="cu-banner">
+    <span class="cu-star">★</span>
+    <div>
+      <h1><i class="fa-solid fa-comments"></i> Room Chat Publik</h1>
+      <p><i class="fa-solid fa-clock"></i> Pesan &amp; lampiran otomatis terhapus tiap 24 jam</p>
+    </div>
+  </div>
+
+  <div class="cu-box">
+    <div class="cu-list" id="cuList"></div>
+    <%- include('partials/chat_composer', { placeholder: 'Tulis pesan...' }) %>
+  </div>
+</div>
+
+<script>window.CHAT_CFG = <%- JSON.stringify(cfg).replace(/</g, '\\u003c') %>;</script>
+<%- include('partials/story_boot') %>
+<script src="/chat-ui.js?v=5"></script>
+
+<%- include('partials/footer') %>
