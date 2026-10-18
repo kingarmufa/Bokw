@@ -1,0 +1,17 @@
+.cm-bot-controls{padding:16px;margin-bottom:18px;border:3px solid var(--cm-ink);border-radius:22px;background:var(--cm-white);box-shadow:4px 5px 0 var(--cm-ink);--cm-fg:var(--cm-ink)!important}
+.cm-bot-heading{display:flex;align-items:center;gap:9px;font-weight:700;line-height:1.4}
+.cm-bot-dot{flex:0 0 12px;width:12px;height:12px;border:2px solid var(--cm-ink);border-radius:50%;background:var(--cm-white)}
+.cm-bot-controls[data-state=running] .cm-bot-dot{background:var(--cm-green);box-shadow:0 0 0 3px var(--cm-green)}
+.cm-bot-controls:is([data-state=starting],[data-state=reconnecting]) .cm-bot-dot{background:var(--cm-yellow)}
+.cm-bot-actions{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:10px;margin-top:14px}
+.cm-bot-actions button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:8px 6px;border:2px solid var(--cm-ink)!important;border-radius:999px!important;box-shadow:2px 3px 0 var(--cm-ink)!important;background:var(--cm-white)!important;--cm-fg:var(--cm-ink)!important;font-weight:700;font-size:13px;cursor:pointer}
+.cm-bot-actions button:first-child{background:var(--cm-green)!important}
+.cm-bot-actions button:last-child{background:var(--cm-yellow)!important}
+.cm-bot-actions button:disabled{opacity:.5;cursor:wait}
+.cm-bot-actions button[aria-pressed=true]{outline:2px solid var(--cm-ink);outline-offset:3px}
+.cm-bot-actions button:focus-visible{outline:3px dashed var(--cm-ink);outline-offset:4px}
+.cm-bot-actions svg{width:17px;height:17px;flex-shrink:0;fill:none!important;stroke:currentColor!important;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cm-bot-message{margin:12px 0 0;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.cm-bot-message[data-error=true]{border-left:4px solid var(--cm-ink);padding:8px;background:var(--cm-yellow);border-radius:0 9px 9px 0}
+.cm-bot-help{margin:12px 0 0;font-size:11px;line-height:1.5}
+@media(max-width:360px){.cm-bot-controls{padding:12px}.cm-bot-actions{gap:7px}.cm-bot-actions button{font-size:12px;gap:4px}}
