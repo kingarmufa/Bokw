@@ -1,0 +1,620 @@
+<%- include('partials/header', { title: 'Kelola Pterodactyl' }) %>
+
+<div class="max-w-3xl mx-auto px-6 mt-1 pb-10">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Kelola Pterodactyl</h1>
+    <span class="text-[12px] font-semibold text-gray-500"><%= panels.length %> Server &middot; <%= packages.length %> Paket</span>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <!-- ===== TAMBAH SERVER PANEL ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+      <i class="fa-solid fa-server text-gray-700 text-sm"></i>
+      <h2 class="text-sm font-medium text-gray-800">Tambah Server Panel</h2>
+    </div>
+    <form method="POST" action="/admin/pterodactyl/panel" class="flex flex-col gap-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nama Server <span class="text-red-500">*</span></label>
+          <input name="name" type="text" required placeholder="cth: Panel Node 1"
+            class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Domain Panel <span class="text-red-500">*</span></label>
+          <input name="domain" type="url" required placeholder="https://panel.domainkamu.com"
+            class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">PTLA (Application API Key) <span class="text-red-500">*</span></label>
+          <input name="ptla" type="text" required placeholder="ptla_xxxxxxxxxxxx"
+            class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">PTLC (Client API Key)</label>
+          <input name="ptlc" type="text" placeholder="ptlc_xxxxxxxxxxxx (opsional)"
+            class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+      </div>
+      <p class="text-[11px] text-gray-400 -mt-1">PTLA dipakai sistem untuk otomatis bikin akun & server user. Ambil dari Admin Area &rarr; API Credentials di panel Pterodactyl kamu.</p>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Location ID</label>
+          <input name="locationId" type="number" value="1" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nest ID</label>
+          <input name="nestId" type="number" value="1" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+      </div>
+      <p class="text-[11px] text-gray-400 -mt-1">Pemilihan Egg dilakukan per-paket saat menambahkan Paket di bawah, bukan di level server.</p>
+
+      <details class="text-xs">
+        <summary class="cursor-pointer font-medium text-gray-600 select-none">Pengaturan lanjutan (docker image, startup, environment)</summary>
+        <div class="flex flex-col gap-3 mt-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Docker Image (opsional)</label>
+            <input name="dockerImage" type="text" placeholder="kosongkan = pakai default egg"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Startup Command (opsional)</label>
+            <input name="startupCommand" type="text" placeholder="kosongkan = pakai default egg"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Environment Variables</label>
+            <textarea name="environment" rows="3" placeholder="KEY=VALUE&#10;SATU_LAGI=VALUE"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none"></textarea>
+            <p class="text-[11px] text-gray-400 mt-1.5">Satu baris untuk satu variabel, format KEY=VALUE.</p>
+          </div>
+        </div>
+      </details>
+
+      <button type="submit" class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-plus"></i> Tambah Server
+      </button>
+    </form>
+  </div>
+
+  <!-- ===== DAFTAR SERVER PANEL ===== -->
+  <div class="flex items-center gap-2 mb-3 px-1">
+    <i class="fas fa-server text-gray-700 text-sm"></i>
+    <h2 class="text-sm font-medium text-gray-800">Daftar Server Panel</h2>
+  </div>
+
+  <% if (panels.length === 0) { %>
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-center mb-6">
+      <p class="text-sm font-medium text-gray-600">Belum ada server panel. Tambahkan dulu di atas.</p>
+    </div>
+  <% } else { %>
+    <div class="flex flex-col gap-3 mb-6">
+      <% panels.forEach(function(p, idx) { %>
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <p class="text-[13.5px] font-bold text-gray-800 truncate"><%= p.name %></p>
+            <span class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black <%= p.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' %>">
+              <%= p.active ? 'Aktif' : 'Nonaktif' %>
+            </span>
+          </div>
+          <p class="text-[12px] text-blue-500 font-medium truncate mb-1"><i class="fa-solid fa-link text-[10px] mr-1"></i><%= p.domain %></p>
+          <p class="text-[11px] text-gray-400 mb-2">Location <%= p.locationId %> &middot; Nest <%= p.nestId %></p>
+          <% if (p.online === true) { %>
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black bg-green-100 text-green-700 mb-2"><i class="fa-solid fa-circle text-[6px]"></i> Online</span>
+          <% } else if (p.online === false) { %>
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black bg-red-100 text-red-700 mb-2"><i class="fa-solid fa-circle text-[6px]"></i> Offline</span>
+          <% } %>
+          <div class="mb-1"></div>
+
+          <div class="flex items-center gap-2 mb-2">
+            <button type="button" onclick="document.getElementById('editPanel-<%= idx %>').classList.toggle('hidden')"
+              class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <form method="POST" action="/admin/pterodactyl/panel/<%= p._id %>/toggle" class="flex-1">
+              <button type="submit" class="w-full comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                <i class="fa-solid <%= p.active ? 'fa-eye-slash' : 'fa-eye' %>"></i> <%= p.active ? 'Nonaktifkan' : 'Aktifkan' %>
+              </button>
+            </form>
+          </div>
+          <form method="POST" action="/admin/pterodactyl/panel/<%= p._id %>/delete" onsubmit="return confirm('Hapus server panel ini beserta semua paketnya? Tindakan ini tidak bisa dibatalkan.');">
+            <button type="submit" class="w-full comic-btn-danger px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-trash"></i> Hapus
+            </button>
+          </form>
+
+          <div id="editPanel-<%= idx %>" class="hidden mt-3 pt-3 border-t border-gray-200">
+            <form method="POST" action="/admin/pterodactyl/panel/<%= p._id %>/edit" class="flex flex-col gap-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Nama Server</label>
+                  <input name="name" type="text" value="<%= p.name %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Domain</label>
+                  <input name="domain" type="url" value="<%= p.domain %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">PTLA (kosongkan jika tidak ganti)</label>
+                  <input name="ptla" type="text" placeholder="ptla_xxxxxxxxxxxx" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">PTLC</label>
+                  <input name="ptlc" type="text" value="<%= p.ptlc %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Location ID</label>
+                  <input name="locationId" type="number" value="<%= p.locationId %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Nest ID</label>
+                  <input name="nestId" type="number" value="<%= p.nestId %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Docker Image</label>
+                <input name="dockerImage" type="text" value="<%= p.dockerImage %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Startup Command</label>
+                <input name="startupCommand" type="text" value="<%= p.startupCommand %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Environment Variables</label>
+                <textarea name="environment" rows="3" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none"><%= p.environment %></textarea>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>
+                <button type="button" onclick="document.getElementById('editPanel-<%= idx %>').classList.add('hidden')" class="flex-1 comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- ===== TAMBAH PAKET ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+      <i class="fa-solid fa-box text-gray-700 text-sm"></i>
+      <h2 class="text-sm font-medium text-gray-800">Tambah Paket</h2>
+    </div>
+    <% if (panels.length === 0) { %>
+      <p class="text-xs font-medium text-gray-500">Tambahkan minimal satu server panel dulu sebelum membuat paket.</p>
+    <% } else { %>
+
+      <!-- Pemilih Mode: Manual atau Cepat (Bulk) -->
+      <div class="flex items-center gap-2 mb-4 bg-gray-50 border border-gray-100 rounded-2xl p-1">
+        <button type="button" id="tabBtnManual" onclick="pkgSwitchMode('manual')"
+          class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold transition-colors bg-white shadow-sm text-gray-800">
+          <i class="fa-solid fa-pen"></i> Manual
+        </button>
+        <button type="button" id="tabBtnCepat" onclick="pkgSwitchMode('cepat')"
+          class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold transition-colors text-gray-500">
+          <i class="fa-solid fa-bolt"></i> Cepat (Bulk)
+        </button>
+      </div>
+
+      <!-- ===== MODE MANUAL: tambah satu paket ===== -->
+      <div id="pkgModeManual">
+        <form method="POST" action="/admin/pterodactyl/package" class="flex flex-col gap-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Server <span class="text-red-500">*</span></label>
+              <select name="panelId" required class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                <% panels.forEach(function(p) { %>
+                  <option value="<%= p._id %>"><%= p.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Nama Paket <span class="text-red-500">*</span></label>
+              <input name="name" type="text" required placeholder="cth: Paket Bronze" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">RAM (MB) <span class="text-red-500">*</span></label>
+              <input name="ram" type="number" required placeholder="1024" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Disk (MB) <span class="text-red-500">*</span></label>
+              <input name="disk" type="number" required placeholder="2048" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">CPU (%) <span class="text-red-500">*</span></label>
+              <input name="cpu" type="number" required placeholder="50" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Harga Jual (Rp) <span class="text-red-500">*</span></label>
+            <input name="price" type="number" required placeholder="15000" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+          </div>
+
+          <p class="text-[11px] text-gray-400 -mt-1">Software (Egg) dipilih pembeli langsung saat checkout, mengikuti Nest &amp; Egg default dari Server yang dipilih.</p>
+
+          <details class="text-xs">
+            <summary class="cursor-pointer font-medium text-gray-600 select-none">Pengaturan lanjutan (swap, io, database, alokasi, backup)</summary>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Swap (MB)</label>
+                <input name="swap" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">IO</label>
+                <input name="io" type="number" value="500" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Databases</label>
+                <input name="databases" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Allocations</label>
+                <input name="allocations" type="number" value="1" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Backups</label>
+                <input name="backups" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+            </div>
+          </details>
+
+          <button type="submit" class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+            <i class="fa-solid fa-plus"></i> Tambah Paket
+          </button>
+        </form>
+      </div>
+
+      <!-- ===== MODE CEPAT: generate banyak paket sekaligus, RAM & Harga naik berurutan ===== -->
+      <div id="pkgModeCepat" class="hidden">
+        <form method="POST" action="/admin/pterodactyl/package/bulk" class="flex flex-col gap-3" onsubmit="return pkgBulkConfirm();">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Server <span class="text-red-500">*</span></label>
+              <select name="panelId" required class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                <% panels.forEach(function(p) { %>
+                  <option value="<%= p._id %>"><%= p.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Awalan Nama Paket</label>
+              <input name="namePrefix" type="text" value="Paket" placeholder="Paket" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Jumlah Produk yang Dibuat <span class="text-red-500">*</span></label>
+            <input id="pkgBulkJumlah" name="jumlah" type="number" min="1" max="200" required placeholder="cth: 10" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+            <p class="text-[11px] text-gray-400 mt-1">Sistem otomatis bikin sejumlah paket berurutan sesuai kelipatan RAM &amp; Harga di bawah — gak perlu input satu-satu manual lagi.</p>
+          </div>
+
+          <p class="text-[11px] font-bold text-gray-600 mt-1">RAM</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex gap-2">
+              <input id="pkgBulkRamAwal" name="ramAwal" type="number" step="any" required placeholder="RAM paket pertama (cth: 1)" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+              <select id="pkgBulkRamUnit" name="ramUnit" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" onchange="pkgBulkPreview()">
+                <option value="gb">GB</option>
+                <option value="mb">MB</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <input id="pkgBulkRamStep" name="ramStep" type="number" step="any" value="1" placeholder="Kelipatan tiap paket" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+              <select id="pkgBulkRamStepUnit" name="ramStepUnit" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" onchange="pkgBulkPreview()">
+                <option value="gb">GB</option>
+                <option value="mb">MB</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-400 -mt-1">Kiri = RAM paket pertama. Kanan = penambahan RAM tiap paket berikutnya. 1GB otomatis dikonversi ke 1024MB.</p>
+
+          <p class="text-[11px] font-bold text-gray-600 mt-1">Disk</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex gap-2">
+              <input id="pkgBulkDiskAwal" name="diskAwal" type="number" step="any" required placeholder="Disk paket pertama (cth: 2)" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+              <select id="pkgBulkDiskUnit" name="diskUnit" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" onchange="pkgBulkPreview()">
+                <option value="gb">GB</option>
+                <option value="mb">MB</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <input id="pkgBulkDiskStep" name="diskStep" type="number" step="any" value="1" placeholder="Kelipatan tiap paket" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+              <select id="pkgBulkDiskStepUnit" name="diskStepUnit" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" onchange="pkgBulkPreview()">
+                <option value="gb">GB</option>
+                <option value="mb">MB</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="text-[11px] font-bold text-gray-600 mt-1">CPU (%)</p>
+          <div class="grid grid-cols-2 gap-3">
+            <input id="pkgBulkCpuAwal" name="cpuAwal" type="number" required placeholder="CPU paket pertama (cth: 50)" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+            <input id="pkgBulkCpuStep" name="cpuStep" type="number" value="0" placeholder="Kelipatan tiap paket" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+          </div>
+
+          <p class="text-[11px] font-bold text-gray-600 mt-1">Harga Jual (Rp)</p>
+          <div class="grid grid-cols-2 gap-3">
+            <input id="pkgBulkHargaAwal" name="hargaAwal" type="number" required placeholder="Harga paket pertama (cth: 1000)" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+            <input id="pkgBulkHargaStep" name="hargaStep" type="number" placeholder="Kenaikan harga tiap paket (cth: 500)" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none" oninput="pkgBulkPreview()">
+          </div>
+          <p class="text-[11px] text-gray-400 -mt-1">Contoh: harga awal 1000, kenaikan 500, jumlah 9 &rarr; jadi 1000, 1500, 2000, ... sampai 5000.</p>
+
+          <p class="text-[11px] text-gray-400 -mt-1">Software (Egg) dipilih pembeli langsung saat checkout, mengikuti Nest &amp; Egg default dari Server yang dipilih.</p>
+
+          <details class="text-xs">
+            <summary class="cursor-pointer font-medium text-gray-600 select-none">Pengaturan lanjutan (swap, io, database, alokasi, backup — sama untuk semua paket)</summary>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Swap (MB)</label>
+                <input name="swap" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">IO</label>
+                <input name="io" type="number" value="500" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Databases</label>
+                <input name="databases" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Allocations</label>
+                <input name="allocations" type="number" value="1" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Backups</label>
+                <input name="backups" type="number" value="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+            </div>
+          </details>
+
+          <!-- Pratinjau hasil generate, sebelum benar-benar disimpan -->
+          <div id="pkgBulkPreviewBox" class="bg-gray-50 border border-gray-100 rounded-2xl p-3 text-[11px] text-gray-500 font-medium">
+            Isi form di atas untuk melihat pratinjau paket yang akan dibuat.
+          </div>
+
+          <button type="submit" class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+            <i class="fa-solid fa-bolt"></i> Generate Paket Otomatis
+          </button>
+        </form>
+      </div>
+
+    <% } %>
+  </div>
+
+  <!-- ===== DAFTAR PAKET ===== -->
+  <div class="flex items-center gap-2 mb-3 px-1">
+    <i class="fas fa-box text-gray-700 text-sm"></i>
+    <h2 class="text-sm font-medium text-gray-800">Daftar Paket</h2>
+  </div>
+
+  <% if (packages.length === 0) { %>
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-center mb-6">
+      <p class="text-sm font-medium text-gray-600">Belum ada paket.</p>
+    </div>
+  <% } else { %>
+    <div class="flex flex-col gap-3 mb-6">
+      <% packages.forEach(function(pkg, idx) { %>
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <p class="text-[13.5px] font-bold text-gray-800 truncate"><%= pkg.name %> <span class="text-gray-400 font-medium">— <%= pkg.panelId ? pkg.panelId.name : '(server dihapus)' %></span></p>
+            <span class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black <%= pkg.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' %>">
+              <%= pkg.active ? 'Aktif' : 'Nonaktif' %>
+            </span>
+          </div>
+          <p class="text-[12px] text-gray-500 font-medium mb-1"><%= pkg.ram %> MB RAM &middot; <%= pkg.disk %> MB Disk &middot; <%= pkg.cpu %>% CPU</p>
+          <p class="text-[13px] font-extrabold text-blue-600 mb-3">Rp <%= pkg.price.toLocaleString('id-ID') %></p>
+
+          <div class="flex items-center gap-2 mb-2">
+            <button type="button" onclick="document.getElementById('editPkg-<%= idx %>').classList.toggle('hidden')"
+              class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <form method="POST" action="/admin/pterodactyl/package/<%= pkg._id %>/toggle" class="flex-1">
+              <button type="submit" class="w-full comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                <i class="fa-solid <%= pkg.active ? 'fa-eye-slash' : 'fa-eye' %>"></i> <%= pkg.active ? 'Nonaktifkan' : 'Aktifkan' %>
+              </button>
+            </form>
+          </div>
+          <form method="POST" action="/admin/pterodactyl/package/<%= pkg._id %>/delete" onsubmit="return confirm('Hapus paket ini?');">
+            <button type="submit" class="w-full comic-btn-danger px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-trash"></i> Hapus
+            </button>
+          </form>
+
+          <div id="editPkg-<%= idx %>" class="hidden mt-3 pt-3 border-t border-gray-200">
+            <form method="POST" action="/admin/pterodactyl/package/<%= pkg._id %>/edit" class="flex flex-col gap-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Server</label>
+                  <select name="panelId" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                    <% panels.forEach(function(p) { %>
+                      <option value="<%= p._id %>" <%= pkg.panelId && pkg.panelId._id.toString() === p._id.toString() ? 'selected' : '' %>><%= p.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Nama Paket</label>
+                  <input name="name" type="text" value="<%= pkg.name %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">RAM (MB)</label>
+                  <input name="ram" type="number" value="<%= pkg.ram %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Disk (MB)</label>
+                  <input name="disk" type="number" value="<%= pkg.disk %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">CPU (%)</label>
+                  <input name="cpu" type="number" value="<%= pkg.cpu %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Harga Jual (Rp)</label>
+                <input name="price" type="number" value="<%= pkg.price %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <p class="text-[11px] text-gray-400 -mt-1">Software (Egg) dipilih pembeli langsung saat checkout, mengikuti Nest &amp; Egg default dari Server yang dipilih.</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Swap (MB)</label>
+                  <input name="swap" type="number" value="<%= pkg.swap %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">IO</label>
+                  <input name="io" type="number" value="<%= pkg.io %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Databases</label>
+                  <input name="databases" type="number" value="<%= pkg.databases %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Allocations</label>
+                  <input name="allocations" type="number" value="<%= pkg.allocations %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>
+                <button type="button" onclick="document.getElementById('editPkg-<%= idx %>').classList.add('hidden')" class="flex-1 comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- ===== MASA EXPIRED PANEL ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+      <span class="lottie-emoji" data-lottie-emoji="clock" data-size="22"></span>
+      <h2 class="text-sm font-medium text-gray-800">Masa Expired Panel</h2>
+    </div>
+    <form method="POST" action="/admin/pterodactyl/expire" class="flex flex-col gap-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Lama</label>
+          <input name="expireValue" type="number" min="1" required value="<%= settings.pterodactylExpireValue || 30 %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Satuan</label>
+          <select name="expireUnit" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+            <% const curUnit = settings.pterodactylExpireUnit || 'day'; %>
+            <option value="minute" <%= curUnit === 'minute' ? 'selected' : '' %>>Menit</option>
+            <option value="hour" <%= curUnit === 'hour' ? 'selected' : '' %>>Jam</option>
+            <option value="day" <%= curUnit === 'day' ? 'selected' : '' %>>Hari</option>
+          </select>
+        </div>
+      </div>
+      <p class="text-[11px] text-gray-400">Berlaku untuk semua panel yang dibeli setelah pengaturan ini disimpan (panel lama tetap pakai masa expired saat dibeli). Begitu masa expired habis, server <b>dan</b> user panel di Pterodactyl otomatis dihapus. Semua panel <b>NON GARANSI</b>. Pengecekan jalan otomatis tiap 30 detik.</p>
+      <button type="submit" class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-floppy-disk"></i> Simpan Masa Expired
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  // ===== Mode "Tambah Paket": Manual vs Cepat (Bulk) =====
+  function pkgSwitchMode(mode) {
+    const manualBox = document.getElementById('pkgModeManual');
+    const cepatBox = document.getElementById('pkgModeCepat');
+    const btnManual = document.getElementById('tabBtnManual');
+    const btnCepat = document.getElementById('tabBtnCepat');
+    if (!manualBox || !cepatBox) return;
+
+    const activeCls = ['bg-white', 'shadow-sm', 'text-gray-800'];
+    if (mode === 'cepat') {
+      manualBox.classList.add('hidden');
+      cepatBox.classList.remove('hidden');
+      btnCepat.classList.add(...activeCls);
+      btnCepat.classList.remove('text-gray-500');
+      btnManual.classList.remove(...activeCls);
+      btnManual.classList.add('text-gray-500');
+      pkgBulkPreview();
+    } else {
+      cepatBox.classList.add('hidden');
+      manualBox.classList.remove('hidden');
+      btnManual.classList.add(...activeCls);
+      btnManual.classList.remove('text-gray-500');
+      btnCepat.classList.remove(...activeCls);
+      btnCepat.classList.add('text-gray-500');
+    }
+  }
+
+  // 1GB = 1024MB — dipakai buat konversi otomatis di pratinjau mode cepat
+  function pkgToMb(val, unit) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return 0;
+    return unit === 'gb' ? Math.round(n * 1024) : Math.round(n);
+  }
+
+  function pkgRamLabel(mb) {
+    if (mb > 0 && mb % 1024 === 0) return (mb / 1024) + 'GB';
+    return mb + 'MB';
+  }
+
+  function pkgBulkPreview() {
+    const box = document.getElementById('pkgBulkPreviewBox');
+    if (!box) return;
+
+    const val = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
+
+    const jumlah = parseInt(val('pkgBulkJumlah'), 10) || 0;
+    const ramAwal = pkgToMb(val('pkgBulkRamAwal'), val('pkgBulkRamUnit'));
+    const ramStep = pkgToMb(val('pkgBulkRamStep'), val('pkgBulkRamStepUnit') || val('pkgBulkRamUnit'));
+    const hargaAwal = parseInt(val('pkgBulkHargaAwal'), 10) || 0;
+    const hargaStep = parseInt(val('pkgBulkHargaStep'), 10) || 0;
+
+    if (!jumlah || !ramAwal || !hargaAwal) {
+      box.innerHTML = 'Isi form di atas untuk melihat pratinjau paket yang akan dibuat.';
+      return;
+    }
+
+    const maxPreview = Math.min(jumlah, 6);
+    let rows = '';
+    for (let i = 0; i < maxPreview; i++) {
+      const ram = ramAwal + (ramStep * i);
+      const harga = hargaAwal + (hargaStep * i);
+      rows += '<div class="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">' +
+        '<span>' + pkgRamLabel(ram) + '</span>' +
+        '<span class="font-bold text-blue-600">Rp ' + harga.toLocaleString('id-ID') + '</span>' +
+        '</div>';
+    }
+    const sisa = jumlah - maxPreview;
+    box.innerHTML = '<p class="font-bold text-gray-700 mb-1">Pratinjau ' + jumlah + ' paket yang akan dibuat:</p>' +
+      rows +
+      (sisa > 0 ? '<p class="text-gray-400 mt-1">+ ' + sisa + ' paket lainnya...</p>' : '');
+  }
+
+  function pkgBulkConfirm() {
+    const jumlahEl = document.getElementById('pkgBulkJumlah');
+    const jumlah = jumlahEl ? jumlahEl.value : '0';
+    return confirm('Buat ' + jumlah + ' paket sekaligus secara otomatis?');
+  }
+</script>
+
+<%- include('partials/footer') %>
