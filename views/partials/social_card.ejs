@@ -1,0 +1,12 @@
+<% if (typeof socialCfg !== 'undefined' && socialCfg && (socialCfg.enabled || (typeof user !== 'undefined' && user && user.role === 'admin'))) { %>
+<a href="/social" class="block mb-5 no-underline" style="text-decoration:none">
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fffbe8;border:3px solid #171717;border-radius:16px;box-shadow:4px 4px 0 #171717;--cm-fg:#171717;color:#171717">
+    <span style="width:46px;height:46px;flex:0 0 auto;border-radius:12px;border:3px solid #171717;display:grid;place-items:center;background:linear-gradient(135deg,#f59e0b,#ec4899);--cm-fg:#fff;color:#fff;font-size:20px"><i class="fa-solid fa-camera-retro"></i></span>
+    <span style="flex:1;min-width:0">
+      <b style="display:block;font-family:Bangers,Impact,sans-serif;font-size:1.3rem;letter-spacing:.05em;line-height:1.1"><%= socialCfg.title %></b>
+      <small style="font-weight:800;font-size:12px;opacity:.75"><%= (typeof user !== 'undefined' && user && user.role === 'admin') ? 'Buat postingan & story sebagai admin' : (socialCfg.subtitle || 'Lihat postingan & story teman') %></small>
+    </span>
+    <i class="fa-solid fa-chevron-right"></i>
+  </div>
+</a>
+<% } %>
