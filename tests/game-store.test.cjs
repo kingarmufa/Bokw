@@ -1,0 +1,63 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const express=require('express'),session=require('express-session'),mongoose=require('mongoose');
+const store=require('../lib/game-store');
+test('contact normalization and unsafe links',()=>{
+ assert.equal(store.contact('wa','0812-3456-7890'),'https://wa.me/6281234567890');
+ assert.equal(store.contact('telegram','t.me/player_one'),'https://t.me/player_one');
+ assert.throws(()=>store.contact('telegram','evil.com/user'));
+ assert.throws(()=>store.mediator('javascript:alert(1)'));
+ assert.equal(store.mediator('https://example.com/admin'),'https://example.com/admin');
+ assert.throws(()=>store.imageType(Buffer.from('<svg onload=alert(1)>')));
+});
+test('HTTP store workflow: permissions, uploads, comments, replies, settings, rendering',async t=>{
+ const id=()=>new mongoose.Types.ObjectId().toString(), owner=id(), other=id();
+ const data=new Map();
+ // In-memory model adapters isolate business routes from external MongoDB/GitHub.
+ for(const name of ['GameCategory','GameListing','GameComment','GameStoreConfig']){
+  const M=mongoose.model(name), rows=[];data.set(name,rows);
+  const match=(r,q)=>Object.entries(q||{}).every(([k,v])=>v && v.$regex!==undefined?new RegExp(v.$regex,v.$options).test(r[k]):String(r[k]??null)===String(v??null));
+  const chain=arr=>{let skip=0,limit=Infinity;const q={sort(order){arr.sort((a,b)=>{for(const [k,d] of Object.entries(order)){if(a[k]<b[k])return -d;if(a[k]>b[k])return d;}return 0});return q},skip(n){skip=n;return q},limit(n){limit=n;return q},lean:async()=>arr.slice(skip,skip+limit)};return q};
+  M.find=q=>chain(rows.filter(r=>match(r,q)));
+  M.findOne=q=>({lean:async()=>rows.find(r=>match(r,q))||null});
+  M.findById=x=>({lean:async()=>rows.find(r=>r._id===x)||null});
+  M.exists=async q=>rows.some(r=>match(r,q));
+  M.countDocuments=async q=>rows.filter(r=>match(r,q)).length;
+  M.create=async r=>{const x={_id:id(),createdAt:new Date(),parent:null,...r};rows.push(x);return x};
+  M.findOneAndDelete=async q=>{const i=rows.findIndex(r=>match(r,q));return i<0?null:rows.splice(i,1)[0]};
+  M.findByIdAndDelete=async x=>M.findOneAndDelete({_id:x});
+  M.deleteMany=async q=>{for(let i=rows.length-1;i>=0;i--)if(match(rows[i],q))rows.splice(i,1)};
+  M.findOneAndUpdate=async(q,u)=>{let r=rows.find(r=>match(r,q));if(!r)r=await M.create(q);Object.assign(r,u.$set);return r};
+ }
+ const cat=await store.Category.create({name:'Free Fire',description:'Battle royale',image:'/icon.png'});
+ const app=express();app.set('view engine','ejs');require('../lib/comic-render').installComicRenderer(app);app.set('views',require('path').join(__dirname,'../views'));app.use(express.urlencoded({extended:true}));app.use(session({secret:'test-secret',resave:false,saveUninitialized:true}));
+ const settings={name:'Averpay',save:async()=>{}};
+ app.use((req,res,next)=>{req.session.userId=req.get('x-user')||owner;req.session.userRole=req.get('x-role')||'user';res.locals.user={username:'Tester',role:req.session.userRole};res.locals.settings=settings;next()});
+ let uploadCount=0,failAt=0,removed=[];
+ store.install({app,isAuth:(q,s,n)=>n(),isAdmin:(q,s,n)=>q.session.userRole==='admin'?n():s.sendStatus(403),getSettings:async()=>settings,social:{pool:{upload:async(b,o)=>{assert.equal(o.provider,'github');uploadCount++;return uploadCount===failAt?{ok:false}:{ok:true,url:'/gh/owner/repo/main/'+uploadCount+'.png'}}},removeMedia:async u=>removed.push(u)}});
+ const server=app.listen(0);t.after(()=>server.close());const base='http://127.0.0.1:'+server.address().port;let cookie='';
+ const req=async(path,opt={})=>{const r=await fetch(base+path,{redirect:'manual',...opt,headers:{cookie,...opt.headers}});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return r};
+ let r=await req('/game-store/new');assert.equal(r.status,200);let html=await r.text();const csrf=html.match(/csrf=([a-f0-9]+)/)[1];
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZQAAAABJRU5ErkJggg==','base64');
+ const form=(n=2,overrides={})=>{const f=new FormData();for(const [k,v]of Object.entries({name:'Akun <script> FF',description:'Spek lengkap',gameId:'',price:'250000',channel:'wa',contact:'081234567890',category:cat._id,...overrides}))f.set(k,v);for(let i=0;i<n;i++)f.append('photos',new Blob([png],{type:'image/png'}),'photo.png');return f};
+ r=await req('/game-store/new?csrf=wrong',{method:'POST',body:form()});assert.equal(r.status,403);
+ r=await req('/game-store/new?csrf='+csrf,{method:'POST',body:form(1)});assert.equal(r.status,400);assert.equal(uploadCount,0);
+ r=await req('/game-store/new?csrf='+csrf,{method:'POST',body:form(2,{price:'-1'})});assert.equal(r.status,400);
+ failAt=2;r=await req('/game-store/new?csrf='+csrf,{method:'POST',body:form()});assert.equal(r.status,503);assert.equal(removed.length,1);assert.equal(data.get('GameListing').length,0);
+ failAt=0;r=await req('/game-store/new?csrf='+csrf,{method:'POST',body:form()});assert.equal(r.status,302);const item=data.get('GameListing')[0];assert.equal(item.photos.length,2);
+ r=await req('/game-store/item/'+item._id);html=await r.text();assert.equal(r.status,200);assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('MC ADMIN JIKA RAGU'));assert.ok(!html.includes('/comic-palette.js'));assert.ok(html.includes('/game-store.css'));
+ const post=(path,body,headers={})=>req(path,{method:'POST',body:new URLSearchParams({_csrf:csrf,...body}),headers});
+ r=await post('/game-store/item/'+item._id+'/comments',{text:'Masih ada?'});assert.equal(r.status,302);const comment=data.get('GameComment')[0];
+ r=await post('/game-store/item/'+item._id+'/comments',{text:'Ada!',parent:comment._id});assert.equal(r.status,302);
+ r=await post('/game-store/item/'+item._id+'/comments',{text:'bad',parent:id()});assert.equal(r.status,400);
+ r=await post('/game-store/item/'+item._id+'/delete',{}, {'x-user':other});assert.equal(r.status,403);assert.equal(data.get('GameListing').length,1);
+ r=await req('/game-store/mine');assert.equal(r.status,200);
+ const extra=await store.Listing.create({...item,_id:id(),name:'Low price account',price:10000});
+ r=await req('/game-store?sort=price_asc');html=await r.text();assert.equal(r.status,200);assert.ok(html.indexOf('Low price account')<html.indexOf('Akun &lt;script&gt; FF'));assert.ok(html.includes('2 akun'));assert.ok(!html.includes('A★'));
+ r=await req('/game-store?sort=price_desc');html=await r.text();assert.ok(html.indexOf('Low price account')>html.indexOf('Akun &lt;script&gt; FF'));await store.Listing.findOneAndDelete({_id:extra._id});
+ r=await req('/admin/game-store');assert.equal(r.status,403);
+ r=await req('/admin/game-store',{headers:{'x-role':'admin'}});assert.equal(r.status,200);
+ r=await post('/admin/game-store/settings',{name:'Averplay',mediator:'6281234567890'},{'x-role':'admin'});assert.equal(r.status,302);assert.equal(settings.name,'Averplay');
+ r=await post('/game-store/item/'+item._id+'/delete',{});assert.equal(r.status,302);assert.equal(data.get('GameListing').length,0);assert.equal(data.get('GameComment').length,0);
+ r=await req('/game-store');assert.equal(r.status,200);
+});
