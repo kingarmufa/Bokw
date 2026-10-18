@@ -1,0 +1,192 @@
+<!-- ================== MODAL CROP BANNER PROFIL ==================
+     Dipakai bareng di /profile dan /admin/account. Rasio banner 3:1 (lebar),
+     sama dengan rasio tampil di semua halaman profil, jadi hasil crop = yang terlihat.
+     Fitur: geser, zoom (slider / scroll / cubit dua jari), lalu Potong & Simpan.
+-->
+<div id="bannerCropModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/60 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-sm p-4 shadow-xl" style="--cm-fg:#171717">
+    <h3 class="text-sm font-semibold text-gray-800 mb-1 text-center">Sesuaikan Banner Profil</h3>
+    <p class="text-[11px] text-gray-400 text-center mb-3">Geser gambar &amp; atur zoom, lalu potong sesuai keinginan</p>
+
+    <div id="bannerCropStage"
+         class="relative mx-auto rounded-lg overflow-hidden bg-gray-900 touch-none select-none"
+         style="width:336px;max-width:100%;aspect-ratio:3/1;cursor:grab;">
+      <canvas id="bannerCropCanvas" width="336" height="112" class="absolute inset-0 w-full h-full"></canvas>
+      <div class="absolute inset-0 rounded-lg ring-2 ring-white/90 pointer-events-none"></div>
+    </div>
+
+    <div class="flex items-center gap-2 mt-4">
+      <i class="fas fa-image text-gray-300 text-[10px]"></i>
+      <input id="bannerZoomRange" type="range" min="100" max="300" value="100" class="flex-1 accent-blue-500">
+      <i class="fas fa-image text-gray-500 text-sm"></i>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <button type="button" onclick="closeBannerCropModal()"
+              class="flex-1 px-3 py-2 rounded-lg border text-[12.5px] font-medium text-gray-600">
+        Batal
+      </button>
+      <button type="button" onclick="confirmBannerCrop()"
+              class="flex-1 px-3 py-2 rounded-lg bg-blue-500 text-white text-[12.5px] font-medium">
+        <i class="fa-solid fa-crop-simple mr-1"></i> Potong &amp; Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STAGE_W = 336, STAGE_H = 112;   // rasio 3:1 (koordinat kanvas)
+  const OUT_W = 1200, OUT_H = 400;      // ukuran hasil akhir
+
+  const canvas = document.getElementById('bannerCropCanvas');
+  const ctx = canvas.getContext('2d');
+  const modal = document.getElementById('bannerCropModal');
+  // Pindahkan modal ke <body>: kalau tetap di dalam container halaman (yang punya transform/filter),
+  // position:fixed jadi relatif ke container & kotak crop muncul jauh di bawah (harus scroll).
+  if (modal.parentNode !== document.body) document.body.appendChild(modal);
+  const stage = document.getElementById('bannerCropStage');
+  const zoomRange = document.getElementById('bannerZoomRange');
+
+  let img = new Image();
+  let scale = 1, minScale = 1, offsetX = 0, offsetY = 0;
+  let dragging = false, lastX = 0, lastY = 0;
+  let activeForm = null, activeInput = null;
+
+  // Stage bisa mengecil di layar sempit -> konversi piksel layar ke koordinat kanvas
+  function k() { const r = stage.getBoundingClientRect(); return r.width ? STAGE_W / r.width : 1; }
+
+  function draw() {
+    ctx.clearRect(0, 0, STAGE_W, STAGE_H);
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, STAGE_W, STAGE_H);
+    if (!img.naturalWidth) return;
+    ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
+  }
+  function clampOffset() {
+    const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+    offsetX = Math.min(0, Math.max(STAGE_W - w, offsetX));
+    offsetY = Math.min(0, Math.max(STAGE_H - h, offsetY));
+  }
+  function resetModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function openWithFile(file, form, input) {
+    activeForm = form; activeInput = input;
+    const url = URL.createObjectURL(file);
+    const newImg = new Image();
+    newImg.onload = function () {
+      URL.revokeObjectURL(url);
+      img = newImg;
+      minScale = Math.max(STAGE_W / img.naturalWidth, STAGE_H / img.naturalHeight);
+      scale = minScale;
+      offsetX = (STAGE_W - img.naturalWidth * scale) / 2;
+      offsetY = (STAGE_H - img.naturalHeight * scale) / 2;
+      zoomRange.value = 100;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      draw();
+    };
+    newImg.onerror = function () { URL.revokeObjectURL(url); input.value = ''; alert('Gambar tidak bisa dibuka. Coba file lain.'); };
+    newImg.src = url;
+  }
+
+  window.closeBannerCropModal = function () {
+    resetModal();
+    if (activeInput) activeInput.value = '';
+    activeForm = null; activeInput = null;
+  };
+
+  window.confirmBannerCrop = function () {
+    if (!activeForm || !activeInput || !img.naturalWidth) return;
+    const out = document.createElement('canvas');
+    out.width = OUT_W; out.height = OUT_H;
+    const octx = out.getContext('2d');
+    const ratio = OUT_W / STAGE_W;
+    octx.fillStyle = '#111827';
+    octx.fillRect(0, 0, OUT_W, OUT_H);
+    octx.drawImage(img, offsetX * ratio, offsetY * ratio, img.naturalWidth * scale * ratio, img.naturalHeight * scale * ratio);
+    out.toBlob(function (blob) {
+      if (!blob) return;
+      const cropped = new File([blob], 'banner.jpg', { type: 'image/jpeg' });
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(cropped);
+        activeInput.files = dt.files;
+      } catch (e) {
+        // Browser lama tanpa DataTransfer: kirim file asli apa adanya
+      }
+      resetModal();
+      activeForm.submit();
+    }, 'image/jpeg', 0.9);
+  };
+
+  // ---- Geser (mouse & sentuh) ----
+  stage.addEventListener('pointerdown', function (e) {
+    if (!img.naturalWidth) return;
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    stage.setPointerCapture(e.pointerId);
+    stage.style.cursor = 'grabbing';
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    const f = k();
+    offsetX += (e.clientX - lastX) * f;
+    offsetY += (e.clientY - lastY) * f;
+    lastX = e.clientX; lastY = e.clientY;
+    clampOffset(); draw();
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (evt) {
+    stage.addEventListener(evt, function () { dragging = false; stage.style.cursor = 'grab'; });
+  });
+
+  // ---- Zoom (slider) ----
+  zoomRange.addEventListener('input', function () {
+    if (!img.naturalWidth) return;
+    const cx = STAGE_W / 2, cy = STAGE_H / 2;
+    const imgX = (cx - offsetX) / scale, imgY = (cy - offsetY) / scale;
+    const ns = minScale * (zoomRange.value / 100);
+    offsetX = cx - imgX * ns; offsetY = cy - imgY * ns; scale = ns;
+    clampOffset(); draw();
+  });
+
+  // ---- Zoom (scroll mouse) ----
+  stage.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    let v = parseInt(zoomRange.value, 10) + (e.deltaY < 0 ? 5 : -5);
+    zoomRange.value = Math.min(300, Math.max(100, v));
+    zoomRange.dispatchEvent(new Event('input'));
+  }, { passive: false });
+
+  // ---- Zoom (cubit dua jari) ----
+  let pDist = null, pZoom = 100;
+  const dist2 = function (t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); };
+  stage.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) { pDist = dist2(e.touches); pZoom = parseInt(zoomRange.value, 10); }
+  }, { passive: true });
+  stage.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pDist) {
+      let v = Math.round(pZoom * (dist2(e.touches) / pDist));
+      zoomRange.value = Math.min(300, Math.max(100, v));
+      zoomRange.dispatchEvent(new Event('input'));
+    }
+  }, { passive: true });
+  stage.addEventListener('touchend', function () { pDist = null; }, { passive: true });
+
+  // Dipanggil dari halaman: hubungkan input file banner -> buka modal crop
+  window.initBannerCropUpload = function (inputId, formId) {
+    const input = document.getElementById(inputId);
+    const form = document.getElementById(formId);
+    if (!input || !form) return;
+    input.addEventListener('change', function () {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      if (!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)) { alert('Format banner harus JPG, PNG, WEBP, atau GIF.'); input.value = ''; return; }
+      if (f.size > 30 * 1024 * 1024) { alert('Ukuran gambar terlalu besar (maksimal 30MB).'); input.value = ''; return; }
+      openWithFile(f, form, input);
+    });
+  };
+})();
+</script>
