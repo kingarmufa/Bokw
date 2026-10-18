@@ -1,0 +1,937 @@
+<%- include('partials/header', { title: 'Profil' }) %>
+
+<%
+  let rawApiKey = '';
+  if (typeof apiKeys !== 'undefined' && apiKeys.length > 0) {
+    rawApiKey = apiKeys[0].key;
+  } else if (user.apiKey) {
+    rawApiKey = user.apiKey;
+  }
+  let maskedApiKey = rawApiKey ? '••••••••' : 'Belum ada API Key';
+  const avatarSrc = user.avatarUrl && user.avatarUrl.trim() ? user.avatarUrl : 'https://api.dicebear.com/7.x/identicon/svg?seed=' + user.username;
+  const joinDate = new Date(user.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const roleClass = user.role === 'merchant' ? 'r-merchant' : (user.role === 'vip' ? 'r-vip' : 'r-user');
+%>
+
+<style data-comic-owned>
+  /* ============ PROFIL — TAMPILAN KOMIK (garis luar transparan, bayangan keras) ============ */
+  .custom-scroll::-webkit-scrollbar { width: 2px; height: 2px; }
+  .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+
+  .pf-wrap { max-width: 44rem; margin: 0 auto; padding: 4px 16px 12px; }
+
+  /* Judul stiker */
+  .pf-title-row { display: flex; align-items: center; gap: 10px; margin: 6px 0 18px; }
+  .pf-title { display: inline-block; margin: 0; padding: 6px 18px 4px; font-size: 2rem; line-height: 1; text-transform: uppercase;
+    background: var(--cm-white); --cm-fg: var(--cm-ink); border-radius: 10px; transform: rotate(-2deg);
+    box-shadow: 4px 4px 0 var(--cm-shadow); }
+  .pf-title-tag { font-family: Bangers, Impact, sans-serif; font-size: 1.05rem; letter-spacing: .08em; padding: 3px 10px 1px; border-radius: 6px;
+    background: var(--cm-ink); --cm-fg: var(--cm-yellow); transform: rotate(3deg); }
+  html[data-theme=black] .pf-title-tag { background: var(--cm-yellow); --cm-fg: var(--cm-ink); }
+
+  /* Kartu dasar: garis luar TRANSPARAN, tegas lewat bayangan keras */
+  .pf-card { position: relative; background: var(--cm-white) !important; --cm-fg: var(--cm-ink) !important; --cm-edge: var(--cm-ink) !important;
+    border: 3px solid transparent !important; border-radius: 16px !important; box-shadow: 6px 6px 0 var(--cm-shadow) !important;
+    margin-bottom: 22px; overflow: hidden; }
+  .pf-card-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px 8px; background: var(--cm-ink); --cm-fg: var(--cm-yellow);
+    font-family: Bangers, Impact, sans-serif; font-size: 1.3rem; letter-spacing: .07em; text-transform: uppercase; }
+  .pf-card-head i { font-size: 1rem; }
+  .pf-card-body { padding: 16px; background-image: radial-gradient(circle, rgba(23,23,23,.08) 1px, transparent 1.2px); background-size: 12px 12px; }
+
+  /* Hero */
+  .pf-hero-top { position: relative; height: 104px; background: var(--cm-yellow);
+    background-image: radial-gradient(circle, rgba(23,23,23,.28) 1.6px, transparent 1.8px), repeating-linear-gradient(115deg, transparent 0 22px, rgba(255,255,255,.35) 22px 34px);
+    background-size: 12px 12px, auto; }
+  .pf-hero-top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--cm-white);
+    clip-path: polygon(0 100%, 0 60%, 6% 30%, 12% 65%, 19% 25%, 26% 62%, 33% 28%, 40% 64%, 47% 24%, 54% 62%, 61% 28%, 68% 64%, 75% 26%, 82% 62%, 89% 30%, 95% 62%, 100% 40%, 100% 100%); }
+  .pf-hero-top.has-banner { height: auto; aspect-ratio: 3 / 1; background-image: none; background-color: var(--cm-ink); }
+  .pf-banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pf-pow { position: absolute; top: 12px; right: 14px; font-family: Bangers, Impact, sans-serif; font-size: 1.5rem; letter-spacing: .06em; padding: 4px 12px 1px;
+    background: var(--cm-white); --cm-fg: var(--cm-ink); border-radius: 8px; transform: rotate(6deg); box-shadow: 3px 3px 0 var(--cm-ink); }
+  .pf-hero-main { position: relative; margin-top: -58px; padding: 0 18px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .pf-av-wrap { position: relative; width: 118px; height: 118px; display: grid; place-items: center; }
+  .pf-burst { position: absolute; inset: -6px; background: var(--cm-ink); clip-path: polygon(50% 0, 60% 14%, 76% 6%, 78% 23%, 94% 24%, 88% 40%, 100% 50%, 88% 60%, 94% 76%, 78% 77%, 76% 94%, 60% 86%, 50% 100%, 40% 86%, 24% 94%, 22% 77%, 6% 76%, 12% 60%, 0 50%, 12% 40%, 6% 24%, 22% 23%, 24% 6%, 40% 14%); animation: pfSpin 24s linear infinite; }
+  .pf-avatar { position: relative; width: 92px; height: 92px; border-radius: 50%; object-fit: cover; background: var(--cm-white);
+    box-shadow: 0 0 0 4px var(--cm-yellow), 4px 4px 0 4px var(--cm-ink); }
+  @keyframes pfSpin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .pf-burst { animation: none; } }
+  .pf-name { margin: 12px 0 2px; font-size: 1.9rem; line-height: 1.05; word-break: break-word; }
+  .pf-mail { margin: 0 0 10px; font-size: 13px; opacity: .8; word-break: break-all; }
+  .pf-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 14px; }
+  .pf-role { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px 3px; border-radius: 999px; font-family: Bangers, Impact, sans-serif; font-size: .95rem; letter-spacing: .08em; text-transform: uppercase; border: 2px solid transparent; box-shadow: 2px 2px 0 var(--cm-ink); }
+  .pf-role.r-user { background: var(--cm-yellow); --cm-fg: var(--cm-ink); }
+  .pf-role.r-vip { background: #d4af37; --cm-fg: var(--cm-ink); }
+  .pf-role.r-merchant { background: var(--cm-ink); --cm-fg: var(--cm-white); }
+  .pf-role.r-admin { background: #dc2626; --cm-fg: #fff; }
+  .pf-role.r-seller { background: #1d4ed8; --cm-fg: #fff; }
+  .pf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 14px; }
+  .pf-stat { padding: 8px 10px 7px; border-radius: 10px; background: #f6f0d2; border: 2px dashed transparent; box-shadow: 3px 3px 0 rgba(23,23,23,.9); text-align: left; min-width: 0; }
+  .pf-stat small { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+  .pf-stat b { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+  .pf-upload { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+  .pf-hint { font-size: 11px; opacity: .65; }
+
+  /* Tombol komik: garis luar transparan */
+  button.pf-btn, button.pf-cta { border-color: transparent !important; background: var(--cm-yellow) !important; --cm-fg: var(--cm-ink) !important;
+    box-shadow: 3px 3px 0 var(--cm-ink) !important; }
+  button.pf-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px 6px; border-radius: 9px; font-family: Bangers, Impact, sans-serif; font-size: 1.05rem; letter-spacing: .06em; }
+  button.pf-cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 16px 9px; border-radius: 12px;
+    font-family: Bangers, Impact, sans-serif; font-size: 1.5rem; letter-spacing: .08em; text-transform: uppercase; box-shadow: 5px 5px 0 var(--cm-shadow) !important; }
+  button.pf-cta:not(:disabled):hover, button.pf-btn:not(:disabled):hover { transform: translate(-1px,-1px); }
+  button.pf-cta:not(:disabled):active, button.pf-btn:not(:disabled):active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--cm-ink) !important; }
+  button.pf-icon { display: inline-grid; place-items: center; width: 40px; min-height: 40px; padding: 0; border-radius: 9px; border-color: transparent !important;
+    background: var(--cm-ink) !important; --cm-fg: var(--cm-yellow) !important; box-shadow: 3px 3px 0 var(--cm-yellow), 3px 3px 0 1px var(--cm-ink) !important; flex-shrink: 0; }
+  button.pf-eye { display: inline-grid; place-items: center; width: 30px; height: 30px; min-height: 0; padding: 0; margin-left: 6px; border-radius: 8px; border-color: transparent !important;
+    background: var(--cm-ink) !important; --cm-fg: var(--cm-yellow) !important; box-shadow: 2px 2px 0 rgba(23,23,23,.35) !important; flex-shrink: 0; }
+  button.pf-eye i { font-size: 12px; }
+
+  /* Daftar info (pengganti tabel) */
+  .pf-row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 2px dashed rgba(23,23,23,.28); }
+  .pf-row:last-child { border-bottom: 0; }
+  .pf-row:nth-child(even) { background: rgba(237,197,49,.16); }
+  .pf-ico { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; background: var(--cm-ink); --cm-fg: var(--cm-yellow); transform: rotate(-4deg); box-shadow: 2px 2px 0 var(--cm-yellow), 2px 2px 0 1px rgba(23,23,23,.9); }
+  .pf-ico i { font-size: 14px; }
+  .pf-rc { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+  .pf-lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; opacity: .62; line-height: 1.2; }
+  .pf-val { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; line-height: 1.35; }
+  .pf-val.muted { opacity: .55; }
+  .pf-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .pf-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 1px; border-radius: 999px; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .pf-tag.ok { background: var(--cm-ink); --cm-fg: var(--cm-yellow); }
+  .pf-tag.no { background: transparent; border: 2px dashed rgba(23,23,23,.55); }
+
+  /* Alert */
+  .pf-alert { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; border: 3px solid transparent; font-size: 13.5px; font-weight: 800; box-shadow: 4px 4px 0 var(--cm-shadow); }
+  .pf-alert.ok { background: var(--cm-yellow); --cm-fg: var(--cm-ink); }
+  .pf-alert.err { background: var(--cm-ink); --cm-fg: var(--cm-white); }
+  .pf-alert .pf-alert-ico { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 9px; background: var(--cm-white); --cm-fg: var(--cm-ink); }
+
+  /* Referral */
+  .pf-field { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .pf-field:last-child { margin-bottom: 0; }
+  .pf-field input { flex: 1; min-width: 0; }
+  .pf-sublbl { display: block; margin: 0 0 5px 2px; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; opacity: .7; }
+
+  /* Popup Edit Informasi — kartu tanpa garis luar */
+  #editInfoModal .cp-card { max-width: 28rem; border-color: transparent !important; border-radius: 16px; box-shadow: 6px 6px 0 var(--cm-yellow), 10px 10px 0 var(--cm-ink); }
+  #editInfoModal .pf-mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; padding: 12px 16px 9px; background: var(--cm-yellow); --cm-fg: var(--cm-ink);
+    background-image: radial-gradient(circle, rgba(23,23,23,.22) 1.4px, transparent 1.6px); background-size: 11px 11px; }
+  #editInfoModal .pf-mhead h3 { margin: 0; font-size: 1.7rem; line-height: 1; text-transform: uppercase; }
+  #editInfoModal .pf-mhead h3 i { margin-right: 8px; font-size: 1.2rem; }
+  #editInfoModal button.pf-x { display: grid; place-items: center; width: 38px; min-height: 38px; padding: 0; border-radius: 9px; border-color: transparent !important; background: var(--cm-white) !important; --cm-fg: var(--cm-ink) !important; box-shadow: 3px 3px 0 var(--cm-ink) !important; }
+  #editInfoModal .pf-mbody { padding: 16px 16px 0; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; background-image: radial-gradient(circle, rgba(23,23,23,.09) 1px, transparent 1.2px); background-size: 12px 12px; }
+  #editInfoModal .pf-form label { font-family: Bangers, Impact, sans-serif; font-weight: 400 !important; font-size: 1.05rem !important; letter-spacing: .05em; }
+  #editInfoModal .pf-form label span, #editInfoModal .pf-form label b { font-family: 'Comic Neue', Arial, sans-serif; letter-spacing: 0; }
+  #editInfoModal .pf-form input:not([type=hidden]) { border-radius: 9px !important; }
+  #editInfoModal .pf-form .bg-amber-50 { background: var(--cm-yellow) !important; border-color: transparent !important; box-shadow: 3px 3px 0 var(--cm-ink) !important; }
+  #editInfoModal .pf-form .border-t { border-top: 3px dashed rgba(23,23,23,.4) !important; }
+
+
+  /* ===== Edit Informasi — kuning dibedakan dari latar halaman (soft, tidak terlalu kuning) ===== */
+  button.pf-cta { background: color-mix(in srgb, var(--cm-yellow) 45%, #fff) !important; border: 3px solid var(--cm-ink) !important; box-shadow: 5px 5px 0 var(--cm-ink) !important; }
+  button.pf-btn { background: color-mix(in srgb, var(--cm-yellow) 45%, #fff) !important; border: 2.5px solid var(--cm-ink) !important; }
+  html body #editInfoModal.cp-overlay .cp-card { background: color-mix(in srgb, var(--cm-yellow) 12%, #fff) !important; border: 3px solid var(--cm-ink) !important; box-shadow: 6px 6px 0 color-mix(in srgb, var(--cm-yellow) 75%, #fff), 9px 9px 0 var(--cm-ink); }
+  #editInfoModal .pf-mhead { background: color-mix(in srgb, var(--cm-yellow) 45%, #fff); border-bottom: 3px solid var(--cm-ink);
+    background-image: radial-gradient(circle, rgba(23,23,23,.16) 1.2px, transparent 1.4px); background-size: 11px 11px; }
+  #editInfoModal .pf-mbody { background-color: color-mix(in srgb, var(--cm-yellow) 12%, #fff); }
+  #editInfoModal .pf-form input:not([type=hidden]) { background: #fff !important; border: 2.5px solid var(--cm-ink) !important; border-radius: 10px !important;
+    box-shadow: 3px 3px 0 color-mix(in srgb, var(--cm-yellow) 75%, #fff) !important; }
+  #editInfoModal .pf-form input:not([type=hidden]):focus { box-shadow: 3px 3px 0 var(--cm-ink) !important; }
+  #editInfoModal button.pf-x { background: #fff !important; border: 2.5px solid var(--cm-ink) !important; }
+
+  /* Pilih provider merchant */
+  .pf-prov-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 420px) { .pf-prov-grid { grid-template-columns: 1fr 1fr; } }
+  .pf-prov { display: block; cursor: pointer; }
+  .pf-prov-box { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 8px; text-align: center; font-family: Bangers, Impact, sans-serif; font-size: 1.05rem; letter-spacing: .05em;
+    background: #fff; --cm-fg: var(--cm-ink); border: 2.5px solid var(--cm-ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--cm-ink); transition: transform .12s, box-shadow .12s, background .12s; }
+  .pf-prov input:checked + .pf-prov-box { background: var(--cm-yellow); --cm-fg: var(--cm-ink); transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--cm-ink); }
+  .pf-prov input:focus-visible + .pf-prov-box { outline: 3px dashed var(--cm-ink); outline-offset: 3px; }
+  #editInfoModal .pf-form .hidden { display: none !important; }
+
+  /* FIX: bar simpan tidak lagi sticky/gradasi (tema meratakan gradasi jadi kuning solid & menutupi kolom terakhir) */
+  #editInfoModal .pf-save-bar { position: static; margin: 18px 0 0; padding: 0 0 18px; }
+  #editInfoModal .pf-mbody { padding-bottom: 8px; }
+  #editInfoModal .pf-form { min-height: min-content; }
+
+  /* FIX popup: kartu tidak bisa ter-scroll sendiri (bikin area kosong/buram), tanpa blur di dalam kartu */
+  html body #editInfoModal.cp-overlay .cp-card { overflow: hidden; overflow: clip; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  #editInfoModal .pf-mbody { overscroll-behavior: contain; min-height: 0; }
+  /* FIX tema hitam: kartu popup berwarna krem, jadi semua teks di dalamnya harus tinta gelap (bukan putih ikut tema) */
+  html body #editInfoModal .cp-card, html body #editInfoModal .cp-card * { --cm-fg: var(--cm-ink) !important; --cm-edge: var(--cm-ink) !important; }
+  html body #editInfoModal .cp-card label, html body #editInfoModal .cp-card h3, html body #editInfoModal .cp-card p, html body #editInfoModal .cp-card small,
+  html body #editInfoModal .cp-card span, html body #editInfoModal .cp-card i, html body #editInfoModal .cp-card code, html body #editInfoModal .cp-card .pf-sublbl { color: #171717 !important; -webkit-text-fill-color: #171717 !important; }
+  html body #editInfoModal .cp-card .pf-form p, html body #editInfoModal .cp-card .pf-form small, html body #editInfoModal .cp-card label span { opacity: .8; }
+  html body #editInfoModal .cp-card a { color: #0b6b1d !important; -webkit-text-fill-color: #0b6b1d !important; text-decoration: underline; font-weight: 800; }
+  html body #editInfoModal .cp-card #togglePassword { background: #fff !important; border: 2px solid #171717 !important; border-radius: 8px; box-shadow: 2px 2px 0 #171717; }
+  html body #editInfoModal .cp-card #togglePassword i { color: #171717 !important; -webkit-text-fill-color: #171717 !important; opacity: 1; }
+  @media (max-width: 380px) { .pf-title { font-size: 1.7rem; } .pf-name { font-size: 1.6rem; } }
+</style>
+
+<div class="pf-wrap">
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="pf-alert ok">
+      <span class="pf-alert-ico"><i class="fas fa-check"></i></span>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="pf-alert err">
+      <span class="pf-alert-ico"><i class="fas fa-exclamation"></i></span>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <!-- Judul -->
+  <div class="pf-title-row">
+    <h2 class="pf-title">Profil</h2>
+    <span class="pf-title-tag">User</span>
+  </div>
+
+  <!-- ===== HERO: foto + identitas (tampil di Room Chat Publik) ===== -->
+  <section class="pf-card">
+    <div class="pf-hero-top<%= (user.bannerUrl && user.bannerUrl.trim()) ? ' has-banner' : '' %>">
+      <% if (user.bannerUrl && user.bannerUrl.trim()) { %>
+        <img src="<%= user.bannerUrl %>" alt="banner profil" class="pf-banner-img">
+      <% } else { %>
+        <span class="pf-pow">WOW!</span>
+      <% } %>
+    </div>
+    <div class="pf-hero-main">
+      <div class="pf-av-wrap">
+        <span class="pf-burst" aria-hidden="true"></span>
+        <img src="<%= avatarSrc %>" alt="avatar" class="pf-avatar">
+      </div>
+      <h3 class="pf-name"><%= (user.firstName && user.firstName.trim()) ? user.firstName : user.username %></h3>
+      <% if (user.firstName && user.firstName.trim()) { %><p class="pf-mail" style="margin-bottom:2px">@<%= user.username %></p><% } %>
+      <% if (user.bio) { %><p class="pf-mail" style="opacity:1;font-weight:700"><%= user.bio %></p><% } %>
+      <p class="pf-mail"><%= user.email %></p>
+
+      <div class="pf-badges">
+        <span class="pf-role <%= roleClass %>"><i class="fa-solid fa-star"></i> <%= user.role %></span>
+        <% if (user.panelRole && user.panelRole !== 'user') { %>
+          <span class="pf-role <%= user.panelRole === 'adminpanel' ? 'r-admin' : 'r-seller' %>"><i class="fa-solid fa-server"></i> <%= user.panelRole === 'adminpanel' ? 'admin panel' : 'seller' %></span>
+        <% } %>
+      </div>
+
+      <div class="pf-stats">
+        <div class="pf-stat"><small>ID User</small><b><%= (user._id.toString()).slice(10) %></b></div>
+        <div class="pf-stat"><small>Bergabung</small><b><%= joinDate %></b></div>
+      </div>
+
+      <form id="avatarUploadForm" action="/profile/avatar" method="POST" enctype="multipart/form-data" class="pf-upload">
+        <input id="avatarFileInput" type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+        <button type="button" onclick="document.getElementById('avatarFileInput').click()" class="pf-btn">
+          <i class="fa-solid fa-camera"></i> Ganti Foto
+        </button>
+        <span class="pf-hint">Foto bisa dipotong (crop) dulu sebelum diunggah</span>
+      </form>
+
+      <form id="bannerUploadForm" action="/profile/banner" method="POST" enctype="multipart/form-data" class="pf-upload" style="margin-top:14px">
+        <input id="bannerFileInput" type="file" name="banner" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button type="button" onclick="document.getElementById('bannerFileInput').click()" class="pf-btn">
+            <i class="fa-solid fa-image"></i> <%= (user.bannerUrl && user.bannerUrl.trim()) ? 'Ganti Banner' : 'Upload Banner' %>
+          </button>
+          <% if (user.bannerUrl && user.bannerUrl.trim()) { %>
+            <button type="submit" formaction="/profile/banner/remove" formnovalidate class="pf-btn" onclick="return confirm('Hapus banner profil?')">
+              <i class="fa-solid fa-trash"></i> Hapus
+            </button>
+          <% } %>
+        </div>
+        <span class="pf-hint">Banner bisa digeser &amp; di-zoom (crop 3:1) dulu sebelum diunggah</span>
+      </form>
+    </div>
+  </section>
+
+  <%- include('partials/avatar_crop_modal') %>
+<%- include('partials/banner_crop_modal') %>
+<script>initBannerCropUpload('bannerFileInput', 'bannerUploadForm');</script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      initAvatarCropUpload('avatarFileInput', 'avatarUploadForm');
+    });
+  </script>
+
+  <!-- ===== Tentang Saya (nama depan + bio) & Story Saya ===== -->
+  <%- include('partials/profile_about', { person: user }) %>
+
+  <!-- ===== Kode Referral ===== -->
+  <% if (settings.referralEnabled && user.referralCode) { %>
+  <section class="pf-card">
+    <div class="pf-card-head"><i class="fa-solid fa-user-plus"></i> Kode Referral Kamu</div>
+    <div class="pf-card-body">
+      <p style="font-size:12px;margin:0 0 14px;opacity:.8">Bagikan kode atau link ini. Kalau ada yang daftar lewat kode kamu, kalian berdua bisa dapat saldo bonus.</p>
+
+      <label class="pf-sublbl">Kode Kamu</label>
+      <div class="pf-field">
+        <input id="refCodeDisplay" type="text" readonly value="<%= user.referralCode %>" style="letter-spacing:.14em;font-weight:800">
+        <button type="button" onclick="copyRefText('refCodeDisplay')" class="pf-icon" title="Salin Kode"><i class="far fa-copy"></i></button>
+      </div>
+
+      <label class="pf-sublbl">Link Referral (otomatis terpakai kalau diklik)</label>
+      <div class="pf-field">
+        <input id="refLinkDisplay" type="text" readonly value="<%= siteUrl || '' %>/register?ref=<%= user.referralCode %>" style="font-size:13px">
+        <button type="button" onclick="copyRefText('refLinkDisplay')" class="pf-icon" title="Salin Link"><i class="far fa-copy"></i></button>
+      </div>
+    </div>
+  </section>
+  <script>
+    function copyRefText(id) {
+      const el = document.getElementById(id);
+      el.select();
+      el.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(el.value).then(() => {
+        alert('Tersalin ke clipboard');
+      }).catch(() => {
+        document.execCommand('copy');
+        alert('Tersalin ke clipboard');
+      });
+    }
+  </script>
+  <% } %>
+
+  <!-- ===== Data Akun ===== -->
+  <section class="pf-card">
+    <div class="pf-card-head"><i class="fa-solid fa-id-card"></i> Data Akun</div>
+    <div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-user"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Username</span><span class="pf-val"><%= user.username %></span></div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-envelope"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Email</span><span class="pf-val"><%= user.email %></span></div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-diagram-project"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Nama Project</span>
+          <span class="pf-val <%= user.projectName ? '' : 'muted' %>"><%= user.projectName || '-' %></span></div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-link"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Callback URL</span>
+          <% if (user.callbackUrl && user.callbackUrl.trim() !== '') { %>
+            <span class="pf-val" title="<%= user.callbackUrl %>"><%= user.callbackUrl %></span>
+          <% } else { %><span class="pf-val muted">-</span><% } %>
+        </div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-image"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Logo Merchant</span>
+          <% if (user.merchantLogoUrl && user.merchantLogoUrl.trim() !== '') { %>
+            <span class="pf-val" title="<%= user.merchantLogoUrl %>"><%= user.merchantLogoUrl %></span>
+          <% } else { %><span class="pf-val muted">-</span><% } %>
+        </div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-brands fa-telegram"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">ID Telegram</span>
+          <div class="pf-line">
+            <% if (user.telegramId && user.telegramId.trim() !== '') { %>
+              <span class="pf-val"><%= user.telegramId %></span>
+              <span class="pf-tag ok"><i class="fa-solid fa-check"></i> Terhubung</span>
+            <% } else { %>
+              <span class="pf-val muted">-</span>
+              <span class="pf-tag no">Belum Terhubung</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-brands fa-whatsapp"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">Nomor WhatsApp</span>
+          <div class="pf-line">
+            <% if (user.whatsappNumber && user.whatsappNumber.trim() !== '') { %>
+              <span class="pf-val">+<%= user.whatsappNumber %></span>
+              <span class="pf-tag ok"><i class="fa-solid fa-check"></i> Terverifikasi</span>
+            <% } else { %>
+              <span class="pf-val muted">-</span>
+              <span class="pf-tag no">Belum Terhubung</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="pf-row">
+        <span class="pf-ico"><i class="fa-solid fa-key"></i></span>
+        <div class="pf-rc"><span class="pf-lbl">API Key</span>
+          <div class="pf-line" style="flex-wrap:nowrap">
+            <span id="tableApiKeyDisplay" class="pf-val" style="min-width:0"><%= maskedApiKey %></span>
+            <% if (rawApiKey) { %>
+              <button type="button" onclick="toggleTableApiKey()" class="pf-eye" title="Tampilkan/Sembunyikan API Key">
+                <i id="tableApiKeyToggleIcon" class="far fa-eye"></i>
+              </button>
+              <button type="button" onclick="copyTableApiKey()" class="pf-eye" style="margin-left:0" title="Salin API Key">
+                <i class="far fa-copy"></i>
+              </button>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+<style>
+/* Kontras profil: teks utama selalu terbaca pada kartu terang */
+.pf-card .pf-lbl,.pf-card .pf-val,.pf-card .pf-sublbl,.pf-card p,.pf-card h1,.pf-card h2,.pf-card h3{color:#111827!important}
+.pf-card input,.pf-card select,.pf-card textarea{color:#111827!important;background:#fff!important}
+.pf-card input::placeholder,.pf-card textarea::placeholder{color:#6b7280!important;opacity:1}
+#editInfoModal .pf-mbody,#editInfoModal .pf-mbody label,#editInfoModal .pf-mbody p,#editInfoModal .pf-mbody h1,#editInfoModal .pf-mbody h2,#editInfoModal .pf-mbody h3,#editInfoModal .pf-mbody h4{color:#111827!important}
+#editInfoModal .pf-mbody .text-gray-400,#editInfoModal .pf-mbody .text-gray-500,#editInfoModal .pf-mbody .text-gray-600,#editInfoModal .pf-mbody .text-gray-700,#editInfoModal .pf-mbody .text-gray-800{color:#111827!important}
+#editInfoModal .pf-mbody input,#editInfoModal .pf-mbody select,#editInfoModal .pf-mbody textarea{color:#111827!important;background:#fff!important;border-color:#111827!important}
+#editInfoModal .pf-mbody input::placeholder,#editInfoModal .pf-mbody textarea::placeholder{color:#6b7280!important;opacity:1}
+</style>
+  <div id="profileMainPane">
+  <!-- Tombol edit -->
+  <% if (user.role !== 'merchant') { %>
+  <section class="pf-pin" id="pinCard">
+    <div class="pf-pin-head">
+      <span class="pf-pin-ic"><i class="fas fa-lock"></i></span>
+      <div>
+        <b class="pf-pin-title">PIN KEAMANAN</b>
+        <span class="pf-pin-state <%= pinEnabled ? 'on' : 'off' %>"><%= pinEnabled ? 'AKTIF' : 'BELUM AKTIF' %></span>
+      </div>
+    </div>
+    <p class="pf-pin-desc">PIN 4 angka diminta setiap kali tarik saldo atau transfer, jadi saldo tetap aman walau HP kamu dipinjam orang.</p>
+    <% if (pinLockedUntil) { %><p class="pf-pin-lock">PIN sedang terkunci sampai <%= new Date(pinLockedUntil).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) %> karena salah terlalu banyak.</p><% } %>
+    <% if (!pinEnabled) { %>
+      <button type="button" class="pf-pin-btn g" onclick="PinGuard.profile.activate()">AKTIFKAN PIN</button>
+    <% } else { %>
+      <div class="pf-pin-row">
+        <button type="button" class="pf-pin-btn y" onclick="PinGuard.profile.change()">UBAH PIN</button>
+        <button type="button" class="pf-pin-btn k" onclick="PinGuard.profile.disable()">NONAKTIFKAN</button>
+      </div>
+      <button type="button" class="pf-pin-link" onclick="PinGuard.profile.reset()">Lupa PIN? Atur ulang pakai password</button>
+    <% } %>
+  </section>
+  <script src="/pin-guard.js?v=3"></script>
+  <style>
+    .pf-pin{background:#fff;border:3px solid #171717;border-radius:16px;box-shadow:5px 5px 0 #22c55e,8px 8px 0 #171717;padding:14px 14px 16px;margin:0 0 26px;position:relative;overflow:hidden}
+    .pf-pin-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .pf-pin-ic{width:46px;height:46px;border:3px solid #171717;border-radius:12px;background:#facc15;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:3px 3px 0 #171717}
+    html body .pf-pin .pf-pin-title{display:block;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:25px;letter-spacing:.8px;line-height:1}
+    .pf-pin-state{display:inline-block;margin-top:3px;padding:1px 9px;border:2.5px solid #171717;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.06em}
+    .pf-pin-state.on{background:#22c55e}.pf-pin-state.off{background:#facc15}
+    html body .pf-pin .pf-pin-desc{font-weight:700;font-size:12.5px;line-height:1.45;margin:0 0 12px}
+    html body .pf-pin .pf-pin-lock{font-weight:900;font-size:12.5px;margin:-4px 0 10px;padding:6px 10px;border:2.5px solid #171717;border-radius:10px;background:#fee2e2}
+    .pf-pin-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    html body .pf-pin button.pf-pin-btn{display:block;width:100%;border:3px solid #171717!important;border-radius:12px!important;padding:10px 6px;font-family:Bangers,Impact,sans-serif;font-size:19px;letter-spacing:.8px;box-shadow:3px 3px 0 #171717!important;cursor:pointer;min-height:0}
+    html body .pf-pin button.pf-pin-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #171717!important}
+    html body .pf-pin button.pf-pin-btn.g{background:#22c55e!important}
+    html body .pf-pin button.pf-pin-btn.y{background:#facc15!important}
+    html body .pf-pin button.pf-pin-btn.k{background:#171717!important}
+    html body .pf-pin button.pf-pin-btn.k,html body .pf-pin button.pf-pin-btn.k *{color:#facc15!important;-webkit-text-fill-color:#facc15!important}
+    html body .pf-pin button.pf-pin-link{display:block;margin:12px auto 0;background:none!important;border:0!important;box-shadow:none!important;font-weight:900;font-size:12px;text-decoration:underline;cursor:pointer;min-height:0;padding:2px}
+    html body #pinCard.pf-pin{background:#fff!important;background-color:#fff!important;border-color:#171717!important;color:#171717!important}
+    html body #pinCard .pf-pin-ic{background:#facc15!important}
+    html body #pinCard .pf-pin-state.on{background:#22c55e!important}
+    html body #pinCard .pf-pin-state.off{background:#facc15!important}
+    html body #pinCard .pf-pin-lock{background:#fee2e2!important}
+    html body #pinCard button.pf-pin-btn.g{background:#22c55e!important}
+    html body #pinCard button.pf-pin-btn.y{background:#facc15!important}
+    html body #pinCard button.pf-pin-btn.k{background:#171717!important}
+    html body #pinCard button.pf-pin-link{background:transparent!important}
+    html body #pinCard,html body #pinCard *{--cm-fg:#171717!important}
+    html body #pinCard .pf-pin-title,html body #pinCard .pf-pin-desc,html body #pinCard .pf-pin-state,html body #pinCard .pf-pin-lock,html body #pinCard .pf-pin-ic i,html body #pinCard button.pf-pin-link,html body #pinCard button.pf-pin-btn.g,html body #pinCard button.pf-pin-btn.y{color:#171717!important;-webkit-text-fill-color:#171717!important}
+    html body #pinCard button.pf-pin-btn.k{color:#facc15!important;-webkit-text-fill-color:#facc15!important}
+    html body .pf-pin,html body .pf-pin *{--cm-fg:#171717!important}
+    html body .pf-pin,html body .pf-pin p,html body .pf-pin b,html body .pf-pin span,html body .pf-pin i,html body .pf-pin button.pf-pin-link{color:#171717!important;-webkit-text-fill-color:#171717!important}
+  </style>
+  <% } %>
+
+  <style data-comic-owned>
+    /* Warna literal (tidak ditulis ulang skrip tema): tombol di profil & popup Edit Informasi harus selalu terbaca di tema hitam/putih/hijau */
+    html body button.pf-cta, html body button.pf-cta * { color: #171717 !important; -webkit-text-fill-color: #171717 !important; }
+    html body #editInfoModal .cp-card button.pf-cta-save { background: #2ecc40 !important; border: 3px solid #171717 !important; }
+    html body #editInfoModal .cp-card button.pf-gen { background: #ffffff !important; border: 2px solid #171717 !important; border-radius: 10px !important; padding: 4px 12px !important; box-shadow: 2px 2px 0 #171717 !important; text-decoration: none !important; }
+    html body #editInfoModal .cp-card button.pf-gen, html body #editInfoModal .cp-card button.pf-gen * { color: #171717 !important; -webkit-text-fill-color: #171717 !important; }
+    html body #editInfoModal .cp-card button.pf-copy { background: #2ecc40 !important; border: 2px solid #171717 !important; border-radius: 12px !important; box-shadow: 3px 3px 0 #171717 !important; min-width: 48px; }
+    html body #editInfoModal .cp-card button.pf-copy, html body #editInfoModal .cp-card button.pf-copy * { color: #171717 !important; -webkit-text-fill-color: #171717 !important; }
+    html body #editInfoModal .cp-card #toggleModalApiKey, html body #editInfoModal .cp-card #toggleModalApiKey *, html body #editInfoModal .cp-card #togglePassword * { color: #171717 !important; -webkit-text-fill-color: #171717 !important; }
+  </style>
+
+  <button type="button" onclick="openEditInfoModal()" class="pf-cta" style="margin-bottom:28px">
+    <i class="fas fa-pen-to-square"></i> Edit Informasi
+  </button>
+
+  </div>
+
+  <!-- Popup Edit Informasi (ComicPopup: selalu di depan layar) -->
+  <div id="editInfoModal" class="cp-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="cp-card">
+      <div class="pf-mhead">
+        <h3 class="font-comic"><i class="fas fa-pen-to-square"></i>Edit Informasi</h3>
+        <button type="button" class="pf-x" data-cp-close aria-label="Tutup"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="pf-mbody">
+        <form method="POST" action="/profile" id="editProfileForm" class="pf-form flex flex-col gap-4">
+          <!-- Email -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Alamat Email</label>
+            <input name="email" type="email" value="<%= user.email %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Password Baru <span class="text-xs text-gray-500">(opsional)</span></label>
+            <div class="relative">
+              <input id="newPassword" name="newPassword" type="password" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 pr-10 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="••••••••">
+              <button type="button" id="togglePassword" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 text-gray-500 hover:text-gray-800 flex items-center justify-center">
+                <i id="toggleIcon" class="far fa-eye text-[13.5px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Nama Project -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Nama Project</label>
+            <input 
+              name="projectName" 
+              type="text" 
+              id="projectNameInput"
+              value="<%= user.projectName || '' %>" 
+              placeholder="Nama aplikasi/website Anda" 
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Callback URL -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Callback URL</label>
+            <input 
+              name="callbackUrl" 
+              type="url" 
+              id="callbackUrlInput"
+              value="<%= user.callbackUrl || '' %>" 
+              placeholder="https://contoh.com/webhook" 
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+            <p class="text-[11px] text-gray-500 mt-1">URL akan dipanggil saat status invoice paid.</p>
+            <p id="callbackUrlError" class="text-[11px] text-red-500 mt-1 hidden">Format URL tidak valid. Harap gunakan URL lengkap (https://...)</p>
+          </div>
+
+          <!-- Logo URL (Merchant) -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">
+              URL Logo Merchant
+              <span class="text-xs text-gray-500">(opsional)</span>
+            </label>
+            <input 
+              name="merchantLogoUrl" 
+              type="url" 
+              id="merchantLogoUrlInput"
+              value="<%= user.merchantLogoUrl || '' %>" 
+              placeholder="https://example.com/logo.png" 
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+            <p class="text-[11px] text-gray-500 mt-1">URL logo ditampilkan di halaman pembayaran</p>
+            <p id="merchantLogoUrlError" class="text-[11px] text-red-500 mt-1 hidden">Format URL tidak valid. Harap gunakan URL lengkap (https://...).</p>
+          </div>
+
+          <!-- ID Telegram -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">
+              ID Telegram
+              <span class="text-xs text-gray-500">(untuk akses Bot)</span>
+            </label>
+            <input
+              name="telegramId"
+              type="text"
+              inputmode="numeric"
+              id="telegramIdInput"
+              value="<%= user.telegramId || '' %>"
+              placeholder="Contoh: 123456789"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+            <p class="text-[11px] text-gray-500 mt-1">
+              Masukkan ID Telegram lalu simpan, agar bisa mengakses fitur Bot (Cek Profil, Cek Saldo, Tarik Dana, dll) serta menerima pengumuman dari admin lewat Bot.
+              Belum tahu ID Telegram kamu? Chat <a href="https://t.me/userinfobot" target="_blank" rel="noopener" class="text-blue-500 hover:underline">@userinfobot</a> untuk mendapatkannya.
+              <strong class="text-gray-600">Kirim <code>/start</code> ke bot terlebih dahulu sebelum menyimpan ID di sini</strong>, karena setelah disimpan sistem akan mengirim kode OTP verifikasi ke Telegram tersebut — ID baru aktif setelah OTP dikonfirmasi, supaya tidak ada orang lain yang bisa memasukkan ID Telegram milikmu tanpa izin.
+              Kolom ini opsional, tapi sangat disarankan diisi — jika suatu saat kamu lupa password, ID Telegram ini bisa dipakai sebagai metode alternatif untuk menerima kode OTP lewat Bot Telegram di halaman Lupa Password.
+            </p>
+            <p id="telegramIdError" class="text-[11px] text-red-500 mt-1 hidden">ID Telegram harus berupa angka.</p>
+          </div>
+
+          <!-- Nomor WhatsApp -->
+          <div>
+            <% const waIsEmpty = !user.whatsappNumber || user.whatsappNumber.trim() === ''; %>
+            <% if (waIsEmpty) { %>
+              <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3.5 py-2.5 mb-2 text-[11.5px] font-medium flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+                <span>Akun kamu belum punya Nomor WhatsApp. <b>Wajib diisi</b> supaya bisa lanjut pakai akun ini — cukup isi & simpan, <b>tanpa perlu kode OTP</b> untuk pengisian pertama kali.</span>
+              </div>
+            <% } %>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">
+              Nomor WhatsApp <% if (waIsEmpty) { %><span class="text-red-500">*</span><% } %>
+              <span class="text-xs text-gray-500">(untuk bukti transaksi)</span>
+            </label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 transition-all focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500">
+              <% const waSplit = splitWaNumber(user.whatsappNumber); %>
+              <i class="fa-brands fa-whatsapp pl-3 pr-1" style="color:#25D366"></i>
+              <select id="whatsappCcSelect" name="whatsappCc" class="bg-transparent text-[13.5px] font-medium text-gray-700 outline-none pl-1 pr-1 py-3 max-w-[112px] cursor-pointer" aria-label="Kode negara">
+                <%- include('partials/wa_country_options', { sel: waSplit.cc }) %>
+              </select>
+              <span class="w-px h-5 bg-gray-200 mx-1"></span>
+              <input
+                name="whatsappNumber"
+                type="tel"
+                inputmode="numeric"
+                id="whatsappNumberInput"
+                value="<%= waSplit.national %>"
+                placeholder="81234567890"
+                <%= waIsEmpty ? 'required' : '' %>
+                class="flex-1 bg-transparent pr-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none w-full"
+              >
+            </div>
+            <p class="text-[11px] text-gray-500 mt-1">
+              Pilih kode negara lalu isi nomor tanpa angka 0 di depan (atau ketik nomor lengkap diawali +).
+              <% if (waIsEmpty) { %>
+                Karena ini pengisian pertama, nomor langsung tersimpan tanpa perlu OTP.
+              <% } else { %>
+                Kalau diganti ke nomor lain, sistem akan mengirim kode OTP ke WhatsApp nomor baru itu dulu — nomor baru aktif setelah OTP dikonfirmasi.
+              <% } %>
+              Setelah terhubung, bukti transaksi (deposit, withdraw, beli panel, OTP, dll) dikirim otomatis ke WhatsApp ini.<% if (!waIsEmpty) { %> Kosongkan lalu simpan untuk melepas nomor.<% } %>
+            </p>
+            <p id="whatsappNumberError" class="text-[11px] text-red-500 mt-1 hidden">Nomor WhatsApp tidak valid, cek kode negara & nomornya.</p>
+          </div>
+
+          <!-- API Key Field -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-[13.5px] font-medium text-gray-700">API Key</label>
+              <button type="button" onclick="regenerateApiKeyFromModal(event)" class="pf-gen text-[13.5px] font-medium text-blue-500 hover:text-blue-600 transition-colors bg-transparent border-0 cursor-pointer">
+                Generate Ulang
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <div class="relative flex-1">
+                <input id="modalApiKeyInput" type="password" readonly value="<%= rawApiKey %>" class="w-full border border-gray-100 rounded-2xl shadow-sm px-3 py-3 pr-10 text-[13.5px] font-medium text-gray-800 outline-none">
+                <button type="button" id="toggleModalApiKey" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 text-gray-500 hover:text-gray-800 flex items-center justify-center">
+                  <i id="modalApiKeyToggleIcon" class="far fa-eye text-[13.5px]"></i>
+                </button>
+              </div>
+              <button type="button" onclick="copyApiKeyFromModal()" class="pf-copy bg-blue-500 hover:bg-blue-600 text-white px-3 py-3 rounded-xl text-[13.5px] font-medium transition-colors whitespace-nowrap" title="Salin API Key">
+                <i class="far fa-copy text-[13.5px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <% if (user.role === 'merchant') { %>
+          <!-- ===== QRIS Pribadi (khusus role Merchant) ===== -->
+          <div class="border-t border-gray-200 pt-4 mt-1">
+            <h4 class="text-[13.5px] font-semibold text-gray-800 mb-1">
+              <i class="fa-solid fa-qrcode text-blue-500 mr-1"></i> QRIS Pribadi
+            </h4>
+            <% const _isShopee = user.merchantProvider === 'shopeepay'; const _isDana = user.merchantProvider === 'dana'; %>
+            <p class="text-[11px] text-gray-500 mb-2">Konfigurasi QRIS pribadi kamu (khusus akun kamu). Withdraw manual/instan otomatis nonaktif karena dana masuk langsung lewat QRIS pribadi ini.</p>
+
+            <!-- Pilih provider sendiri (tidak lagi diatur admin) -->
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Provider Pembayaran</label>
+            <div class="pf-prov-grid">
+              <label class="pf-prov">
+                <input type="radio" name="merchantProvider" value="gopaymerchant" class="sr-only" <%= (_isShopee || _isDana) ? '' : 'checked' %> onchange="pfApplyProvider()">
+                <span class="pf-prov-box gp"><i class="fa-solid fa-motorcycle"></i> GoPay Merchant</span>
+              </label>
+              <label class="pf-prov">
+                <input type="radio" name="merchantProvider" value="shopeepay" class="sr-only" <%= _isShopee ? 'checked' : '' %> onchange="pfApplyProvider()">
+                <span class="pf-prov-box sp"><img src="https://img3.pixhost.to/images/6091/776776751_356980.jpg" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover"> ShopeePay</span>
+              </label>
+              <label class="pf-prov">
+                <input type="radio" name="merchantProvider" value="dana" class="sr-only" <%= _isDana ? 'checked' : '' %> onchange="pfApplyProvider()">
+                <span class="pf-prov-box dn"><img src="https://img3.pixhost.to/images/6091/776776856_356979.jpg" alt="" style="width:22px;height:22px;border-radius:6px;object-fit:cover"> DANA</span>
+              </label>
+            </div>
+            <p class="text-[11px] text-gray-500 mt-1 mb-3">Pilih sendiri provider yang dipakai untuk QRIS pribadi kamu. Ganti pilihan tidak menghapus API provider lainnya.</p>
+
+            <div id="pfShopeeFields" class="<%= _isShopee ? '' : 'hidden' %>">
+              <div class="mb-3">
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">API Key ShopeePay</label>
+                <input name="merchantShopeeApiKey" type="text" value="<%= user.merchantShopeeApiKey || '' %>" placeholder="API key kamu" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <p class="text-[11px] text-gray-500 mt-1">Deposit QRIS kamu dibuat &amp; dicek memakai API ini. Saldo ShopeePay mengikuti aturan tahan saldo (hold) yang berlaku.</p>
+              </div>
+            </div>
+
+            <div id="pfDanaFields" class="<%= _isDana ? '' : 'hidden' %>">
+              <div class="mb-3">
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">API Key DANA</label>
+                <input name="merchantDanaApiKey" type="text" value="<%= user.merchantDanaApiKey || '' %>" placeholder="API key kamu" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <p class="text-[11px] text-gray-500 mt-1">Deposit QRIS kamu dibuat &amp; dicek memakai API ini. Saldo DANA langsung masuk tanpa hold.</p>
+              </div>
+            </div>
+
+            <div id="pfGopayFields" class="<%= (_isShopee || _isDana) ? 'hidden' : '' %>">
+              <div class="mb-3">
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Domain Gopay Merchant</label>
+                <input name="merchantGopayDomain" type="text" value="<%= user.merchantGopayDomain || 'pian-gomerch.vercel.app' %>" placeholder="pian-gomerch.vercel.app" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Static QR (Kode QRIS Statis)</label>
+                <input name="merchantGopayStaticQr" type="text" value="<%= user.merchantGopayStaticQr || '' %>" placeholder="Isi string QRIS statis kamu" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Access Token</label>
+                <input name="merchantGopayToken" type="text" value="<%= user.merchantGopayToken || '' %>" placeholder="Access token dari akun gomerch kamu" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Refresh Token <span class="text-xs text-gray-500">(opsional, untuk auto-refresh token)</span></label>
+                <input name="merchantGopayRefreshToken" type="text" value="<%= user.merchantGopayRefreshToken || '' %>" placeholder="Refresh token dari akun gomerch kamu" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Biaya Admin (Rp)</label>
+              <input name="merchantAdminFee" type="number" min="0" step="1" value="<%= user.merchantAdminFee || 0 %>" placeholder="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              <p class="text-[11px] text-gray-500 mt-1">Biaya tetap yang ditambahkan ke setiap deposit QRIS pribadi kamu (bukan kode unik acak seperti QRIS gateway admin).</p>
+            </div>
+          </div>
+          <% } %>
+
+          <% if (user.role === 'vip') { %>
+          <div class="border-t border-gray-200 pt-4 mt-1">
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5 mb-3">
+              <i class="fa-solid fa-crown text-amber-500 mt-0.5"></i>
+              <p class="text-[12px] text-amber-800 font-medium leading-relaxed">Kamu VIP — withdraw (manual & instan) otomatis <span class="font-semibold">bebas biaya admin</span>. Biaya admin deposit QRIS bisa kamu atur sendiri di bawah ini.</p>
+            </div>
+            <div>
+              <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Biaya Admin Deposit QRIS (Rp)</label>
+              <input name="vipDepositFee" type="number" min="0" step="1" value="<%= user.vipDepositFee || 0 %>" placeholder="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+              <p class="text-[11px] text-gray-500 mt-1">Nominal tetap yang ditambahkan ke setiap deposit QRIS kamu (bukan kode unik acak). Isi 0 kalau tidak mau dikenakan biaya admin.</p>
+            </div>
+          </div>
+          <% } %>
+
+          <!-- Submit -->
+          <div class="pf-save-bar">
+            <button type="submit" class="pf-cta pf-cta-save">
+              <i class="fas fa-bolt"></i> Simpan Profil
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ================== GLOBAL VARIABEL ==================
+  window.rawApiKeyValue = '<%= rawApiKey.replace(/'/g, "\\'") %>';
+  let isTableApiKeyVisible = false;
+
+  // ================== PILIH PROVIDER MERCHANT ==================
+  function pfApplyProvider() {
+    var c = document.querySelector('input[name="merchantProvider"]:checked');
+    var v = c ? c.value : 'gopaymerchant';
+    var sp = document.getElementById('pfShopeeFields'), gp = document.getElementById('pfGopayFields'), dn = document.getElementById('pfDanaFields');
+    if (sp) sp.classList.toggle('hidden', v !== 'shopeepay');
+    if (dn) dn.classList.toggle('hidden', v !== 'dana');
+    if (gp) gp.classList.toggle('hidden', v !== 'gopaymerchant');
+  }
+
+  // ================== MODAL EDIT INFORMASI ==================
+  function openEditInfoModal() {
+    var m = document.getElementById('editInfoModal');
+    if (window.ComicPopup) ComicPopup.open(m); else m.classList.remove('hidden');
+    document.getElementById('modalApiKeyInput').value = window.rawApiKeyValue;
+    document.getElementById('modalApiKeyInput').type = 'password';
+    document.getElementById('modalApiKeyToggleIcon').className = 'far fa-eye text-[13.5px]';
+  }
+  function closeEditInfoModal() {
+    var m = document.getElementById('editInfoModal');
+    if (window.ComicPopup) ComicPopup.close(m); else m.classList.add('hidden');
+  }
+
+  // ================== TOGGLE PASSWORD ==================
+  document.addEventListener('DOMContentLoaded', function() {
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('newPassword');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function (e) {
+        e.preventDefault();
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        if (type === 'text') {
+          toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+    }
+
+    // TOGGLE API KEY DI MODAL
+    const toggleModalApiKey = document.getElementById('toggleModalApiKey');
+    const modalApiKeyInput = document.getElementById('modalApiKeyInput');
+    const modalApiKeyToggleIcon = document.getElementById('modalApiKeyToggleIcon');
+
+    if (toggleModalApiKey && modalApiKeyInput) {
+      toggleModalApiKey.addEventListener('click', function (e) {
+        e.preventDefault();
+        const type = modalApiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        modalApiKeyInput.setAttribute('type', type);
+        if (type === 'text') {
+          modalApiKeyToggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          modalApiKeyToggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+    }
+
+    // ================== VALIDASI CALLBACK URL & LOGO URL ==================
+    const editForm = document.getElementById('editProfileForm');
+    if (editForm) {
+      editForm.addEventListener('submit', function(e) {
+        const callbackInput = document.getElementById('callbackUrlInput');
+        const callbackErrorEl = document.getElementById('callbackUrlError');
+        const merchantLogoInput = document.getElementById('merchantLogoUrlInput');
+        const merchantLogoErrorEl = document.getElementById('merchantLogoUrlError');
+        const telegramIdInput = document.getElementById('telegramIdInput');
+        const telegramIdErrorEl = document.getElementById('telegramIdError');
+
+        // Reset error
+        callbackErrorEl.classList.add('hidden');
+        merchantLogoErrorEl.classList.add('hidden');
+        if (telegramIdErrorEl) telegramIdErrorEl.classList.add('hidden');
+
+        // Validasi ID Telegram jika diisi
+        if (telegramIdInput && telegramIdInput.value.trim() !== '') {
+          if (!/^[0-9]{5,15}$/.test(telegramIdInput.value.trim())) {
+            e.preventDefault();
+            telegramIdErrorEl.classList.remove('hidden');
+            telegramIdInput.focus();
+            return;
+          }
+        }
+
+        // Validasi nomor WhatsApp jika diisi
+        const waInputEl = document.getElementById('whatsappNumberInput');
+        const waErrEl = document.getElementById('whatsappNumberError');
+        if (waErrEl) waErrEl.classList.add('hidden');
+        if (waInputEl && waInputEl.value.trim() !== '') {
+          const ccEl = document.getElementById('whatsappCcSelect');
+          const cc = ccEl ? ccEl.value : '62';
+          const raw = waInputEl.value.trim();
+          let n = raw.replace(/[^0-9]/g, '');
+          let full;
+          if (raw.startsWith('+')) full = n;
+          else { n = n.replace(/^0+/, ''); full = (cc === '62' && n.startsWith('62')) ? n : cc + n; }
+          const ok = full.startsWith('62') ? /^628\d{8,12}$/.test(full) : /^[1-9]\d{7,14}$/.test(full);
+          if (!ok) {
+            e.preventDefault();
+            waErrEl.classList.remove('hidden');
+            waInputEl.focus();
+            return;
+          }
+        }
+
+        // Validasi callback URL jika diisi
+        if (callbackInput && callbackInput.value.trim() !== '') {
+          try {
+            const url = new URL(callbackInput.value.trim());
+            if (!['http:', 'https:'].includes(url.protocol)) {
+              throw new Error('Invalid protocol');
+            }
+          } catch (err) {
+            e.preventDefault();
+            callbackErrorEl.classList.remove('hidden');
+            callbackInput.focus();
+            return;
+          }
+        }
+
+        // Validasi logo URL jika diisi
+        if (merchantLogoInput && merchantLogoInput.value.trim() !== '') {
+          try {
+            new URL(merchantLogoInput.value.trim());
+          } catch (err) {
+            e.preventDefault();
+            merchantLogoErrorEl.classList.remove('hidden');
+            merchantLogoInput.focus();
+            return;
+          }
+        }
+      });
+    }
+  });
+
+  // ================== TOGGLE API KEY DI TABEL UTAMA ==================
+  function toggleTableApiKey() {
+    const displayEl = document.getElementById('tableApiKeyDisplay');
+    const toggleIcon = document.getElementById('tableApiKeyToggleIcon');
+    if (!displayEl || !toggleIcon) return;
+    if (isTableApiKeyVisible) {
+      displayEl.innerText = '••••••••';
+      toggleIcon.className = 'far fa-eye text-[13.5px]';
+    } else {
+      displayEl.innerText = window.rawApiKeyValue;
+      toggleIcon.className = 'far fa-eye-slash text-[13.5px]';
+    }
+    isTableApiKeyVisible = !isTableApiKeyVisible;
+  }
+
+  // ================== SALIN API KEY DARI TABEL UTAMA ==================
+  function copyTableApiKey() {
+    if (!window.rawApiKeyValue) {
+      alert('Tidak ada API Key untuk disalin.');
+      return;
+    }
+    navigator.clipboard.writeText(window.rawApiKeyValue).then(() => {
+      alert('API Key disalin ke clipboard');
+    }).catch(() => {
+      alert('Gagal menyalin');
+    });
+  }
+
+  // ================== REGENERATE API KEY ==================
+  async function regenerateApiKeyFromModal(event) {
+    const btn = event.target;
+    if (!confirm('Apakah Anda yakin ingin membuat kunci API baru? Kunci yang lama tidak akan bisa digunakan lagi dan transaksi yang berjalan bisa terhenti.')) {
+      return;
+    }
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '...';
+    try {
+      const res = await fetch('/api/user/api-key/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.apiKey) {
+        window.rawApiKeyValue = data.apiKey;
+        document.getElementById('modalApiKeyInput').value = data.apiKey;
+        const displayEl = document.getElementById('tableApiKeyDisplay');
+        const toggleIcon = document.getElementById('tableApiKeyToggleIcon');
+        if (displayEl) displayEl.innerText = '••••••••';
+        if (toggleIcon) toggleIcon.className = 'far fa-eye text-[13.5px]';
+        isTableApiKeyVisible = false;
+        alert('API Key berhasil diperbarui!');
+        window.location.reload();
+      } else {
+        alert(data.error || 'Gagal generate ulang API key');
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan saat generate ulang API key');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = originalText;
+    }
+  }
+
+  // ================== COPY API KEY DARI MODAL ==================
+  function copyApiKeyFromModal() {
+    const input = document.getElementById('modalApiKeyInput');
+    if (!input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      alert('API Key disalin ke clipboard');
+    }).catch(() => {
+      alert('Gagal menyalin');
+    });
+  }
+</script>
+
+
+<%- include('partials/footer') %>
