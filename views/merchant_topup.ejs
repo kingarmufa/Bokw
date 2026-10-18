@@ -1,0 +1,136 @@
+<%- include('partials/header', { title: 'Top Up Saldo' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-10">
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] px-5 py-4 rounded-xl mb-6 text-[13.5px] font-medium flex items-center gap-3">
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-base font-medium text-gray-800">Top Up Saldo</h1>
+    <a href="/dashboard" class="text-[13.5px] font-medium text-blue-500"><i class="fas fa-arrow-left mr-1"></i> Dashboard</a>
+  </div>
+
+  <p class="text-[12.5px] text-gray-500 -mt-2 mb-4">Saldo ini terpisah dari saldo QRIS pribadi kamu. Diisi lewat QRIS admin, dipakai khusus untuk beli Nokos & beli Panel Pterodactyl.</p>
+
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-5 mb-6">
+    <p class="text-[12px] font-medium text-gray-500 mb-1">Saldo Top Up Kamu</p>
+    <p class="text-2xl font-semibold text-gray-800 mb-4">Rp <%= (user.topupBalance || 0).toLocaleString('id-ID') %></p>
+    <button onclick="openNominalModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl text-[13.5px] font-medium transition-colors flex items-center gap-2">
+      <i class="fas fa-plus"></i> Top Up Sekarang
+    </button>
+  </div>
+
+  <div class="border border-gray-100 rounded-2xl shadow-sm mb-6 bg-white overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100">
+      <p class="text-[13.5px] font-semibold text-gray-800">Riwayat Top Up</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse whitespace-nowrap bg-white">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="py-2.5 px-3 text-[12.5px] font-semibold text-gray-800 border-b border-gray-200">ID Invoice</th>
+            <th class="py-2.5 px-3 text-[12.5px] font-semibold text-gray-800 border-b border-gray-200">Jumlah</th>
+            <th class="py-2.5 px-3 text-[12.5px] font-semibold text-gray-800 border-b border-gray-200">Status</th>
+            <th class="py-2.5 px-3 text-[12.5px] font-semibold text-gray-800 border-b border-gray-200">Tanggal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (topups.length === 0) { %>
+            <tr><td colspan="4" class="py-8 text-center text-[13px] text-gray-500">Belum ada riwayat top up</td></tr>
+          <% } %>
+          <% topups.forEach(function(t) {
+               let statusText = (t.status === 'paid' || t.status === 'success') ? 'paid' : t.status;
+               let statusColor = (t.status === 'paid' || t.status === 'success') ? 'text-green-600' : (t.status === 'pending' ? 'text-[#eab308]' : 'text-[#dc2626]');
+          %>
+            <tr onclick="window.location.href='/payment/<%= t._id %>'" class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+              <td class="py-2.5 px-3 text-[12.5px] font-medium text-blue-500 underline"><%= t._id %></td>
+              <td class="py-2.5 px-3 text-[12.5px] font-medium text-gray-800">Rp <%= Math.abs(t.amount).toLocaleString('id-ID') %></td>
+              <td class="py-2.5 px-3 text-[12.5px] font-medium <%= statusColor %>"><%= statusText %></td>
+              <td class="py-2.5 px-3 text-[12.5px] font-medium text-gray-800"><%= new Date(t.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Nominal -->
+  <div id="nominalModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeNominalModal()"></div>
+    <div class="relative bg-white border border-gray-100 rounded-2xl shadow-sm w-full max-w-sm">
+      <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="text-sm font-medium text-gray-800">Top Up Saldo</h3>
+        <button onclick="closeNominalModal()" class="w-7 h-7 flex items-center justify-center rounded-xl text-gray-800 hover:bg-gray-100">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+      <div class="p-5">
+        <div class="mb-4">
+          <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Nominal Top Up (Min. Rp <%= minDeposit.toLocaleString('id-ID') %>)</label>
+          <input id="modalAmountInput" type="text" inputmode="numeric" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm px-3 py-3 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="0">
+          <p id="modalAmountError" class="text-[13.5px] text-[#dc2626] mt-1 hidden"></p>
+        </div>
+        <button id="modalSubmitBtn" onclick="submitNominal()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl text-[13.5px] font-medium transition-colors flex items-center justify-center gap-2">
+          <span id="modalBtnText">Buat QRIS</span>
+          <i id="modalSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openNominalModal() {
+    document.getElementById('modalAmountInput').value = '';
+    document.getElementById('modalAmountError').classList.add('hidden');
+    document.getElementById('nominalModal').classList.remove('hidden');
+  }
+  function closeNominalModal() { document.getElementById('nominalModal').classList.add('hidden'); }
+
+  async function submitNominal() {
+    const raw = document.getElementById('modalAmountInput').value.replace(/[^0-9]/g, '');
+    const amount = parseInt(raw);
+    const errorEl = document.getElementById('modalAmountError');
+    const minDeposit = <%= minDeposit %>;
+    if (!amount || amount < minDeposit) {
+      errorEl.textContent = `Minimal top up Rp ${minDeposit.toLocaleString('id-ID')}`;
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    errorEl.classList.add('hidden');
+
+    const btn = document.getElementById('modalSubmitBtn');
+    const btnText = document.getElementById('modalBtnText');
+    const spinner = document.getElementById('modalSpinner');
+    btn.disabled = true;
+    btnText.textContent = 'Memproses...';
+    spinner.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/merchant/topup/invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat invoice top up.');
+      window.location.href = '/payment/' + data.id;
+    } catch (e) {
+      errorEl.textContent = e.message;
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btnText.textContent = 'Buat QRIS';
+      spinner.classList.add('hidden');
+    }
+  }
+
+  document.getElementById('modalAmountInput').addEventListener('input', function() {
+    let v = this.value.replace(/[^0-9]/g, '');
+    this.value = v ? parseInt(v).toLocaleString('id-ID') : '';
+  });
+</script>
+
+<%- include('partials/footer') %>
