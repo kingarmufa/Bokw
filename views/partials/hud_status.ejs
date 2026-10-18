@@ -1,0 +1,155 @@
+<%# HUD Status komik x teknologi: PING, SIGNAL, RAM, MEMORI. Boleh dipasang beberapa kali dalam satu halaman (satu polling bersama). Data: /api/ping + /api/status. %>
+<link rel="stylesheet" href="/hud-ui.css?v=1" data-comic-owned>
+<!-- ========== HUD STATUS (komik x teknologi) ========== -->
+<div class="hud" aria-label="Status server dan koneksi">
+  <span class="hud-burst" aria-hidden="true">ZAP!</span>
+  <div class="hud-head">
+    <b class="hud-title"><i class="fa-solid fa-satellite-dish"></i> STATUS SERVER</b>
+    <span class="hud-live" data-k="hudLive"><i></i><em data-k="hudLiveTx">menghubungkan</em></span>
+  </div>
+
+  <div class="hud-grid">
+    <div class="hud-tile" data-k="tPing">
+      <div class="hud-lbl"><i class="fa-solid fa-bolt-lightning"></i> PING</div>
+      <div class="hud-val"><span data-k="vPing">--</span><small>ms</small></div>
+      <div class="hud-seg" data-n="10"></div>
+      <div class="hud-sub" data-k="vPingSub">mengukur…</div>
+    </div>
+
+    <div class="hud-tile" data-k="tSig">
+      <div class="hud-lbl"><i class="fa-solid fa-signal"></i> SIGNAL</div>
+      <div class="hud-val"><span data-k="vSigTx">--</span></div>
+      <div class="hud-bars" data-k="vSigBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hud-sub" data-k="vSigSub">mengukur…</div>
+    </div>
+
+    <div class="hud-tile" data-k="tRam">
+      <div class="hud-lbl"><i class="fa-solid fa-memory"></i> RAM</div>
+      <div class="hud-val"><span data-k="vRam">--</span><small data-k="vRamOf"></small></div>
+      <div class="hud-seg" data-n="10"></div>
+      <div class="hud-sub" data-k="vRamSub">memuat…</div>
+    </div>
+
+    <div class="hud-tile" data-k="tDisk">
+      <div class="hud-lbl"><i class="fa-solid fa-hard-drive"></i> MEMORI</div>
+      <div class="hud-val"><span data-k="vDisk">--</span><small data-k="vDiskOf"></small></div>
+      <div class="hud-seg" data-n="10"></div>
+      <div class="hud-sub" data-k="vDiskSub">memuat…</div>
+    </div>
+  </div>
+
+  <div class="hud-foot">
+    <span><i class="fa-solid fa-microchip"></i> CPU <b data-k="vCpu">--</b></span>
+    <span><i class="fa-solid fa-clock-rotate-left"></i> UP <b data-k="vUp">--</b></span>
+    <span data-k="vDevWrap" hidden><i class="fa-solid fa-mobile-screen"></i> HP <b data-k="vDev">--</b></span>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* Satu mesin bersama untuk SEMUA panel .hud di halaman: ping & status diambil sekali, lalu dibagikan ke tiap panel. */
+  if (window.__hudScan) { window.__hudScan(); return; }
+  var panels = [], samples = [], last = { ping: undefined, st: undefined, live: null };
+  var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+  var LV = function (p) { return p >= 85 ? 'hi' : p >= 60 ? 'mid' : 'lo'; };
+  function K(root, k) { return root.querySelector('[data-k="' + k + '"]'); }
+  function gb(b) { var g = b / 1073741824; return g >= 10 ? g.toFixed(0) : g.toFixed(1); }
+  function dur(sec) {
+    sec = Math.floor(sec); var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    return d ? d + 'h ' + h + 'j' : h ? h + 'j ' + m + 'm' : m + 'm';
+  }
+  function median(a) { var b = a.slice().sort(function (x, y) { return x - y; }); return b[Math.floor(b.length / 2)]; }
+  function T(root, k, v) { var e = K(root, k); if (e) e.textContent = v; }
+
+  function seg(root, tile, pct, lv) {
+    var t = K(root, tile); if (!t) return;
+    var cells = t.querySelectorAll('.hud-seg i'), on = Math.round(Math.max(0, Math.min(100, pct)) / 100 * cells.length);
+    if (pct > 0 && on < 1) on = 1;
+    cells.forEach(function (c, i) { c.className = i < on ? 'on ' + lv : ''; });
+    t.setAttribute('data-lv', lv);
+  }
+  function bars(root, n) { root.querySelectorAll('[data-k="vSigBars"] i').forEach(function (e, i) { e.className = i < n ? 'on b' + n : ''; }); }
+
+  function drawLive(root, ok) {
+    var l = K(root, 'hudLive'); if (l) l.className = 'hud-live' + (ok ? '' : ' off');
+    T(root, 'hudLiveTx', ok ? 'LIVE' : 'terputus');
+  }
+  function drawNet(root, ms) {
+    if (ms == null) {
+      T(root, 'vPing', '--'); T(root, 'vPingSub', 'tidak ada respon'); seg(root, 'tPing', 0, 'hi');
+      T(root, 'vSigTx', 'NO SIGNAL'); T(root, 'vSigSub', 'periksa koneksi'); bars(root, 0);
+      var s0 = K(root, 'tSig'); if (s0) s0.setAttribute('data-lv', 'hi');
+      return;
+    }
+    var ping = Math.round(ms);
+    T(root, 'vPing', ping);
+    var q = ping < 60 ? ['SUPER CEPAT', 'lo'] : ping < 120 ? ['MANTAP', 'lo'] : ping < 250 ? ['OKE', 'mid'] : ping < 500 ? ['LEMOT', 'hi'] : ['PARAH', 'hi'];
+    T(root, 'vPingSub', q[0]); seg(root, 'tPing', Math.min(100, ping / 5), q[1]);
+    var n = ping < 60 ? 5 : ping < 120 ? 4 : ping < 250 ? 3 : ping < 500 ? 2 : 1, type = '', extra = '';
+    if (conn) {
+      var et = conn.effectiveType;
+      if (et === 'slow-2g' || et === '2g') n = Math.min(n, et === '2g' ? 2 : 1); else if (et === '3g') n = Math.min(n, 3);
+      if (et) type = et.replace('slow-', '').toUpperCase();
+      if (conn.downlink) extra = ' · ' + conn.downlink + ' Mbps';
+      if (conn.type === 'wifi') type = 'WI-FI';
+    }
+    bars(root, n); T(root, 'vSigTx', n + '/5'); T(root, 'vSigSub', (type || 'JARINGAN') + extra);
+    var st = K(root, 'tSig'); if (st) st.setAttribute('data-lv', n >= 4 ? 'lo' : n === 3 ? 'mid' : 'hi');
+  }
+  function drawStatus(root, d) {
+    T(root, 'vRam', gb(d.mem.used)); T(root, 'vRamOf', '/ ' + gb(d.mem.total) + ' GB');
+    T(root, 'vRamSub', d.mem.percent.toFixed(0) + '% terpakai'); seg(root, 'tRam', d.mem.percent, LV(d.mem.percent));
+    if (d.disk) {
+      T(root, 'vDisk', gb(d.disk.used)); T(root, 'vDiskOf', '/ ' + gb(d.disk.total) + ' GB');
+      T(root, 'vDiskSub', d.disk.percent.toFixed(0) + '% terpakai'); seg(root, 'tDisk', d.disk.percent, LV(d.disk.percent));
+    } else { T(root, 'vDisk', 'n/a'); T(root, 'vDiskSub', 'tidak tersedia'); }
+    T(root, 'vCpu', d.cpu.usage.toFixed(0) + '%'); T(root, 'vUp', dur(d.uptime));
+  }
+  function paint(root) {
+    if (last.live !== null) drawLive(root, last.live);
+    if (last.ping !== undefined) drawNet(root, last.ping);
+    if (last.st) drawStatus(root, last.st);
+  }
+  function paintAll() { panels.forEach(paint); }
+
+  function scan() {
+    document.querySelectorAll('.hud:not([data-init])').forEach(function (root) {
+      root.setAttribute('data-init', '1');
+      root.querySelectorAll('.hud-seg').forEach(function (b) {
+        var n = +b.getAttribute('data-n') || 10, h = ''; for (var i = 0; i < n; i++) h += '<i></i>'; b.innerHTML = h;
+      });
+      if (navigator.deviceMemory) { var w = K(root, 'vDevWrap'); if (w) w.hidden = false; T(root, 'vDev', '~' + navigator.deviceMemory + ' GB'); }
+      panels.push(root); paint(root);
+    });
+  }
+  window.__hudScan = scan;
+
+  var pingBusy = false, stBusy = false;
+  function measure() {
+    if (pingBusy) return; pingBusy = true;
+    if (navigator.onLine === false) { samples = []; last.ping = null; paintAll(); pingBusy = false; return; }
+    var t0 = performance.now();
+    fetch('/api/ping?_=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function () { samples.push(performance.now() - t0); if (samples.length > 5) samples.shift(); last.ping = median(samples); })
+      .catch(function () { last.ping = null; })
+      .then(function () { pingBusy = false; paintAll(); });
+  }
+  function loadStatus() {
+    if (stBusy) return; stBusy = true;
+    fetch('/api/status', { cache: 'no-store', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { if (!d || !d.ok) throw 0; last.st = d; last.live = true; })
+      .catch(function () { last.live = false; })
+      .then(function () { stBusy = false; paintAll(); });
+  }
+
+  scan(); measure(); loadStatus();
+  setInterval(function () { if (!document.hidden) measure(); }, 4000);
+  setInterval(function () { if (!document.hidden) loadStatus(); }, 5000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { measure(); loadStatus(); } });
+  window.addEventListener('online', measure);
+  window.addEventListener('offline', function () { last.ping = null; paintAll(); });
+  if (conn && conn.addEventListener) conn.addEventListener('change', function () { samples = []; measure(); });
+})();
+</script>
