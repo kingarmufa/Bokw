@@ -1,0 +1,42 @@
+{
+  "name": "averpay-gateway-vercel",
+  "version": "2.3.0",
+  "description": "Modern Payment Gateway with Orderkuota QRIS",
+  "main": "server.js",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:css": "node scripts/build-comic-css.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "build": "node scripts/check-syntax.cjs",
+    "test:vercel": "node --test tests/vercel.test.cjs"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "archiver": "^7.0.1",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "express-rate-limit": "^7.5.0",
+    "nodemailer": "^8.0.7",
+    "node-fetch": "^2.6.7",
+    "mongoose": "^8.0.0",
+    "memorystore": "^1.6.8",
+    "multer": "^2.1.1",
+    "telegraf": "^4.16.3",
+    "pino": "^9.0.0",
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7",
+    "qrcode": "^1.5.4",
+    "jsqr": "^1.4.0",
+    "express-async-errors": "^3.1.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17",
+    "postcss": "^8.4.47"
+  }
+}
