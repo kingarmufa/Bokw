@@ -1,0 +1,191 @@
+<%- include('partials/header', { title: 'Aplikasi Premium' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800">Aplikasi Premium</h1>
+      <p class="text-[12px] font-medium text-gray-500">Beli akun premium (Capcut, Netflix, dll) otomatis pakai saldo</p>
+    </div>
+    <a href="/premium/riwayat" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-[11.5px] font-bold text-gray-800">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+    </a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+
+  <div class="relative mb-4">
+    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+    <input type="text" id="productSearch" placeholder="Cari produk (Capcut, Netflix, dll)..." class="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-black text-xs font-medium outline-none focus:ring-2 focus:ring-blue-300">
+  </div>
+
+  <div id="productGrid" class="grid grid-cols-3 gap-2">
+    <% products.forEach(p => { %>
+      <button type="button"
+        class="premium-item"
+        data-product-name="<%= p.name.toLowerCase() %>"
+        data-id="<%= p.id %>"
+        data-name="<%= p.name %>"
+        data-price="<%= p.price %>"
+        data-stock="<%= p.stock %>"
+        onclick="selectProduct(this, event)">
+        <% if (p.image) { %>
+          <img src="<%= p.image %>" alt="<%= p.name %>" class="premium-item-img" onerror="this.style.display='none'">
+        <% } else { %>
+          <div class="premium-item-img premium-item-img-fallback">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+        <% } %>
+        <div class="premium-item-body">
+          <p class="premium-item-name"><%= p.name %></p>
+          <p class="premium-item-price">Rp <%= p.price.toLocaleString('id-ID') %></p>
+          <p class="premium-item-stock">Stok <%= p.stock %></p>
+        </div>
+      </button>
+    <% }) %>
+    <% if (products.length === 0) { %>
+      <div class="col-span-full comic-panel p-6 text-center">
+        <p class="text-xs font-medium text-gray-500">Belum ada produk tersedia saat ini. Coba lagi nanti.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Form tersembunyi buat submit pesanan -->
+  <form id="orderForm" method="POST" action="/premium/order">
+    <input type="hidden" name="product_id" id="orderProductId">
+    <input type="hidden" name="qty" id="orderQty" value="1">
+  </form>
+
+  <!-- Native dialog lives above the header and floating navigation. -->
+  <dialog id="confirmModal" class="cm-screen-dialog premium-checkout" aria-labelledby="confirmTitle" aria-describedby="confirmDescription" data-comic-owned>
+    <header class="pc-header">
+      <span class="pc-heading-icon" aria-hidden="true"><i class="fa-solid fa-bag-shopping"></i></span>
+      <div><span class="pc-eyebrow">APLIKASI PREMIUM</span><h2 id="confirmTitle">Konfirmasi pesanan</h2></div>
+      <button type="button" class="pc-close" onclick="closeConfirm()" aria-label="Tutup konfirmasi" autofocus><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </header>
+    <div class="pc-scroll" data-dialog-scroll>
+      <p id="confirmDescription" class="pc-description">Cek pesananmu, pakai voucher, lalu lanjut beli.</p>
+      <section class="pc-summary" aria-label="Detail pesanan">
+        <span class="pc-eyebrow">PRODUK PILIHAN</span>
+        <h3 id="cfName"></h3>
+        <div class="pc-row"><span>Jumlah</span><div class="pc-quantity">
+          <button id="cfMinus" type="button" onclick="changeQty(-1)" aria-label="Kurangi jumlah">−</button>
+          <output id="cfQty" aria-live="polite">1</output>
+          <button id="cfPlus" type="button" onclick="changeQty(1)" aria-label="Tambah jumlah">+</button>
+        </div></div>
+        <div class="pc-row pc-total"><span>Total sebelum diskon</span><strong id="cfTotal"></strong></div>
+      </section>
+      <%- include('partials/voucher_checkout', { formId: 'orderForm', service: 'premium', amount: 0 }) %>
+      <div id="confirmError" class="pc-error hidden" role="alert"></div>
+    </div>
+    <footer class="pc-footer">
+      <p><i class="fa-solid fa-wallet" aria-hidden="true"></i> Pembayaran menggunakan saldo akun</p>
+      <div class="pc-actions">
+        <button type="button" onclick="closeConfirm()" class="pc-cancel">Batal</button>
+        <button id="confirmBuy" type="button" onclick="submitOrder()" class="pc-buy">Beli sekarang <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+      </div>
+    </footer>
+  </dialog>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); overflow: hidden; }
+  .premium-item {
+    display: flex; flex-direction: column; align-items: stretch;
+    border: 2px solid var(--comic-black);
+    border-radius: 12px;
+    background: #fffdf7;
+    box-shadow: 2px 2px 0 var(--comic-black);
+    overflow: hidden;
+    text-align: left;
+    padding: 0;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .premium-item:active { transform: translate(1.5px, 1.5px); box-shadow: 0.5px 0.5px 0 var(--comic-black); }
+  .premium-item-img { width: 100%; height: 56px; object-fit: cover; border-bottom: 2px solid var(--comic-black); display: block; }
+  .premium-item-img-fallback { display: flex; align-items: center; justify-content: center; background: #f3f4f6; color: #d1d5db; font-size: 20px; }
+  .premium-item-body { padding: 6px 6px 8px; min-width: 0; width: 100%; }
+  .premium-item-name {
+    font-size: 10.5px; font-weight: 800; color: #1f2937; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    min-height: 26px; margin-bottom: 3px;
+  }
+  .premium-item-price { font-size: 11px; font-weight: 800; color: #2563eb; margin-bottom: 1px; }
+  .premium-item-stock { font-size: 9px; font-weight: 700; color: #9ca3af; }
+
+</style>
+
+<script>
+  let pendingProduct = null;
+  let pendingQty = 1;
+
+  document.getElementById('productSearch').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.premium-item').forEach(item => {
+      item.style.display = (item.dataset.productName || '').includes(q) ? '' : 'none';
+    });
+  });
+
+  function selectProduct(btn, evt) {
+    // Cegah efek default apa pun dari klik/tap (termasuk potensi auto-scroll bawaan browser).
+    if (evt) { evt.preventDefault(); evt.stopPropagation(); }
+
+    pendingProduct = {
+      id: btn.dataset.id,
+      name: btn.dataset.name,
+      price: Number(btn.dataset.price),
+      stock: Number(btn.dataset.stock)
+    };
+    pendingQty = 1;
+
+    // Hilangkan fokus tombol supaya browser tidak coba "scroll-into-view" elemen yang fokus.
+    // Native dialog restores focus to this product when closed.
+
+    openConfirm();
+  }
+
+  function changeQty(delta) {
+    if (!pendingProduct) return;
+    const next = pendingQty + delta;
+    if (next < 1 || next > pendingProduct.stock) return;
+    pendingQty = next;
+    renderConfirm();
+  }
+
+  function renderConfirm() {
+    document.getElementById('cfName').textContent = pendingProduct?.name || '-';
+    document.getElementById('cfQty').textContent = pendingQty;
+    document.getElementById('cfTotal').textContent = 'Rp ' + ((pendingProduct?.price || 0) * pendingQty).toLocaleString('id-ID');
+    document.getElementById('cfMinus').disabled = pendingQty <= 1;
+    document.getElementById('cfPlus').disabled = pendingQty >= pendingProduct.stock;
+    document.getElementById('confirmBuy').disabled = pendingProduct.stock < 1;
+    window.VoucherUI.setAmount('orderForm', (pendingProduct?.price || 0) * pendingQty);
+  }
+
+  function openConfirm() {
+    document.getElementById('confirmError').classList.add('hidden');
+    renderConfirm();
+    ComicDialog.open('confirmModal');
+  }
+
+  function closeConfirm() { ComicDialog.close('confirmModal'); }
+  document.getElementById('confirmModal').addEventListener('close', function () {
+    document.getElementById('confirmError').classList.add('hidden');
+    pendingProduct = null;
+  });
+
+  function submitOrder() {
+    if (!pendingProduct || pendingProduct.stock < 1) return;
+    document.getElementById('confirmBuy').disabled = true;
+    document.getElementById('orderProductId').value = pendingProduct.id;
+    document.getElementById('orderQty').value = pendingQty;
+    document.getElementById('orderForm').submit();
+  }
+</script>
+
+<%- include('partials/footer') %>
