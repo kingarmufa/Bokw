@@ -1,0 +1,9 @@
+<% const events = (typeof announcements !== 'undefined' ? announcements : []).filter(a => a.isEvent); %>
+<% if (events.length) { %><section class="ev-list" aria-label="Event dan pengumuman penting" data-comic-owned>
+  <% events.forEach(function(a) { %><article class="ev-card">
+    <div class="ev-ribbon"><span>EVENT · PENGUMUMAN PENTING</span></div>
+    <div class="ev-content"><h2><%= a.title %></h2><% if (a.descriptionType === 'voice' && a.voiceUrl) { %><audio controls preload="none" src="<%= a.voiceUrl %>"></audio><% } else { %><p><%= a.descriptionText %></p><% } %>
+      <% if (a.autoDeleteAt) { %><small>Sampai <%= new Date(a.autoDeleteAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' }) %> WIB</small><% } %>
+    </div>
+  </article><% }); %>
+</section><% } %>
