@@ -1,0 +1,167 @@
+<%
+  // Parameter: p (paket atau null), idp (prefix id unik), action (URL POST), submitLabel
+  const P = (typeof p !== 'undefined' && p) ? p : {};
+  const isNew = !(typeof p !== 'undefined' && p);
+  const ruleOf = (k) => Object.assign({ enabled: true, mode: 'fixed', percent: 0, fixed: 0 }, P[k] || {});
+  const rp = Object.assign({ enabled: false, role: 'vip' }, P.rolePayment || {});
+  const rn = Object.assign({ enabled: false, role: 'reseller' }, P.rolePanel || {});
+  const feeRows = [
+    { key: 'deposit',  title: 'Potongan Biaya Admin', sub: 'Dikenakan di setiap deposit QRIS (dihitung dari nominal deposit).',            icon: 'fa-arrow-down',          color: '#22c55e', unit: 'Rp',        max: 100 },
+    { key: 'withdraw', title: 'Biaya Penarikan',      sub: 'Dikenakan di setiap withdraw, manual maupun instan (dari nominal tarik).',       icon: 'fa-money-bill-transfer', color: '#f97316', unit: 'Rp',        max: 100 },
+    { key: 'nokos',    title: 'Atur Harga Nokos',     sub: 'Biaya admin di atas harga modal provider. Menggantikan markup global Nokos.',    icon: 'fa-phone',               color: '#1d4ed8', unit: 'Rp',        max: 1000 },
+    { key: 'panel',    title: 'Atur Harga Panel',     sub: 'Biaya admin di atas harga paket panel (Pterodactyl).',                          icon: 'fa-server',              color: '#a855f7', unit: 'Rp',        max: 1000 },
+    { key: 'smm',      title: 'Atur Harga SMM Panel', sub: 'Biaya admin di atas rate provider. Nominal tetap dihitung per 1.000 unit.',      icon: 'fa-share-nodes',         color: '#ec4899', unit: 'Rp / 1.000', max: 1000 },
+    { key: 'produk',   title: 'Atur Harga Produk',    sub: 'Biaya admin di atas harga produk. Produk gratis tetap gratis.',                  icon: 'fa-box-open',            color: '#f59e0b', unit: 'Rp',        max: 1000 },
+    { key: 'aplikasi', title: 'Atur Harga Aplikasi',  sub: 'Biaya admin di atas harga modal Aplikasi Premium (per akun).',                   icon: 'fa-mobile-screen',       color: '#14b8a6', unit: 'Rp',        max: 1000 }
+  ];
+%>
+<form method="POST" action="<%= action %>" class="pk-form">
+
+  <div class="pk-field">
+    <label class="pk-label" for="<%= idp %>-name">Nama Paket <span class="pk-req">*</span></label>
+    <input id="<%= idp %>-name" name="name" type="text" required maxlength="40" value="<%= P.name || '' %>" placeholder="cth: Paket Gold" class="pk-input">
+  </div>
+
+  <div class="pk-field">
+    <label class="pk-label" for="<%= idp %>-desc">Deskripsi (opsional)</label>
+    <input id="<%= idp %>-desc" name="description" type="text" maxlength="200" value="<%= P.description || '' %>" placeholder="cth: Untuk reseller besar" class="pk-input">
+  </div>
+
+  <div class="pk-toggles">
+    <label class="pk-toggle-line">
+      <span class="pk-switch"><input type="checkbox" name="active" <%= (isNew || P.active !== false) ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></span>
+      <span class="pk-toggle-text"><b>Paket aktif</b><small>Kalau OFF, aturan biaya paket ini tidak berlaku sementara.</small></span>
+    </label>
+    <label class="pk-toggle-line">
+      <span class="pk-switch"><input type="checkbox" name="isDefault" <%= P.isDefault ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></span>
+      <span class="pk-toggle-text"><b>Jadikan Paket Default</b><small>Dipakai semua user yang belum punya paket. Nilai 0 = tanpa biaya admin, jadi cek dulu isinya.</small></span>
+    </label>
+  </div>
+
+  <div class="pk-sec"><i class="fa-solid fa-cart-shopping"></i> Harga Jual Paket</div>
+  <p class="pk-note">Kalau harga diisi lebih dari 0, user bisa <b>beli paket ini sendiri</b> lewat menu Daftar Paket (saldo dipotong, benefit &amp; role di bawah langsung aktif). Isi <b>0</b> = tidak dijual, hanya bisa dipasang admin. Paket Default tidak bisa dijual.</p>
+  <div class="pk-field">
+    <label class="pk-label" for="<%= idp %>-price">Harga Paket (Rp)</label>
+    <input id="<%= idp %>-price" name="price" type="number" min="0" step="1" inputmode="numeric" value="<%= P.price || 0 %>" placeholder="cth: 25000" class="pk-input">
+  </div>
+  <div class="pk-field">
+    <label class="pk-label" for="<%= idp %>-dur">Masa Aktif (hari)</label>
+    <input id="<%= idp %>-dur" name="durationDays" type="number" min="0" max="3650" step="1" inputmode="numeric" value="<%= P.durationDays || 0 %>" placeholder="cth: 30 (0 = permanen)" class="pk-input">
+  </div>
+
+  <div class="pk-sec"><i class="fa-solid fa-percent"></i> Biaya &amp; Harga Layanan</div>
+  <p class="pk-note">Tiap layanan punya toggle <b>Benefit</b>: <b>ON</b> = paket ini mengatur biaya layanan itu, <b>OFF</b> = paket ini tidak mengubahnya (ikut Paket Default / aturan bawaan). Kalau Benefit ON: toggle persen <b>ON</b> = biaya admin dalam <b>persen (%)</b>, <b>OFF</b> = <b>nominal tetap (Rp)</b>, isi <b>0</b> kalau tanpa biaya admin.</p>
+
+  <% feeRows.forEach(function(f) { const r = ruleOf(f.key); %>
+  <div class="pk-row <%= r.mode === 'percent' ? 'is-percent' : '' %> <%= r.enabled === false ? 'is-off' : '' %>" data-pk-fee>
+    <div class="pk-row-top">
+      <span class="pk-ico" style="background:<%= f.color %>"><i class="fa-solid <%= f.icon %>"></i></span>
+      <div class="pk-row-text">
+        <p class="pk-row-title"><%= f.title %></p>
+        <p class="pk-row-sub"><%= f.sub %></p>
+      </div>
+    </div>
+    <div class="pk-ctrl pk-benefit">
+      <label class="pk-switch"><input type="checkbox" name="<%= f.key %>_enabled" data-pk-benefit <%= r.enabled === false ? '' : 'checked' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-ben-on">ON · Benefit aktif</span>
+      <span class="pk-pill pk-ben-off">OFF · Pakai aturan bawaan</span>
+    </div>
+    <div class="pk-ctrl pk-fee-ctrl">
+      <label class="pk-switch"><input type="checkbox" name="<%= f.key %>_percentMode" data-pk-mode <%= r.mode === 'percent' ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-pill-on">ON · Persen (%)</span>
+      <span class="pk-pill pk-pill-off">OFF · Nominal tetap</span>
+    </div>
+    <div class="pk-val pk-fee-val">
+      <div class="pk-inputwrap pk-show-percent">
+        <input class="pk-input" type="number" name="<%= f.key %>_percent" min="0" max="<%= f.max %>" step="0.01" value="<%= r.percent %>" inputmode="decimal" aria-label="<%= f.title %> persen">
+        <span class="pk-unit">%</span>
+      </div>
+      <div class="pk-inputwrap pk-show-fixed">
+        <span class="pk-unit"><%= f.unit %></span>
+        <input class="pk-input" type="number" name="<%= f.key %>_fixed" min="0" step="1" value="<%= r.fixed %>" inputmode="numeric" aria-label="<%= f.title %> nominal">
+      </div>
+    </div>
+  </div>
+  <% }); %>
+
+  <div class="pk-sec"><i class="fa-solid fa-user-shield"></i> Role</div>
+  <p class="pk-note">Role diterapkan ke user saat paket dipasang. Toggle <b>OFF</b> = role user tidak diubah. Role Panel <b>tidak dikenai biaya admin</b>.</p>
+
+  <div class="pk-row <%= rp.enabled ? 'is-on' : '' %>" data-pk-role>
+    <div class="pk-row-top">
+      <span class="pk-ico" style="background:#d4af37"><i class="fa-solid fa-crown"></i></span>
+      <div class="pk-row-text">
+        <p class="pk-row-title">Role Payment</p>
+        <p class="pk-row-sub">Role payment gateway: User, VIP, atau Merchant.</p>
+      </div>
+    </div>
+    <div class="pk-ctrl">
+      <label class="pk-switch"><input type="checkbox" name="rolePaymentOn" data-pk-roleswitch <%= rp.enabled ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-pill-on">ON · Atur role</span>
+      <span class="pk-pill pk-pill-off">OFF · Tidak diubah</span>
+    </div>
+    <div class="pk-val pk-show-on">
+      <select name="rolePayment" class="pk-input" aria-label="Role payment">
+        <option value="user" <%= rp.role === 'user' ? 'selected' : '' %>>User (biasa)</option>
+        <option value="vip" <%= rp.role === 'vip' ? 'selected' : '' %>>VIP</option>
+        <option value="merchant" <%= rp.role === 'merchant' ? 'selected' : '' %>>Merchant (QRIS pribadi)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="pk-row <%= rn.enabled ? 'is-on' : '' %>" data-pk-role>
+    <div class="pk-row-top">
+      <span class="pk-ico" style="background:#dc2626"><i class="fa-solid fa-store"></i></span>
+      <div class="pk-row-text">
+        <p class="pk-row-title">Role Panel</p>
+        <p class="pk-row-sub">Role panel: User, Seller (Reseller Panel), atau Admin Panel.</p>
+      </div>
+    </div>
+    <div class="pk-ctrl">
+      <label class="pk-switch"><input type="checkbox" name="rolePanelOn" data-pk-roleswitch <%= rn.enabled ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-pill-on">ON · Atur role</span>
+      <span class="pk-pill pk-pill-off">OFF · Tidak diubah</span>
+    </div>
+    <div class="pk-val pk-show-on">
+      <select name="rolePanel" class="pk-input" aria-label="Role panel">
+        <option value="user" <%= rn.role === 'user' ? 'selected' : '' %>>User (belum punya role panel)</option>
+        <option value="reseller" <%= rn.role === 'reseller' ? 'selected' : '' %>>Seller (Reseller Panel)</option>
+        <option value="adminpanel" <%= rn.role === 'adminpanel' ? 'selected' : '' %>>Admin Panel</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="pk-row <%= P.gachaNokosAccess ? 'is-on' : '' %>" data-pk-role>
+    <div class="pk-row-top">
+      <span class="pk-ico" style="background:#7c3aed"><i class="fa-solid fa-dice"></i></span>
+      <div class="pk-row-text">
+        <p class="pk-row-title">Akses Gacha Nokos</p>
+        <p class="pk-row-sub">User dengan paket ini otomatis kebuka akses Gacha Nokos (setara di-ACC admin), tanpa perlu antre review.</p>
+      </div>
+    </div>
+    <div class="pk-ctrl">
+      <label class="pk-switch"><input type="checkbox" name="gachaNokosAccess" <%= P.gachaNokosAccess ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-pill-on">ON · Kebuka otomatis</span>
+      <span class="pk-pill pk-pill-off">OFF · Tidak diatur</span>
+    </div>
+  </div>
+
+  <div class="pk-row <%= P.fixNoAccess ? 'is-on' : '' %>" data-pk-role>
+    <div class="pk-row-top">
+      <span class="pk-ico" style="background:#ef4444"><i class="fa-solid fa-wrench"></i></span>
+      <div class="pk-row-text">
+        <p class="pk-row-title">Akses Fix No / Unban WA</p>
+        <p class="pk-row-sub">User dengan paket ini otomatis kebuka akses Fix No/Unban WA, tanpa perlu bayar biaya pembukaan lagi.</p>
+      </div>
+    </div>
+    <div class="pk-ctrl">
+      <label class="pk-switch"><input type="checkbox" name="fixNoAccess" <%= P.fixNoAccess ? 'checked' : '' %>><span class="pk-track"><span class="pk-knob"></span></span></label>
+      <span class="pk-pill pk-pill-on">ON · Kebuka otomatis</span>
+      <span class="pk-pill pk-pill-off">OFF · Tidak diatur</span>
+    </div>
+  </div>
+
+  <button type="submit" class="comic-btn-primary pk-submit">
+    <i class="fa-solid fa-floppy-disk"></i> <%= submitLabel %>
+  </button>
+</form>
