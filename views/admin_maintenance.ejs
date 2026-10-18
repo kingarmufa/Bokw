@@ -1,0 +1,32 @@
+<%- include('partials/header', { title: 'Pengaturan Maintenance' }) %>
+<link rel="stylesheet" href="/maintenance.css?v=3" data-comic-owned>
+<main class="mt-admin" data-comic-owned>
+  <header class="mt-hero"><div class="mt-hero-copy"><span class="mt-sticker">CONTROL ROOM / ADMIN</span><h1>ATUR JEDA.<br><span>JAGA KUALITAS!</span></h1><p>Pengaturan Maintenance</p><div class="mt-state"><span class="mt-dot <%= maintenance.enabled?'on':'' %>"></span><b><%= maintenance.enabled ? 'MAINTENANCE AKTIF' : 'WEBSITE BEROPERASI' %></b></div></div><%- include('partials/maintenance_art') %></header>
+  <div class="mt-summary"><div><small>MODE TERSIMPAN</small><b><%= maintenance.mode==='website'?'Seluruh website':'Layanan terpilih' %></b></div><div><small>LAYANAN DIPILIH</small><b><%= maintenance.services.length %> / <%= maintenanceServices.length %> layanan</b></div><div><small>AKSES ADMIN</small><b>Selalu terbuka ↗</b></div></div>
+  <% if (success) { %><p class="mt-notice" role="status"><%= success %></p><% } %>
+  <form method="post" action="/admin/maintenance" class="mt-form">
+    <input type="hidden" name="csrf" value="<%= maintenanceCsrf %>">
+    <section class="mt-panel"><div class="mt-panel-title"><span>01</span><h2>Kendalikan akses</h2></div>
+      <label class="mt-switch"><input type="checkbox" name="enabled" <%= maintenance.enabled?'checked':'' %>><span class="mt-switch-track"></span><span><b>Aktifkan maintenance</b><small>Akun admin website tetap dapat mengakses semua menu.</small></span></label>
+      <div class="mt-mode-grid">
+        <label class="mt-mode"><input type="radio" name="mode" value="website" <%= maintenance.mode==='website'?'checked':'' %>><span class="mt-pick-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg></span><span><b>Seluruh website</b><small>Semua halaman setelah login ditutup sementara.</small></span></label>
+        <label class="mt-mode"><input type="radio" name="mode" value="services" <%= maintenance.mode==='services'?'checked':'' %>><span class="mt-pick-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg></span><span><b>Layanan terpilih</b><small>Layanan lain tetap dapat digunakan.</small></span></label>
+      </div>
+      <p class="mt-help">Dokumentasi API dan unduhan JSON otomatis ikut maintenance pada kedua mode, termasuk untuk pengunjung yang belum login. Admin tetap dapat mengaksesnya.</p>
+    </section>
+    <section class="mt-panel"><div class="mt-panel-title"><span>02</span><h2>Pesan untuk pengguna</h2></div>
+      <label class="mt-field">Judul halaman<input name="title" maxlength="120" value="<%= maintenance.title %>" required></label>
+      <label class="mt-field">Keterangan maintenance<textarea name="message" rows="4" maxlength="2000" required><%= maintenance.message %></textarea></label>
+      <p class="mt-help">Jelaskan yang sedang diperbaiki dan perkiraan selesai jika sudah diketahui.</p>
+    </section>
+    <section class="mt-panel"><div class="mt-panel-title"><span>03</span><h2>Pilih layanan</h2></div><p class="mt-help">Pilihan berikut berlaku pada mode layanan terpilih. Alasan khusus yang kosong mengikuti keterangan utama.</p>
+      <div class="mt-tools"><button type="button" data-select-services="all">Pilih semua</button><button type="button" data-select-services="none">Kosongkan</button><span id="mt-count" role="status"></span></div>
+      <div class="mt-service-grid"><% maintenanceServices.forEach(function(s,index){ const selected=maintenance.services.find(x=>x.id===s.id); %>
+        <article class="mt-service <%= selected?'selected':'' %>"><label><input type="checkbox" name="services" value="<%= s.id %>" <%= selected?'checked':'' %>><span class="mt-pick-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg></span><span><em aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><% if(['nokos','gacha','fixno'].includes(s.id)){ %><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/><% } else if(s.id==='deposit'){ %><path d="M12 5v14M5 12h14"/><% } else if(s.id==='withdraw'){ %><path d="M5 17 19 3M9 3h10v10M3 12v8a1 1 0 0 0 1 1h8"/><% } else if(s.id==='transfer'){ %><path d="M3 7h18l-4-4M21 17H3l4 4"/><% } else if(s.id==='voucher'){ %><path d="M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4Z M15 5v14"/><% } else if(['chat','social','ai'].includes(s.id)){ %><path d="M3 4h18v13H9l-6 4Z M7 8h10M7 12h6"/><% } else { %><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12"/><% } %></svg></em><b><%= s.name %></b></span></label><label class="mt-field mt-reason">Alasan khusus<textarea name="reason_<%= s.id %>" rows="2" maxlength="1000" placeholder="Opsional: sedang perbaikan…"><%= selected?selected.message:'' %></textarea></label><a href="/admin/maintenance/preview?service=<%= s.id %>" target="_blank" rel="noopener">Lihat tampilan tersimpan ↗</a></article>
+      <% }) %></div>
+    </section>
+    <div class="mt-save"><strong>SIAP DITERAPKAN?</strong><p>Perubahan berlaku setelah disimpan, termasuk pada permintaan baru dari pengguna yang sudah login.</p><div><a class="mt-btn secondary" href="/admin/maintenance/preview" target="_blank" rel="noopener">Pratinjau tersimpan ↗</a><button class="mt-btn" type="submit">Simpan Pengaturan →</button></div></div>
+  </form>
+</main>
+<script src="/maintenance-admin.js?v=2" defer></script>
+<%- include('partials/footer') %>
