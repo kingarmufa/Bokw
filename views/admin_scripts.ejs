@@ -1,0 +1,101 @@
+<%- include('partials/header', { title: 'Script Gratis' }) %>
+<div class="max-w-3xl mx-auto px-4 pb-24">
+  <div class="flex items-center justify-between gap-3 mb-4">
+    <h1 class="font-comic text-3xl tracking-wide text-black">SCRIPT GRATIS</h1>
+    <a href="/script-gratis" target="_blank" class="comic-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold"><i class="fa-solid fa-eye"></i> Lihat Halaman</a>
+  </div>
+
+  <!-- ===== FORM TAMBAH ===== -->
+  <form action="/admin/scripts" method="POST" enctype="multipart/form-data" class="bg-white border-[3px] border-black rounded-2xl p-5 mb-6" style="box-shadow:5px 5px 0 #22c55e,8px 8px 0 #171717">
+    <h2 class="font-comic text-xl mb-3 text-black"><i class="fa-solid fa-upload"></i> UPLOAD SCRIPT BARU</h2>
+    <div class="flex flex-col gap-3">
+      <div><label class="block text-xs font-bold mb-1 text-black">Judul</label>
+        <input name="title" required maxlength="120" class="w-full border-[3px] border-black rounded-xl px-3 py-2.5 text-sm font-bold" placeholder="Contoh: Bot Telegram Auto Order"></div>
+      <div><label class="block text-xs font-bold mb-1 text-black">Deskripsi</label>
+        <textarea name="description" rows="4" maxlength="3000" class="w-full border-[3px] border-black rounded-xl px-3 py-2.5 text-sm font-bold" placeholder="Fitur, cara pakai, versi, dll."></textarea></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="block text-xs font-bold mb-1 text-black">Banner (gambar, max 5MB)</label>
+          <input type="file" name="banner" accept="image/png,image/jpeg,image/webp,image/gif" class="w-full border-[3px] border-black rounded-xl px-2 py-2 text-xs font-bold bg-white">
+          <input name="bannerUrl" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-xs font-bold mt-2" placeholder="atau URL banner https://..."></div>
+        <div><label class="block text-xs font-bold mb-1 text-black">File Script (zip/rar/js/dll, max 60MB)</label>
+          <input type="file" name="scriptFile" accept=".zip,.rar,.7z,.tar,.gz,.js,.py,.php,.txt,.pdf" class="w-full border-[3px] border-black rounded-xl px-2 py-2 text-xs font-bold bg-white">
+          <input name="downloadUrl" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-xs font-bold mt-2" placeholder="atau link download https://..."></div>
+      </div>
+      <p class="text-[11px] font-bold text-gray-600">Banner &amp; file diunggah ke penyimpanan cloud (foto ke GitHub, file ke Supabase). Isi <b>file</b> atau <b>link download</b> salah satu. Link tidak ditampilkan ke pengunjung sebelum login.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-bold mb-1 text-black">Urutan (besar = di atas)</label>
+          <input name="order" type="number" value="0" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-sm font-bold"></div>
+        <label class="flex items-end gap-2 pb-2 text-xs font-bold text-black"><input type="checkbox" checked onchange="this.nextElementSibling.value=this.checked?'on':'off'" class="w-4 h-4"><input type="hidden" name="active" value="on"> Tampilkan sekarang</label>
+      </div>
+      <button type="submit" class="comic-btn-primary w-full py-3 rounded-xl font-bold text-sm"><i class="fa-solid fa-paper-plane"></i> PUBLISH SCRIPT</button>
+    </div>
+  </form>
+
+  <!-- ===== DAFTAR ===== -->
+  <h2 class="font-comic text-xl mb-3 text-black">DAFTAR SCRIPT (<%= scripts.length %>)</h2>
+  <% if (!scripts.length) { %>
+    <div class="text-center py-8 font-bold text-sm bg-white border-[3px] border-dashed border-black rounded-2xl text-black">Belum ada script. Upload yang pertama di atas.</div>
+  <% } %>
+  <div class="flex flex-col gap-3">
+    <% scripts.forEach(function(sc){ %>
+    <div class="bg-white border-[3px] border-black rounded-2xl overflow-hidden flex gap-3 p-3" style="box-shadow:4px 4px 0 #171717">
+      <img src="<%= sc.bannerUrl %>" alt="" class="w-28 h-20 object-cover rounded-xl border-[3px] border-black shrink-0 bg-black" onerror="this.style.visibility='hidden'">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <p class="font-bold text-sm text-black truncate"><%= sc.title %></p>
+          <span class="text-[10px] px-2 py-0.5 rounded-lg border-2 border-black font-bold text-black" style="background:<%= sc.active ? '#22c55e' : '#fca5a5' %>"><%= sc.active ? 'TAMPIL' : 'HIDDEN' %></span>
+        </div>
+        <p class="text-[11px] font-bold text-gray-600 mt-0.5"><i class="fa-solid fa-download"></i> <%= sc.downloads || 0 %>x · <%= sc.localFile ? 'file lokal (privat)' : (sc.downloadUrl ? (sc.fileName ? 'file cloud: ' + sc.fileName : 'link luar') : '-') %> · urutan <%= sc.order || 0 %></p>
+        <div class="flex flex-wrap gap-2 mt-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg border-2 border-black text-[11px] font-bold text-black" style="background:#facc15" data-edit="<%= sc._id %>"><i class="fa-solid fa-pen"></i> Edit</button>
+          <form action="/admin/scripts/<%= sc._id %>/toggle" method="POST"><button class="px-3 py-1.5 rounded-lg border-2 border-black text-[11px] font-bold bg-white text-black"><i class="fa-solid fa-eye<%= sc.active ? '-slash' : '' %>"></i> <%= sc.active ? 'Sembunyikan' : 'Tampilkan' %></button></form>
+          <form action="/admin/scripts/<%= sc._id %>/delete" method="POST" onsubmit="return confirm('Hapus script ini beserta file-nya?')"><button class="px-3 py-1.5 rounded-lg border-2 border-black text-[11px] font-bold text-white" style="background:#dc2626"><i class="fa-solid fa-trash"></i> Hapus</button></form>
+        </div>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<!-- ===== MODAL EDIT ===== -->
+<div id="scEditModal" class="fixed inset-0 z-[150] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.6)">
+  <form id="scEditForm" method="POST" enctype="multipart/form-data" class="bg-white border-[3px] border-black rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5" style="box-shadow:6px 6px 0 #22c55e,9px 9px 0 #171717">
+    <div class="flex items-center justify-between mb-3"><h3 class="font-comic text-xl text-black">EDIT SCRIPT</h3><button type="button" id="scEditClose" class="w-8 h-8 rounded-full border-2 border-black font-bold text-black bg-white">&times;</button></div>
+    <div class="flex flex-col gap-3">
+      <input id="scTitle" name="title" required maxlength="120" class="w-full border-[3px] border-black rounded-xl px-3 py-2.5 text-sm font-bold" placeholder="Judul">
+      <textarea id="scDesc" name="description" rows="4" maxlength="3000" class="w-full border-[3px] border-black rounded-xl px-3 py-2.5 text-sm font-bold" placeholder="Deskripsi"></textarea>
+      <div><label class="block text-xs font-bold mb-1 text-black">Ganti banner (opsional)</label>
+        <input type="file" name="banner" accept="image/png,image/jpeg,image/webp,image/gif" class="w-full border-[3px] border-black rounded-xl px-2 py-2 text-xs font-bold bg-white">
+        <input id="scBannerUrl" name="bannerUrl" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-xs font-bold mt-2" placeholder="URL banner"></div>
+      <div><label class="block text-xs font-bold mb-1 text-black">Ganti file script (opsional)</label>
+        <input type="file" name="scriptFile" accept=".zip,.rar,.7z,.tar,.gz,.js,.py,.php,.txt,.pdf" class="w-full border-[3px] border-black rounded-xl px-2 py-2 text-xs font-bold bg-white">
+        <input id="scDownloadUrl" name="downloadUrl" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-xs font-bold mt-2" placeholder="Link download"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="scOrder" name="order" type="number" class="w-full border-[3px] border-black rounded-xl px-3 py-2 text-sm font-bold" placeholder="Urutan">
+        <label class="flex items-center gap-2 text-xs font-bold text-black"><input id="scActive" type="checkbox" class="w-4 h-4" onchange="document.getElementById('scActiveVal').value=this.checked?'on':'off'"><input type="hidden" id="scActiveVal" name="active" value="on"> Tampil</label>
+      </div>
+      <button type="submit" class="comic-btn-primary w-full py-3 rounded-xl font-bold text-sm">SIMPAN PERUBAHAN</button>
+    </div>
+  </form>
+</div>
+<script>
+(function () {
+  var data = <%- JSON.stringify(scripts.map(function (s) { return { id: String(s._id), title: s.title, description: s.description || '', bannerUrl: s.bannerUrl || '', downloadUrl: /^https?:\/\//i.test(s.downloadUrl || '') ? s.downloadUrl : '', order: s.order || 0, active: !!s.active }; })).replace(/</g, '\\u003c') %>;
+  var modal = document.getElementById('scEditModal'), form = document.getElementById('scEditForm');
+  document.querySelectorAll('[data-edit]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = data.find(function (x) { return x.id === b.dataset.edit; }); if (!s) return;
+      form.action = '/admin/scripts/' + s.id + '/edit';
+      document.getElementById('scTitle').value = s.title; document.getElementById('scDesc').value = s.description;
+      document.getElementById('scBannerUrl').value = /^https?:\/\//i.test(s.bannerUrl) ? s.bannerUrl : '';
+      document.getElementById('scDownloadUrl').value = s.downloadUrl; document.getElementById('scOrder').value = s.order;
+      document.getElementById('scActive').checked = s.active; document.getElementById('scActiveVal').value = s.active ? 'on' : 'off';
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+    });
+  });
+  function close() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+  document.getElementById('scEditClose').addEventListener('click', close);
+  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+})();
+</script>
+<%- include('partials/footer') %>
