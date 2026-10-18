@@ -1,0 +1,99 @@
+<%# Widget Spesifikasi VPS (khusus admin). Data: GET /admin/api/vps-spec. Gaya: public/glass-ui.css (.gl-vps) %>
+<section class="gl-vps comic-anim" id="glVps" aria-label="Spesifikasi VPS">
+  <div class="gl-vps-h">
+    <h2><i class="fa-solid fa-server"></i> Spesifikasi VPS</h2>
+    <span style="display:flex;align-items:center;gap:8px">
+      <span class="gl-live" id="glLive"><i class="gl-dot"></i><em id="glVpsAt">memuat…</em></span>
+      <button type="button" class="gl-refresh" id="glVpsRefresh" aria-label="Segarkan"><i class="fa-solid fa-rotate"></i></button>
+    </span>
+  </div>
+
+  <div class="gl-meters">
+    <div class="gl-meter">
+      <div class="gl-meter-top"><span><i class="fa-solid fa-microchip"></i> CPU</span><b id="vCpuPct">–</b></div>
+      <div class="gl-bar"><i id="vCpuBar"></i></div>
+      <small id="vCpuSub">–</small>
+    </div>
+    <div class="gl-meter">
+      <div class="gl-meter-top"><span><i class="fa-solid fa-memory"></i> RAM</span><b id="vMemPct">–</b></div>
+      <div class="gl-bar"><i id="vMemBar"></i></div>
+      <small id="vMemSub">–</small>
+    </div>
+    <div class="gl-meter">
+      <div class="gl-meter-top"><span><i class="fa-solid fa-hard-drive"></i> Disk</span><b id="vDiskPct">–</b></div>
+      <div class="gl-bar"><i id="vDiskBar"></i></div>
+      <small id="vDiskSub">–</small>
+    </div>
+  </div>
+
+  <dl class="gl-specs">
+    <div class="wide"><dt><i class="fa-brands fa-linux"></i> Sistem Operasi</dt><dd id="vOs">–</dd></div>
+    <div class="wide"><dt><i class="fa-solid fa-microchip"></i> Prosesor</dt><dd id="vCpuModel">–</dd></div>
+    <div><dt><i class="fa-solid fa-layer-group"></i> Core / Arsitektur</dt><dd id="vCores">–</dd></div>
+    <div><dt><i class="fa-solid fa-gauge-high"></i> Load Avg (1/5/15m)</dt><dd id="vLoad">–</dd></div>
+    <div><dt><i class="fa-solid fa-clock-rotate-left"></i> Uptime Server</dt><dd id="vUpSys">–</dd></div>
+    <div><dt><i class="fa-solid fa-bolt"></i> Uptime Aplikasi</dt><dd id="vUpApp">–</dd></div>
+    <div><dt><i class="fa-brands fa-node-js"></i> Node.js</dt><dd id="vNode">–</dd></div>
+    <div><dt><i class="fa-solid fa-database"></i> Memori Aplikasi</dt><dd id="vProc">–</dd></div>
+  </dl>
+  <div class="gl-vps-err" id="glVpsErr"><i class="fa-solid fa-triangle-exclamation"></i> Gagal memuat data server. Mencoba lagi otomatis…</div>
+</section>
+<script>
+(function () {
+  var box = document.getElementById('glVps');
+  if (!box) return;
+  var $ = function (id) { return document.getElementById(id); };
+  function gb(b) { return (b / 1073741824).toFixed(b >= 10737418240 ? 0 : 1) + ' GB'; }
+  function mb(b) { return Math.round(b / 1048576) + ' MB'; }
+  function dur(sec) {
+    sec = Math.floor(sec);
+    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    var out = [];
+    if (d) out.push(d + ' hari');
+    if (h) out.push(h + ' jam');
+    if (!d) out.push(m + ' menit');
+    return out.join(' ');
+  }
+  function lv(p) { return p >= 85 ? 'hi' : p >= 60 ? 'mid' : 'lo'; }
+  function meter(bar, pct, val) {
+    var b = $(bar); if (!b) return;
+    b.style.width = Math.max(2, Math.min(100, val)) + '%';
+    b.setAttribute('data-lv', lv(val));
+    $(pct).textContent = val.toFixed(val >= 10 ? 0 : 1) + '%';
+  }
+  var timer = null, busy = false;
+  function render(d) {
+    box.classList.remove('err'); $('glLive').classList.remove('off');
+    meter('vCpuBar', 'vCpuPct', d.cpu.usage);
+    $('vCpuSub').textContent = d.cpu.cores + ' core · ' + (d.cpu.speed ? (d.cpu.speed / 1000).toFixed(2) + ' GHz' : 'aktif');
+    meter('vMemBar', 'vMemPct', d.mem.percent);
+    $('vMemSub').textContent = gb(d.mem.used) + ' terpakai dari ' + gb(d.mem.total);
+    if (d.disk) {
+      meter('vDiskBar', 'vDiskPct', d.disk.percent);
+      $('vDiskSub').textContent = gb(d.disk.used) + ' terpakai dari ' + gb(d.disk.total);
+    } else { $('vDiskPct').textContent = 'n/a'; $('vDiskSub').textContent = 'Info disk tidak tersedia'; }
+    $('vOs').textContent = d.os.name + ' · kernel ' + d.os.kernel;
+    $('vCpuModel').textContent = d.cpu.model;
+    $('vCores').textContent = d.cpu.cores + ' core · ' + d.os.arch;
+    $('vLoad').textContent = d.cpu.load.map(function (x) { return x.toFixed(2); }).join(' / ');
+    $('vUpSys').textContent = dur(d.uptime.system);
+    $('vUpApp').textContent = dur(d.uptime.process);
+    $('vNode').textContent = d.node;
+    $('vProc').textContent = mb(d.proc.rss) + ' RSS · ' + mb(d.proc.heap) + ' heap';
+    var t = new Date(d.ts), p = function (n) { return n < 10 ? '0' + n : n; };
+    $('glVpsAt').textContent = 'Live · ' + p(t.getHours()) + ':' + p(t.getMinutes()) + ':' + p(t.getSeconds());
+  }
+  function load() {
+    if (busy) return; busy = true;
+    fetch('/admin/api/vps-spec', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) { if (!d || !d.ok) throw new Error('bad'); render(d); })
+      .catch(function () { box.classList.add('err'); $('glLive').classList.add('off'); $('glVpsAt').textContent = 'terputus'; })
+      .then(function () { busy = false; });
+  }
+  function start() { load(); clearInterval(timer); timer = setInterval(function () { if (!document.hidden) load(); }, 5000); }
+  $('glVpsRefresh').addEventListener('click', load);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+  start();
+})();
+</script>
