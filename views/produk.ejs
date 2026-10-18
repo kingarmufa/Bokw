@@ -1,0 +1,219 @@
+<%- include('partials/header', { title: 'Produk' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800">Produk</h1>
+      <p class="text-[12px] font-medium text-gray-500">Beli produk digital pakai saldo — Full Up dapat link Group</p>
+    </div>
+    <a href="/produk/riwayat" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-[11.5px] font-bold text-gray-800">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+    </a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-2 gap-3" id="produkGrid">
+    <% produkList.forEach(function(p) { %>
+      <button type="button"
+        class="produk-item"
+        data-id="<%= p._id %>"
+        data-name="<%= p.name %>"
+        data-price="<%= p.price %>"
+        data-fullup="<%= p.fullUp ? '1' : '0' %>"
+        onclick="selectProduk(this, event)">
+        <div class="produk-item-top">
+          <i class="fa-solid <%= p.fullUp ? 'fa-users' : 'fa-download' %>"></i>
+        </div>
+        <div class="produk-item-body">
+          <p class="produk-item-name"><%= p.name %></p>
+          <% if (p.description) { %>
+            <p class="produk-item-desc"><%= p.description %></p>
+          <% } %>
+          <div class="flex items-center flex-wrap gap-1 mt-1.5">
+            <% if (p.price === 0) { %>
+              <span class="comic-badge-free" style="font-size:10.5px;padding:2px 7px;">Gratis</span>
+            <% } else { %>
+              <span class="produk-item-price">Rp <%= p.price.toLocaleString('id-ID') %></span>
+            <% } %>
+            <% if (p.fullUp) { %>
+              <span class="comic-badge-fullup" style="font-size:9px;padding:2px 6px;">Full Up</span>
+            <% } %>
+          </div>
+        </div>
+      </button>
+    <% }) %>
+    <% if (produkList.length === 0) { %>
+      <div class="col-span-full comic-panel p-6 text-center">
+        <p class="text-xs font-medium text-gray-500">Belum ada produk tersedia saat ini. Coba lagi nanti.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Form tersembunyi buat submit pembelian -->
+  <form id="orderForm" method="POST" action="/produk">
+    <!-- action di-set dinamis lewat JS ke /produk/:id/beli -->
+  </form>
+
+  <!-- ===== MODAL KONFIRMASI ===== -->
+  <div id="confirmOverlay" class="confirm-overlay" onclick="closeConfirm()"></div>
+  <div id="confirmModal" class="confirm-modal bg-[#fffdf7] border-2 border-black p-5">
+    <h3 class="text-lg text-gray-800 mb-1">Konfirmasi Pembelian</h3>
+    <p id="cfSubtitle" class="text-[12px] text-gray-500 mb-4">Cek detail sebelum saldo kamu dipotong.</p>
+    <div class="rounded-xl border-2 border-black p-3 mb-4 bg-white">
+      <div class="flex justify-between text-xs font-semibold mb-1.5"><span class="text-gray-500">Produk</span><span id="cfName" class="text-gray-800 text-right"></span></div>
+      <div class="flex justify-between text-xs font-semibold mb-1.5"><span class="text-gray-500">Tipe</span><span id="cfType" class="text-gray-800 text-right"></span></div>
+      <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Harga</span><span id="cfPrice" class="text-blue-600"></span></div>
+    </div>
+    <%- include('partials/voucher_checkout', { formId: 'orderForm', service: 'produk', amount: 0 }) %>
+    <div id="confirmError" class="hidden bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-3 text-[11px] text-red-600 font-medium"></div>
+    <div class="flex gap-2">
+      <button type="button" onclick="closeConfirm()" class="flex-1 py-3 rounded-xl border-2 border-black bg-white text-xs font-bold text-gray-800">Batal</button>
+      <button type="button" onclick="submitOrder()" class="flex-1 py-3 rounded-xl border-2 border-black bg-blue-500 text-xs font-bold text-white shadow-[2.5px_2.5px_0_#14120f]">Beli Sekarang</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); overflow: hidden; }
+  .produk-item {
+    display: flex; flex-direction: column; align-items: stretch;
+    border: 2px solid var(--comic-black);
+    border-radius: 14px;
+    background: #fffdf7;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black);
+    overflow: hidden;
+    text-align: left;
+    padding: 0;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .produk-item:active { transform: translate(1.5px, 1.5px); box-shadow: 1px 1px 0 var(--comic-black); }
+  .produk-item-top {
+    height: 46px; display: flex; align-items: center; justify-content: center;
+    background: var(--comic-yellow); border-bottom: 2px solid var(--comic-black);
+    color: var(--comic-black); font-size: 18px;
+  }
+  .produk-item-body { padding: 8px 9px 10px; min-width: 0; width: 100%; }
+  .produk-item-name {
+    font-size: 11.5px; font-weight: 800; color: #1f2937; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    min-height: 28px; margin-bottom: 2px;
+  }
+  .produk-item-desc {
+    font-size: 10px; font-weight: 600; color: #9ca3af; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .produk-item-price { font-size: 11px; font-weight: 800; color: #2563eb; }
+
+  .confirm-overlay {
+    position: fixed; inset: 0;
+    background: transparent;
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .confirm-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .confirm-modal {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: calc(100% - 32px);
+    max-width: 380px;
+    border-radius: 20px;
+    box-shadow: 6px 6px 0 #14120f;
+    z-index: 81;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -46%);
+    transition: transform 0.22s ease, opacity 0.22s ease;
+  }
+  .confirm-modal.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+  }
+</style>
+
+<script>
+  let pendingProduk = null;
+
+  function selectProduk(btn, evt) {
+    if (evt) { evt.preventDefault(); evt.stopPropagation(); }
+    pendingProduk = {
+      id: btn.dataset.id,
+      name: btn.dataset.name,
+      price: Number(btn.dataset.price),
+      fullUp: btn.dataset.fullup === '1'
+    };
+    btn.blur();
+    openConfirm();
+  }
+
+  function renderConfirm() {
+    if (!pendingProduk) return;
+    document.getElementById('cfName').textContent = pendingProduk.name;
+    document.getElementById('cfType').textContent = pendingProduk.fullUp ? 'Full Up (dapat link Group)' : 'Tidak Full Up';
+    document.getElementById('cfPrice').textContent = pendingProduk.price === 0 ? 'GRATIS' : ('Rp ' + pendingProduk.price.toLocaleString('id-ID'));
+    window.VoucherUI.setAmount('orderForm', pendingProduk.price);
+    document.getElementById('cfSubtitle').textContent = pendingProduk.price === 0
+      ? 'Produk ini gratis, tidak ada potongan saldo.'
+      : 'Cek detail sebelum saldo kamu dipotong.';
+  }
+
+  function openConfirm() {
+    document.getElementById('confirmError').classList.add('hidden');
+    renderConfirm();
+    document.getElementById('confirmOverlay').classList.add('open');
+    document.getElementById('confirmModal').classList.add('open');
+    lockBodyScroll();
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('open');
+    document.getElementById('confirmModal').classList.remove('open');
+    document.getElementById('confirmError').classList.add('hidden');
+    unlockBodyScroll();
+    pendingProduk = null;
+  }
+
+  let _lockedScrollY = 0;
+  function lockBodyScroll() {
+    _lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = (-_lockedScrollY) + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function unlockBodyScroll() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _lockedScrollY);
+  }
+
+  function submitOrder() {
+    if (!pendingProduk) return;
+    const form = document.getElementById('orderForm');
+    form.action = '/produk/' + pendingProduk.id + '/beli';
+    form.submit();
+  }
+</script>
+
+<%- include('partials/footer') %>
