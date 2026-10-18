@@ -1,0 +1,152 @@
+<%- include('partials/header', { title: 'Manage Sender' }) %>
+
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* ===== Tema komik PUTIH + KUNING (halaman Manage Sender) ===== */
+  :root { --ms-yellow: #ffd400; --ms-yellow-2: #ffe766; --ms-white: #ffffff; --ms-ink: #14120f; }
+  html, body { background-color: #fffdf0 !important; background-image: radial-gradient(rgba(255,212,0,.55) 1.6px, transparent 1.7px) !important; background-size: 16px 16px !important; }
+  .ms-wrap { font-family: 'Baloo 2', sans-serif; color: var(--ms-ink); }
+  .ms-title { font-family: 'Bangers', 'Baloo 2', sans-serif; letter-spacing: 1.5px; }
+
+  .ms-banner {
+    position: relative; background: var(--ms-yellow); border: 4px solid var(--ms-ink); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--ms-ink); padding: 14px 16px; transform: rotate(-1.2deg); margin-bottom: 18px;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 8px, transparent 8px 16px);
+  }
+  .ms-banner h1 { font-size: 30px; line-height: 1; margin: 0; color: var(--ms-white); -webkit-text-stroke: 1.5px var(--ms-ink); text-shadow: 3px 3px 0 var(--ms-ink); }
+  .ms-banner p { margin: 4px 0 0; font-size: 12px; font-weight: 700; }
+  .ms-pow { position: absolute; right: -8px; top: -14px; background: var(--ms-white); border: 3px solid var(--ms-ink); border-radius: 999px; padding: 2px 10px; font-family: 'Bangers'; font-size: 16px; transform: rotate(8deg); box-shadow: 3px 3px 0 var(--ms-ink); }
+
+  .ms-back { display: inline-flex; align-items: center; gap: 6px; background: var(--ms-white); border: 3px solid var(--ms-ink); border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 12px; box-shadow: 3px 3px 0 var(--ms-ink); margin-bottom: 14px; color: var(--ms-ink); }
+
+  .ms-card { background: var(--ms-white); border: 3.5px solid var(--ms-ink); border-radius: 20px; box-shadow: 5px 5px 0 var(--ms-ink); padding: 16px; margin-bottom: 16px; position: relative; }
+  .ms-card h2 { font-family: 'Bangers'; font-size: 20px; letter-spacing: 1px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .ms-card h2 i { background: var(--ms-yellow); border: 2.5px solid var(--ms-ink); border-radius: 10px; padding: 5px 7px; font-size: 13px; }
+  .ms-hint { font-size: 11.5px; font-weight: 600; color: #57534e; margin-bottom: 8px; }
+  .ms-hint code { background: var(--ms-yellow-2); border: 1.5px solid var(--ms-ink); border-radius: 6px; padding: 0 5px; font-weight: 800; color: var(--ms-ink); }
+
+  .ms-input { width: 100%; background: #fffbe0; border: 3px solid var(--ms-ink); border-radius: 14px; padding: 10px 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; color: var(--ms-ink); resize: vertical; box-shadow: inset 2px 2px 0 rgba(0,0,0,.08); }
+  .ms-input:focus { outline: none; background: var(--ms-white); box-shadow: 3px 3px 0 var(--ms-yellow); }
+
+  .ms-btn { width: 100%; margin-top: 10px; background: var(--ms-yellow); border: 3.5px solid var(--ms-ink); border-radius: 14px; padding: 10px; font-family: 'Bangers'; font-size: 20px; letter-spacing: 1.5px; color: var(--ms-ink); box-shadow: 4px 4px 0 var(--ms-ink); cursor: pointer; transition: transform .08s, box-shadow .08s; }
+  .ms-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ms-ink); }
+  .ms-btn:disabled { opacity: .6; }
+
+  .ms-count { position: absolute; right: 14px; top: 12px; background: var(--ms-yellow); border: 3px solid var(--ms-ink); border-radius: 999px; min-width: 38px; text-align: center; padding: 0 10px; font-family: 'Bangers'; font-size: 20px; box-shadow: 2px 2px 0 var(--ms-ink); }
+
+  .ms-row { display: flex; align-items: center; gap: 10px; background: var(--ms-white); border: 3px solid var(--ms-ink); border-radius: 14px; padding: 8px 10px; margin-bottom: 9px; box-shadow: 3px 3px 0 var(--ms-yellow); }
+  .ms-row:nth-child(even) { background: #fffbe0; }
+  .ms-num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--ms-yellow); border: 2.5px solid var(--ms-ink); display: flex; align-items: center; justify-content: center; font-family: 'Bangers'; font-size: 15px; }
+  .ms-mail { flex: 1; min-width: 0; font-weight: 800; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms-del { flex: none; background: var(--ms-ink); color: var(--ms-yellow); border: 2.5px solid var(--ms-ink); border-radius: 10px; padding: 4px 10px; font-family: 'Bangers'; font-size: 14px; letter-spacing: 1px; cursor: pointer; box-shadow: 2px 2px 0 var(--ms-yellow-2); }
+  .ms-del:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  .ms-empty { text-align: center; padding: 14px 6px; font-weight: 800; font-size: 13px; }
+  .ms-empty i { display: block; font-size: 30px; margin-bottom: 6px; }
+
+  .ms-toast { border: 3px solid var(--ms-ink); border-radius: 14px; padding: 9px 12px; margin-bottom: 12px; font-weight: 800; font-size: 12px; box-shadow: 3px 3px 0 var(--ms-ink); background: var(--ms-yellow); }
+  .ms-toast.err { background: var(--ms-white); }
+  .ms-toast.err::before { content: '\26A0\FE0F  '; }
+  .ms-toast.ok::before { content: '\1F4A5  '; }
+</style>
+
+<div class="ms-wrap max-w-md mx-auto px-6 pb-8 mt-1">
+
+  <a href="/fix-no" class="ms-back"><i class="fa-solid fa-arrow-left"></i> Kembali</a>
+
+  <div class="ms-banner">
+    <span class="ms-pow">POW!</span>
+    <h1 class="ms-title">MANAGE SENDER</h1>
+    <p>Kelola Gmail pengirim permohonan Fix No / Unban WA</p>
+  </div>
+
+  <div id="msToast"></div>
+
+  <!-- TAMBAH SENDER -->
+  <div class="ms-card">
+    <h2><i class="fa-solid fa-plus"></i> TAMBAH SENDER</h2>
+    <p class="ms-hint">Boleh banyak sekaligus, <b>satu akun per baris</b> dengan format <code>email|apppassword</code>. Duplikat &amp; format salah otomatis dilewati.</p>
+    <textarea id="bulkSenders" rows="5" class="ms-input" placeholder="akun1@gmail.com|abcdwxyzefghijkl&#10;akun2@gmail.com|mnopqrstuvwxabcd"></textarea>
+    <button type="button" id="btnTambah" class="ms-btn" onclick="tambahSender()">TAMBAH SEKARANG!</button>
+  </div>
+
+  <!-- DAFTAR SENDER -->
+  <div class="ms-card">
+    <span class="ms-count" id="msCount">0</span>
+    <h2><i class="fa-solid fa-envelope"></i> DAFTAR SENDER</h2>
+    <p class="ms-hint">Sistem memilih salah satu akun secara acak tiap pengiriman.</p>
+    <div id="msList"></div>
+    <div id="msEmpty" class="ms-empty hidden"><i class="fa-regular fa-face-surprise"></i>Belum ada sender. Tambahkan di atas!</div>
+  </div>
+
+</div>
+
+<script>
+  let senders = <%- JSON.stringify((privateSenders || []).map(x => ({ _id: x._id, email: x.email }))) %>;
+
+  function toast(msg, ok) {
+    const box = document.getElementById('msToast');
+    box.innerHTML = '<div class="ms-toast ' + (ok ? 'ok' : 'err') + '"></div>';
+    box.firstChild.appendChild(document.createTextNode(msg));
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function render() {
+    const list = document.getElementById('msList');
+    list.innerHTML = '';
+    senders.forEach((sd, i) => {
+      const row = document.createElement('div');
+      row.className = 'ms-row';
+      const num = document.createElement('div'); num.className = 'ms-num'; num.textContent = i + 1;
+      const mail = document.createElement('div'); mail.className = 'ms-mail'; mail.textContent = sd.email; mail.title = sd.email;
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'ms-del'; del.textContent = 'HAPUS';
+      del.onclick = () => hapusSender(sd._id, sd.email);
+      row.appendChild(num); row.appendChild(mail); row.appendChild(del);
+      list.appendChild(row);
+    });
+    document.getElementById('msCount').textContent = senders.length;
+    document.getElementById('msEmpty').classList.toggle('hidden', senders.length > 0);
+  }
+
+  async function tambahSender() {
+    const bulk = document.getElementById('bulkSenders').value.trim();
+    if (!bulk) { toast('Isi minimal 1 akun (email|apppassword).', false); return; }
+    const btn = document.getElementById('btnTambah');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/fix-no/private-sender/tambah', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ bulk }) });
+      const json = await res.json();
+      if (!json.success) { toast(json.error || 'Gagal menambah sender.', false); return; }
+      senders = json.senders || senders;
+      render();
+      document.getElementById('bulkSenders').value = '';
+      let msg = json.added + ' sender ditambahkan';
+      if (json.skipped) msg += ', ' + json.skipped + ' duplikat dilewati';
+      if (json.invalid) msg += ', ' + json.invalid + ' format salah';
+      toast(msg + '.', json.added > 0);
+    } catch (e) {
+      toast('Gagal menghubungi server.', false);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function hapusSender(id, email) {
+    if (!confirm('Hapus sender ' + email + '?')) return;
+    try {
+      const res = await fetch('/fix-no/private-sender/hapus/' + id, { method: 'POST' });
+      const json = await res.json();
+      if (!json.success) { toast(json.error || 'Gagal menghapus sender.', false); return; }
+      senders = senders.filter(x => x._id !== id);
+      render();
+      toast('Sender dihapus.', true);
+    } catch (e) {
+      toast('Gagal menghubungi server.', false);
+    }
+  }
+
+  render();
+</script>
+
+<%- include('partials/footer') %>
