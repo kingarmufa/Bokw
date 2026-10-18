@@ -1,0 +1,175 @@
+<%- include('partials/header', { title: 'Daftar Paket' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/dashboard" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Daftar Paket</h1>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-rose-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-rose-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <div class="mb-4 flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-black bg-white shadow-[3px_3px_0_#14120f]">
+    <span class="flex items-center gap-2 text-[12px] font-bold text-gray-600"><i class="fa-solid fa-wallet text-blue-600"></i> Saldo kamu</span>
+    <span class="text-[14px] font-extrabold text-gray-800">Rp <%= Number(saldo || 0).toLocaleString('id-ID') %></span>
+  </div>
+
+  <% if (ownInactive) { %>
+    <div class="mb-4 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-black bg-amber-50 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i>
+      <p class="text-[11.5px] font-bold text-amber-700">Paket khususmu lagi dinonaktifkan sementara oleh admin, jadi kamu ikut Paket Default dulu.</p>
+    </div>
+  <% } %>
+
+  <% if (!paketList.length) { %>
+    <div class="text-center py-16">
+      <i class="fa-solid fa-tags text-3xl text-gray-300 mb-3"></i>
+      <p class="text-xs font-medium text-gray-500">Belum ada paket yang tersedia.<br>Biaya admin tiap layanan pakai aturan bawaan.</p>
+    </div>
+  <% } else {
+      const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
+      const roleName = { user: 'User', vip: 'VIP', merchant: 'Merchant', reseller: 'Seller', adminpanel: 'Admin Panel' };
+      const feeLabels = [['deposit', 'Deposit', 'fa-arrow-down'], ['withdraw', 'Tarik Saldo', 'fa-arrow-up'],
+        ['nokos', 'Nokos', 'fa-sim-card'], ['panel', 'Panel', 'fa-server'], ['smm', 'Suntik Sosmed', 'fa-bullhorn'],
+        ['produk', 'Produk', 'fa-box-open'], ['aplikasi', 'Aplikasi Premium', 'fa-crown']];
+      const now = new Date();
+  %>
+
+    <div class="flex flex-col gap-4">
+    <% paketList.forEach(function(pk) {
+         const isCurrent = String(pk._id) === currentId;
+         const isOwn = String(pk._id) === ownId;
+         const isExpired = isOwn && expiresAt && new Date(expiresAt) <= now;
+         const price = Number(pk.price) || 0;
+         const forSale = price > 0 && !pk.isDefault;
+         const durTxt = (pk.durationDays > 0) ? pk.durationDays + ' hari' : 'Permanen';
+         const ownPermanent = isOwn && !expiresAt;
+         const enough = (saldo || 0) >= price;
+         const ownPk = ownId ? paketList.find(function(x) { return String(x._id) === ownId; }) : null;
+         let confirmTxt = (isOwn ? 'Perpanjang' : 'Beli') + ' paket ' + pk.name + ' seharga Rp ' + fmt(price) + ' (' + durTxt + ')? Saldo kamu akan dipotong.';
+         if (ownPk && !isOwn) confirmTxt += ' Paket kamu saat ini (' + ownPk.name + ') akan diganti dan benefit-nya otomatis berubah ikut paket baru (sisa masa aktif paket lama tidak dibawa).';
+    %>
+      <div class="rounded-2xl border-2 border-black bg-white shadow-[3px_3px_0_#14120f] p-4">
+        <div class="flex items-start justify-between gap-2 mb-1">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-tags text-white text-sm"></i>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-[15px] font-extrabold text-gray-800 truncate"><%= pk.name %></span>
+              <% if (pk.isDefault) { %><span class="block text-[10.5px] font-bold text-amber-600"><i class="fa-solid fa-star mr-0.5"></i>Paket Default</span><% } %>
+            </span>
+          </div>
+          <% if (isCurrent) { %>
+            <span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold <%= isExpired ? 'bg-rose-100 text-rose-700' : 'bg-green-100 text-green-700' %>">
+              <%= isExpired ? 'EXPIRED' : 'PAKET KAMU' %>
+            </span>
+          <% } %>
+        </div>
+
+        <% if (pk.description) { %>
+          <p class="text-[11.5px] text-gray-500 mt-2"><%= pk.description %></p>
+        <% } %>
+
+        <% if (isOwn) { %>
+          <div class="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl <%= isExpired ? 'bg-rose-50' : 'bg-sky-50' %>">
+            <i class="fa-solid fa-clock-rotate-left <%= isExpired ? 'text-rose-500' : 'text-sky-500' %> text-xs"></i>
+            <p class="text-[11.5px] font-bold <%= isExpired ? 'text-rose-700' : 'text-sky-700' %>">
+              <% if (!expiresAt) { %>
+                Masa aktif: Permanen
+              <% } else if (isExpired) { %>
+                Expired sejak <%= new Date(expiresAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) %>
+              <% } else { %>
+                Aktif sampai <%= new Date(expiresAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) %>
+              <% } %>
+            </p>
+          </div>
+        <% } %>
+
+        <% if (forSale) { %>
+          <div class="mt-3 rounded-xl border-2 border-black bg-yellow-50 px-3 py-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[12px] font-bold text-gray-600"><i class="fa-solid fa-tag mr-1 text-amber-500"></i>Harga</span>
+              <span class="text-[15px] font-extrabold text-gray-800">Rp <%= fmt(price) %> <span class="text-[11px] font-bold text-gray-500">/ <%= durTxt %></span></span>
+            </div>
+            <% if (ownPermanent) { %>
+              <div class="mt-2 w-full text-center px-3 py-2.5 rounded-xl bg-gray-200 text-[12px] font-extrabold text-gray-500">Sudah aktif permanen</div>
+            <% } else { %>
+              <% if (!enough) { %><p class="text-xs mt-2 mb-2">Saldo belum cukup sebelum diskon. Terapkan voucher atau <a href="<%= isMerchant ? '/merchant/topup' : '/deposit' %>" class="underline font-bold">isi saldo</a>.</p><% } %>
+              <form id="<%= 'paket-' + pk._id %>" method="POST" action="/paket/beli/<%= pk._id %>" data-confirm="<%= confirmTxt %>"
+                    onsubmit="return window.VoucherUI.confirm(this);">
+                <%- include('partials/voucher_checkout', { formId: 'paket-' + pk._id, service: 'paket', amount: price }) %>
+<button type="submit" class="mt-2 w-full px-3 py-2.5 rounded-xl border-2 border-black bg-blue-600 text-white text-[12.5px] font-extrabold shadow-[2px_2px_0_#14120f]">
+                  <i class="fa-solid fa-cart-shopping mr-1"></i><%= isOwn ? 'Perpanjang Paket' : 'Beli Paket' %>
+                </button>
+              </form>
+            <% } %>
+          </div>
+        <% } else if (!pk.isDefault) { %>
+          <p class="mt-3 text-[11px] font-semibold text-gray-400"><i class="fa-solid fa-user-shield mr-1"></i>Paket ini dipasang oleh admin (tidak dijual).</p>
+        <% } %>
+
+        <div class="grid grid-cols-1 gap-2 mt-3">
+          <% feeLabels.forEach(function(fl) {
+               const r = pk[fl[0]] || {};
+               if (r.enabled === false) return;   // benefit layanan ini dimatikan admin -> tidak ditampilkan
+               const isPct = r.mode === 'percent';
+               const val = isPct ? Number(r.percent || 0) : Number(r.fixed || 0);
+               const free = val === 0;
+               const txt = free ? 'Gratis' : (isPct ? val + '%' : 'Rp ' + fmt(val) + (fl[0] === 'smm' ? ' / 1000' : ''));
+          %>
+            <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50">
+              <span class="flex items-center gap-2 text-[12px] font-semibold text-gray-700">
+                <i class="fa-solid <%= fl[2] %> text-gray-400 text-[11px] w-4 text-center"></i> <%= fl[1] %>
+              </span>
+              <span class="text-[12px] font-extrabold <%= free ? 'text-green-600' : 'text-gray-800' %>">Biaya admin: <%= txt %></span>
+            </div>
+          <% }); %>
+        </div>
+
+        <% if ((pk.rolePayment && pk.rolePayment.enabled) || (pk.rolePanel && pk.rolePanel.enabled) || pk.gachaNokosAccess || pk.fixNoAccess) { %>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <% if (pk.rolePayment && pk.rolePayment.enabled) { %>
+              <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-purple-100 text-purple-700">
+                <i class="fa-solid fa-crown mr-1"></i>Role: <%= roleName[pk.rolePayment.role] %>
+              </span>
+            <% } %>
+            <% if (pk.rolePanel && pk.rolePanel.enabled) { %>
+              <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-indigo-100 text-indigo-700">
+                <i class="fa-solid fa-store mr-1"></i>Role Panel: <%= roleName[pk.rolePanel.role] %>
+              </span>
+            <% } %>
+            <% if (pk.gachaNokosAccess) { %>
+              <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-violet-100 text-violet-700">
+                <i class="fa-solid fa-dice mr-1"></i>Akses Gacha Nokos
+              </span>
+            <% } %>
+            <% if (pk.fixNoAccess) { %>
+              <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-red-100 text-red-700">
+                <i class="fa-solid fa-wrench mr-1"></i>Akses Fix No / Unban WA
+              </span>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+    </div>
+
+    <p class="text-[11px] text-gray-400 text-center px-4 mt-4">Beli paket pakai saldo, benefit (biaya admin &amp; role) langsung aktif. Paket yang tidak dijual dipasang oleh admin — hubungi CS lewat menu Bantuan kalau mau pakai.</p>
+  <% } %>
+
+</div>
+
+<%- include('partials/footer') %>
