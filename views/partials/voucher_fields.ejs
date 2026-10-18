@@ -1,0 +1,25 @@
+<% const vcIcons = { paket:'layer-group', nokos:'sim-card', gacha_access:'key', gacha_nokos:'dice', fix_access:'unlock-keyhole', fix_package:'envelope', panel:'server', premium:'crown', sosmed:'heart', produk:'box-open', reseller:'store', admin_panel:'user-shield' }; %>
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<div class="vc-live-ticket" aria-label="Pratinjau voucher">
+  <div><span class="vc-mini-label">PROMO PILIHANMU</span><strong data-vc-preview-code><%= v.code || 'KODE VOUCHER' %></strong><span class="vc-mini-label" data-vc-preview-mode><%= v.published ? 'PUBLIK · TAMPIL DI REKOMENDASI' : 'PRIVAT · BAGIKAN KODE SENDIRI' %></span></div>
+  <div class="vc-live-percent"><strong data-vc-preview-percent><%= v.percent || 10 %>%</strong><span>DISKON</span></div>
+</div>
+<div class="vc-section-title"><span>01</span><div><h3>Racik promonya</h3><p>Kode unik, potongan menarik.</p></div><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div>
+<div class="vc-fields">
+  <label>Kode voucher<input name="code" value="<%= v.code || '' %>" placeholder="VOCHER10" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_-]{3,32}" autocomplete="off"></label>
+  <label>Potongan (%)<input name="percent" type="number" min="1" max="100" step="0.01" value="<%= v.percent || 10 %>" required></label>
+  <label class="vc-wide">Kedaluwarsa (WIB)<input name="expiresAt" type="datetime-local" value="<%= v.expiresAt ? dateInput(v.expiresAt) : '' %>" required></label>
+</div>
+<fieldset class="vc-services"><legend class="vc-section-title"><span>02</span><div><h3>Pilih arena diskon</h3><p>Berlaku untuk layanan pilihanmu.</p></div></legend>
+  <div class="vc-tools"><button type="button" data-vc-select="all"><i class="fa-solid fa-check-double" aria-hidden="true"></i> Pilih semua</button><button type="button" data-vc-select="none">Kosongkan</button><span class="vc-selected-count" data-vc-count><%= (v.services || []).length %> dipilih</span></div>
+  <div class="vc-check-grid"><% services.forEach(function(service) { %>
+    <label class="vc-service-tile"><input type="checkbox" name="services" value="<%= service.id %>" <%= (v.services || []).includes(service.id) ? 'checked' : '' %>><span class="vc-service-art"><i class="fa-solid fa-<%= vcIcons[service.id] || 'ticket' %>" aria-hidden="true"></i></span><span class="vc-service-name"><%= service.label %></span><span class="vc-tile-check" aria-hidden="true"><i class="fa-solid fa-check"></i></span></label>
+  <% }); %></div>
+</fieldset>
+<div class="vc-section-title"><span>03</span><div><h3>Siap tayang?</h3><p>Atur status dan siapa yang melihat.</p></div></div>
+<div class="vc-checks">
+  <label class="vc-toggle-card"><input type="checkbox" name="active" <%= v.active !== false ? 'checked' : '' %>><span class="vc-toggle-icon"><i class="fa-solid fa-bolt" aria-hidden="true"></i></span><span class="vc-toggle-copy"><strong>Voucher aktif</strong><small>Izinkan kode dipakai saat pembelian.</small></span><span class="vc-switch" aria-hidden="true"></span></label>
+  <label class="vc-toggle-card"><input type="checkbox" name="published" <%= v.published ? 'checked' : '' %>><span class="vc-toggle-icon"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></span><span class="vc-toggle-copy"><strong>Publikasikan voucher</strong><small>Tampil di menu &amp; rekomendasi.</small></span><span class="vc-switch" aria-hidden="true"></span></label>
+</div>
+<p class="vc-note vc-info-strip"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Voucher privat tetap bisa dipakai manual. Setiap voucher hanya bisa dipakai satu kali per akun. Top up, penarikan, dan transfer saldo tidak termasuk.</p>
+<button type="submit" class="vc-button vc-save-button"><i class="fa-solid fa-ticket" aria-hidden="true"></i> Simpan voucher <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
