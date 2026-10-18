@@ -1,0 +1,2 @@
+<% (waCountries || []).forEach(function(c) { %><option value="<%= c[1] %>" <%= c[1] === (typeof sel !== 'undefined' ? sel : '62') ? 'selected' : '' %>>+<%= c[1] %> <%= c[0] %></option>
+<% }) %>
