@@ -1,0 +1,191 @@
+<%- include('partials/header', { title: 'Kelola Produk' }) %>
+
+<div class="max-w-3xl mx-auto px-6 mt-1 pb-10">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Kelola Produk</h1>
+    <span class="text-[12px] font-semibold text-gray-500"><%= produkList.length %> Produk</span>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <!-- ===== TAMBAH PRODUK ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+      <i class="fa-solid fa-box-open text-gray-700 text-sm"></i>
+      <h2 class="text-sm font-medium text-gray-800">Tambah Produk</h2>
+    </div>
+
+    <form method="POST" action="/admin/produk" class="flex flex-col gap-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Nama Produk <span class="text-red-500">*</span></label>
+        <input name="name" type="text" required placeholder="cth: E-Book Panduan Lengkap" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Deskripsi (opsional)</label>
+        <textarea name="description" rows="2" placeholder="Deskripsi singkat produk..." class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Harga (Rp) <span class="text-red-500">*</span></label>
+        <input name="price" type="number" min="0" required value="0" placeholder="0" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        <p class="text-[11px] text-gray-400 mt-1.5"><i class="fa-solid fa-circle-info mr-1"></i>Isi <b>0</b> kalau produk mau digratiskan — otomatis dikasih badge <b>GRATIS</b> di halaman Layanan.</p>
+      </div>
+
+      <!-- Toggle Full Up -->
+      <div class="bg-[#f9f9f9] border border-gray-100 rounded-2xl p-3">
+        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" name="fullUp" id="addFullUp" onchange="toggleGroupLinkField('add')" class="w-4 h-4 accent-blue-600">
+          <span class="text-xs font-bold text-gray-700">Full Up (pembeli dapat link Group Join)</span>
+        </label>
+        <p class="text-[11px] text-gray-400 mt-1.5 ml-6">Kalau dicentang &rarr; wajib isi Link Group di bawah. Kalau tidak &rarr; pembeli cuma dapat Link Download.</p>
+
+        <div id="addGroupLinkBox" class="hidden mt-3">
+          <label class="block text-xs font-medium text-gray-700 mb-2">Link Group Join <span class="text-red-500">*</span></label>
+          <input name="groupLink" type="url" placeholder="https://t.me/joinchat/xxxxx atau https://chat.whatsapp.com/xxxxx" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Link Download (opsional)</label>
+        <input name="downloadLink" type="url" placeholder="https://drive.google.com/..." class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+        <p class="text-[11px] text-gray-400 mt-1.5">Dikirim ke pembeli setelah beli, berlaku untuk Full Up maupun Tidak Full Up.</p>
+      </div>
+
+      <button type="submit" class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-plus"></i> Tambah Produk
+      </button>
+    </form>
+  </div>
+
+  <!-- ===== DAFTAR PRODUK ===== -->
+  <div class="flex items-center gap-2 mb-3 px-1">
+    <i class="fas fa-boxes-stacked text-gray-700 text-sm"></i>
+    <h2 class="text-sm font-medium text-gray-800">Daftar Produk</h2>
+  </div>
+
+  <% if (produkList.length === 0) { %>
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-center mb-6">
+      <p class="text-sm font-medium text-gray-600">Belum ada produk. Tambahkan produk pertama di atas.</p>
+    </div>
+  <% } else { %>
+    <div class="flex flex-col gap-3 mb-6">
+      <% produkList.forEach(function(p, idx) { %>
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <p class="text-[13.5px] font-bold text-gray-800 truncate"><%= p.name %></p>
+            <span class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black <%= p.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' %>">
+              <%= p.active ? 'Aktif' : 'Nonaktif' %>
+            </span>
+          </div>
+
+          <% if (p.description) { %>
+            <p class="text-[11.5px] text-gray-500 font-medium mb-2 line-clamp-2"><%= p.description %></p>
+          <% } %>
+
+          <div class="flex items-center flex-wrap gap-1.5 mb-2">
+            <% if (p.price === 0) { %>
+              <span class="comic-badge-free">Gratis</span>
+            <% } else { %>
+              <span class="text-[13px] font-extrabold text-blue-600">Rp <%= p.price.toLocaleString('id-ID') %></span>
+            <% } %>
+            <% if (p.fullUp) { %>
+              <span class="comic-badge-fullup"><i class="fa-solid fa-users mr-1"></i>Full Up</span>
+            <% } else { %>
+              <span class="text-[10.5px] font-bold text-gray-400 px-2 py-1 rounded-full border border-gray-200">Tidak Full Up</span>
+            <% } %>
+          </div>
+
+          <div class="text-[11px] text-gray-400 flex flex-col gap-0.5 mb-3">
+            <% if (p.fullUp && p.groupLink) { %>
+              <span class="truncate"><i class="fa-solid fa-users text-[10px] mr-1"></i>Group: <%= p.groupLink %></span>
+            <% } %>
+            <% if (p.downloadLink) { %>
+              <span class="truncate"><i class="fa-solid fa-download text-[10px] mr-1"></i>Download: <%= p.downloadLink %></span>
+            <% } %>
+          </div>
+
+          <div class="flex items-center gap-2 mb-2">
+            <button type="button" onclick="document.getElementById('editProduk-<%= idx %>').classList.toggle('hidden')"
+              class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <form method="POST" action="/admin/produk/<%= p._id %>/toggle" class="flex-1">
+              <button type="submit" class="w-full comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                <i class="fa-solid <%= p.active ? 'fa-eye-slash' : 'fa-eye' %>"></i> <%= p.active ? 'Nonaktifkan' : 'Aktifkan' %>
+              </button>
+            </form>
+          </div>
+          <form method="POST" action="/admin/produk/<%= p._id %>/delete" onsubmit="return confirm('Hapus produk ini?');">
+            <button type="submit" class="w-full comic-btn-danger px-3 py-2 rounded-xl text-[12.5px] font-bold">
+              <i class="fa-solid fa-trash"></i> Hapus
+            </button>
+          </form>
+
+          <div id="editProduk-<%= idx %>" class="hidden mt-3 pt-3 border-t border-gray-200">
+            <form method="POST" action="/admin/produk/<%= p._id %>/edit" class="flex flex-col gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Nama Produk</label>
+                <input name="name" type="text" value="<%= p.name %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Deskripsi</label>
+                <textarea name="description" rows="2" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none resize-none"><%= p.description || '' %></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Harga (Rp)</label>
+                <input name="price" type="number" min="0" value="<%= p.price %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                <p class="text-[11px] text-gray-400 mt-1.5">Isi 0 untuk gratis.</p>
+              </div>
+
+              <div class="bg-[#f9f9f9] border border-gray-100 rounded-2xl p-3">
+                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input type="checkbox" name="fullUp" id="editFullUp-<%= idx %>" onchange="toggleGroupLinkField('edit-<%= idx %>')" <%= p.fullUp ? 'checked' : '' %> class="w-4 h-4 accent-blue-600">
+                  <span class="text-xs font-bold text-gray-700">Full Up (pembeli dapat link Group Join)</span>
+                </label>
+                <div id="editGroupLinkBox-<%= idx %>" class="mt-3 <%= p.fullUp ? '' : 'hidden' %>">
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Link Group Join</label>
+                  <input name="groupLink" type="url" value="<%= p.groupLink || '' %>" placeholder="https://t.me/joinchat/xxxxx" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Link Download</label>
+                <input name="downloadLink" type="url" value="<%= p.downloadLink || '' %>" placeholder="https://drive.google.com/..." class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-2.5 text-xs font-medium outline-none">
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>
+                <button type="button" onclick="document.getElementById('editProduk-<%= idx %>').classList.add('hidden')" class="flex-1 comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+</div>
+
+<script>
+  // Tampilkan/sembunyikan field "Link Group Join" sesuai centang Full Up,
+  // dipakai untuk form Tambah ('add') maupun tiap form Edit ('edit-<idx>').
+  function toggleGroupLinkField(scope) {
+    const checkbox = document.getElementById(scope === 'add' ? 'addFullUp' : 'editFullUp-' + scope.split('-')[1]);
+    const box = document.getElementById(scope === 'add' ? 'addGroupLinkBox' : 'editGroupLinkBox-' + scope.split('-')[1]);
+    if (!checkbox || !box) return;
+    box.classList.toggle('hidden', !checkbox.checked);
+  }
+</script>
+
+<%- include('partials/footer') %>
