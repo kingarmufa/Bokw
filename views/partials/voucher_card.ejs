@@ -1,0 +1,30 @@
+<%# Kartu voucher bersama: dipakai di /voucher (publik) dan /admin/vouchers. Param: v, mode ('public' | 'admin') %>
+<% const vcAdmin = typeof mode !== 'undefined' && mode === 'admin';
+   const vcExpired = new Date(v.expiresAt) <= new Date();
+   const vcOff = vcAdmin && (!v.active || vcExpired);
+   const vcStatus = !v.active ? 'NONAKTIF' : (vcExpired ? 'KEDALUWARSA' : 'AKTIF'); %>
+<article class="vc-coupon<%= vcOff ? ' is-off' : '' %>">
+  <div class="vc-coupon-stub" aria-label="Diskon <%= v.percent %> persen">
+    <span class="vc-coupon-mini">DISKON</span>
+    <strong class="vc-coupon-percent"><%= v.percent %>%</strong>
+    <span class="vc-coupon-mini"><i class="fa-solid fa-ticket" aria-hidden="true"></i> VOUCHER</span>
+  </div>
+  <div class="vc-coupon-body">
+    <span class="vc-badge"><%= vcAdmin ? (vcStatus + ' · ' + (v.published ? 'PUBLIK' : 'PRIVAT')) : 'DISKON LAYANAN' %></span>
+    <span class="vc-coupon-mini vc-coupon-caption">KODE VOUCHER</span>
+    <div class="vc-coupon-code" data-vc-code><%= v.code %></div>
+    <p class="vc-coupon-date"><i class="fa-regular fa-clock" aria-hidden="true"></i> Berlaku sampai <%= formatDate(v.expiresAt) %></p>
+    <p class="vc-coupon-date"><i class="fa-solid fa-user-check" aria-hidden="true"></i> Sekali pakai per akun</p>
+    <div class="vc-tags"><% services.filter(s => v.services.includes(s.id)).forEach(function(s) { %><% if (vcAdmin) { %><span><%= s.label %></span><% } else { %><a href="<%= s.href %>"><%= s.label %> ↗</a><% } %><% }); %></div>
+    <div class="vc-coupon-actions">
+      <button type="button" class="vc-button" data-copy-voucher="<%= v.code %>"><i class="fa-regular fa-copy" aria-hidden="true"></i>&nbsp;Salin kode</button>
+      <p class="vc-copy-status" aria-live="polite"></p>
+    </div>
+  </div>
+  <% if (vcAdmin) { %>
+  <div class="vc-coupon-foot">
+    <details><summary>Edit / perpanjang voucher</summary><form method="POST" action="/admin/vouchers/<%= v._id %>/edit"><%- include('voucher_fields', { v }) %></form></details>
+    <% if (v.active) { %><form method="POST" action="/admin/vouchers/<%= v._id %>/disable" class="vc-disable"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" class="vc-link">Nonaktifkan voucher</button></form><% } %>
+  </div>
+  <% } %>
+</article>
