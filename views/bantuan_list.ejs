@@ -1,0 +1,57 @@
+<%- include('partials/header', { title: 'CS Bantuan' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800 mb-0">🎫 CS Bantuan</h1>
+      <p class="text-[12px] text-gray-500 font-medium mb-0">Forum tiket bantuanmu. Admin akan membalas secepatnya.</p>
+    </div>
+    <a href="/bantuan/baru" class="comic-btn-primary rounded-full px-4 py-2 text-[13px] flex items-center gap-1.5 shrink-0">
+      <i class="fa-solid fa-plus"></i> Tiket Baru
+    </a>
+  </div>
+
+  <% if (!tickets || tickets.length === 0) { %>
+    <div class="bg-white comic-anim border border-gray-100 rounded-2xl px-5 py-10 text-center">
+      <i class="fa-solid fa-comment-medical text-3xl text-gray-300 mb-3"></i>
+      <p class="text-sm font-medium text-gray-600 mb-1">Belum ada tiket bantuan.</p>
+      <p class="text-[12px] text-gray-400 mb-4">Punya kendala? Buat tiket baru dan ceritakan masalahmu ke admin.</p>
+      <a href="/bantuan/baru" class="comic-btn-primary inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px]">
+        <i class="fa-solid fa-plus"></i> Buat Tiket Sekarang
+      </a>
+    </div>
+  <% } else { %>
+    <div class="space-y-3">
+      <% tickets.forEach(function(t) { %>
+        <% const lastMsg = t.messages && t.messages.length ? t.messages[t.messages.length - 1] : null; %>
+        <a href="/bantuan/<%= t._id %>" class="comic-anim block bg-white border border-gray-100 rounded-2xl px-4 py-3.5 shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <h2 class="text-[14px] font-bold text-gray-800 leading-snug break-words"><%= t.title %></h2>
+            <% if (t.unreadForUser) { %>
+              <span class="shrink-0 text-[9px] font-extrabold uppercase bg-[var(--comic-red)] text-white px-2 py-1 rounded-full border-2 border-black">Baru</span>
+            <% } %>
+          </div>
+          <p class="text-[12px] text-gray-500 font-medium truncate mb-2">
+            <% if (lastMsg) { %>
+              <%= lastMsg.sender === 'admin' ? 'CS: ' : 'Kamu: ' %><%= lastMsg.image && !lastMsg.message ? '📷 Mengirim gambar' : lastMsg.message %>
+            <% } else { %>
+              Belum ada pesan.
+            <% } %>
+          </p>
+          <div class="flex items-center justify-between">
+            <span class="text-[10.5px] font-bold uppercase px-2 py-1 rounded-full border-2 border-black <%= t.status === 'closed' ? 'bg-gray-200 text-gray-600' : 'bg-[var(--comic-yellow)] text-black' %>">
+              <%= t.status === 'closed' ? 'Ditutup' : (t.lastSender === 'admin' ? 'Menunggu Balasanmu' : 'Menunggu Admin') %>
+            </span>
+            <span class="text-[10.5px] text-gray-400 font-medium">
+              <%= new Date(t.updatedAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+            </span>
+          </div>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+
+</div>
+
+<%- include('partials/footer') %>
