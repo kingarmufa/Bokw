@@ -1,0 +1,96 @@
+<%- include('partials/header', { title: 'Verifikasi Nomor WhatsApp' }) %>
+
+<style>
+  #waOtpInput {
+    letter-spacing: 10px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+  }
+</style>
+
+<div class="max-w-md mx-auto px-6 pb-10">
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] px-5 py-4 rounded-xl mb-6 text-[13.5px] font-medium flex items-center gap-3">
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-[#f0fdf4] border border-[#bbf7d0] text-[#16a34a] px-5 py-4 rounded-xl mb-6 text-[13.5px] font-medium flex items-center gap-3">
+      <p><%= success %></p>
+    </div>
+  <% } %>
+
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-6 flex flex-col gap-5">
+
+    <div class="text-center flex flex-col gap-1.5">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-1" style="background:#25D366">
+        <i class="fa-brands fa-whatsapp text-white text-2xl"></i>
+      </div>
+      <h1 class="text-base font-medium text-gray-800">Verifikasi Nomor WhatsApp</h1>
+      <p class="text-[13px] text-gray-500">
+        Kode OTP 6 digit telah dikirim ke WhatsApp
+        <span class="font-semibold text-gray-700"><%= waLink.target %></span>.
+        Berlaku 5 menit. Ini untuk memastikan nomor tersebut memang milikmu, sebelum dipakai untuk menerima bukti transaksi akun ini.
+      </p>
+    </div>
+
+    <form method="POST" action="/profile/verify-whatsapp" class="flex flex-col gap-4" id="waOtpForm">
+      <div>
+        <label class="block text-[13.5px] font-medium text-gray-800 mb-2 px-1">Kode OTP</label>
+        <input name="otp" id="waOtpInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="------"
+               class="w-full bg-[#f9f9f9] border border-gray-100 rounded-2xl shadow-sm px-4 py-3 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-300"
+               required autocomplete="one-time-code">
+      </div>
+
+      <button type="submit" id="waOtpBtn" class="comic-btn-primary w-full py-3 rounded-xl text-[13.5px] font-bold flex items-center justify-center gap-2">
+        <span id="waOtpBtnText">Verifikasi &amp; Hubungkan</span>
+        <i id="waOtpBtnSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+      </button>
+    </form>
+
+    <div class="flex items-center justify-between text-[13px] font-medium">
+      <form method="POST" action="/profile/verify-whatsapp/resend">
+        <button type="submit" class="text-blue-500 hover:underline">Kirim ulang kode</button>
+      </form>
+      <a href="/profile" class="text-gray-500 hover:underline">Batalkan</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function() {
+    const otpInput = document.getElementById('waOtpInput');
+    otpInput.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+    otpInput.focus();
+
+    const form = document.getElementById('waOtpForm');
+    const btn = document.getElementById('waOtpBtn');
+    const btnText = document.getElementById('waOtpBtnText');
+    const btnSpinner = document.getElementById('waOtpBtnSpinner');
+    if (!form || !btn) return;
+    let isSubmitting = false;
+    form.addEventListener('submit', function(e) {
+      if (isSubmitting) { e.preventDefault(); return false; }
+      isSubmitting = true;
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      btnText.textContent = 'Memverifikasi...';
+      btnSpinner.classList.remove('hidden');
+    });
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+        btnText.textContent = 'Verifikasi & Hubungkan';
+        btnSpinner.classList.add('hidden');
+      }
+    });
+  })();
+</script>
