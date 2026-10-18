@@ -1,0 +1,397 @@
+<%- include('partials/header', { title: 'Beli Panel' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/dashboard" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Beli Panel Hosting</h1>
+    <a href="/panel/riwayat" class="ml-auto text-[11.5px] font-bold text-blue-600">
+      <i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat
+    </a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <!-- ===== STEPPER ===== -->
+  <div class="flex items-center gap-1.5 mb-5" id="panelStepper">
+    <div class="flex items-center gap-1.5" data-step-indicator="1">
+      <div class="step-dot active">1</div>
+      <span class="text-[10px] font-bold uppercase tracking-wide hidden xs:inline">Server</span>
+    </div>
+    <div class="flex-1 h-[3px] bg-black/15 rounded-full stepper-line"></div>
+    <div class="flex items-center gap-1.5" data-step-indicator="2">
+      <div class="step-dot">2</div>
+      <span class="text-[10px] font-bold uppercase tracking-wide hidden xs:inline">Paket</span>
+    </div>
+    <div class="flex-1 h-[3px] bg-black/15 rounded-full stepper-line"></div>
+    <div class="flex items-center gap-1.5" data-step-indicator="3">
+      <div class="step-dot">3</div>
+      <span class="text-[10px] font-bold uppercase tracking-wide hidden xs:inline">Egg</span>
+    </div>
+    <div class="flex-1 h-[3px] bg-black/15 rounded-full stepper-line"></div>
+    <div class="flex items-center gap-1.5" data-step-indicator="4">
+      <div class="step-dot">4</div>
+      <span class="text-[10px] font-bold uppercase tracking-wide hidden xs:inline">Data</span>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: PILIH SERVER (PANEL) ===== -->
+  <div id="stepPanel">
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-server text-base"></i>
+        <span>Pilih Server</span>
+      </div>
+      <div class="p-3 flex flex-col gap-2">
+        <% if (panels.length === 0) { %>
+          <p class="text-center text-xs text-gray-500 py-6">Belum ada server panel yang tersedia. Coba lagi nanti.</p>
+        <% } %>
+        <% panels.forEach(function(p) { %>
+          <% if (p.online === false) { %>
+            <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-gray-100 shadow-[2.5px_2.5px_0_#14120f] text-left opacity-60 cursor-not-allowed">
+              <span class="flex items-center gap-2.5 min-w-0">
+                <span class="w-9 h-9 rounded-lg bg-slate-400 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-server text-white text-sm"></i>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[13px] font-bold text-gray-600 truncate"><%= p.name %></span>
+                  <span class="inline-flex items-center gap-1 text-[10.5px] font-bold text-red-600"><i class="fa-solid fa-circle text-[6px]"></i> Offline</span>
+                </span>
+              </span>
+            </div>
+          <% } else { %>
+            <button type="button" data-panel-id="<%= p._id %>" data-panel-name="<%= p.name %>" onclick="selectPanel(this.dataset.panelId, this.dataset.panelName)"
+              class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-left transition-transform active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-[1px_1px_0_#14120f]">
+              <span class="flex items-center gap-2.5 min-w-0">
+                <span class="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-server text-white text-sm"></i>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[13px] font-bold text-gray-800 truncate"><%= p.name %></span>
+                  <span class="inline-flex items-center gap-1 text-[10.5px] font-bold text-green-600"><i class="fa-solid fa-circle text-[6px]"></i> Online</span>
+                </span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </button>
+          <% } %>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: PILIH PAKET ===== -->
+  <div id="stepPackage" class="hidden">
+    <button type="button" onclick="backToPanel()" class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-700">
+      <i class="fa-solid fa-arrow-left"></i> Ganti server
+    </button>
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-box text-base"></i>
+        <span>Pilih Paket — <span id="selectedPanelName" class="font-extrabold">-</span></span>
+      </div>
+      <div class="p-3">
+        <p id="packageEmpty" class="hidden text-center text-xs text-gray-500 py-6">Belum ada paket tersedia untuk server ini.</p>
+        <div id="packageList" class="flex flex-col gap-2 max-h-[440px] overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: PILIH EGG (SESUAI NEST ID) ===== -->
+  <div id="stepEgg" class="hidden">
+    <button type="button" onclick="backToPackage()" class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-700">
+      <i class="fa-solid fa-arrow-left"></i> Ganti paket
+    </button>
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-egg text-base"></i>
+        <span>Pilih Tipe Software (Egg)</span>
+      </div>
+      <div class="p-3">
+        <p id="eggLoading" class="text-center text-xs text-gray-500 py-6">
+          <i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Mengambil daftar egg dari server...
+        </p>
+        <p id="eggError" class="hidden text-center text-xs text-red-600 py-4"></p>
+        <div id="eggList" class="hidden flex flex-col gap-2 max-h-[440px] overflow-y-auto pr-1"></div>
+        <button type="button" id="eggContinueBtn" onclick="confirmEggAndContinue()"
+          class="hidden mt-3 w-full py-3 rounded-xl border-2 border-black bg-blue-500 text-white font-extrabold text-[13.5px] shadow-[3px_3px_0_#14120f] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_#14120f]">
+          Lanjut <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4: ISI DATA & KONFIRMASI ===== -->
+  <div id="stepData" class="hidden">
+    <button type="button" onclick="backToEgg()" class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-700">
+      <i class="fa-solid fa-arrow-left"></i> Ganti egg
+    </button>
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-pen text-base"></i>
+        <span>Data Akun Panel</span>
+      </div>
+      <div class="p-4">
+        <div class="rounded-xl border-2 border-black bg-amber-50 px-3 py-2.5 mb-4">
+          <p class="text-[12px] font-bold text-gray-800" id="summaryPackage">-</p>
+          <p class="text-[11px] font-medium text-gray-600" id="summarySpec">-</p>
+          <p class="text-[11px] font-medium text-gray-600" id="summaryEgg">-</p>
+          <p class="text-[15px] font-extrabold text-blue-600 mt-1" id="summaryPrice">Rp 0</p>
+          <p class="text-[10.5px] font-bold text-red-600 mt-1.5"><span class="lottie-emoji" data-lottie-emoji="clock" data-size="16"></span> Masa aktif <%= typeof expireLabel !== 'undefined' ? expireLabel : '30 Hari' %> &bull; setelah itu panel &amp; user otomatis dihapus &bull; NON GARANSI</p>
+        </div>
+
+        <form id="orderForm" method="POST" action="/panel/order">
+          <input type="hidden" name="panel_id" id="orderPanelId">
+          <input type="hidden" name="package_id" id="orderPackageId">
+          <input type="hidden" name="egg_id" id="orderEggId">
+
+          <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Username Panel</label>
+          <input type="text" name="username" id="orderUsername" required maxlength="20" placeholder="cth: budi123"
+            pattern="[a-zA-Z0-9_]{3,20}"
+            class="w-full mb-1 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-medium focus:outline-none">
+          <p class="text-[10.5px] text-gray-500 mb-3">Huruf, angka, underscore. 3-20 karakter.</p>
+
+          <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Password Panel</label>
+          <div class="flex flex-wrap gap-2 mb-1">
+            <input type="password" name="password" id="orderPassword" required minlength="8" maxlength="32"
+              placeholder="Isi password login panel"
+              pattern="[\S]{8,32}"
+              class="flex-1 min-w-0 basis-full sm:basis-0 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-medium focus:outline-none">
+            <button type="button" id="orderPasswordToggle" onclick="toggleOrderPasswordVisibility()"
+              class="shrink-0 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-bold">
+              <i class="fa-solid fa-eye" id="orderPasswordToggleIcon"></i>
+            </button>
+            <button type="button" onclick="generateOrderPassword()"
+              class="shrink-0 flex-1 sm:flex-none px-3 py-2.5 rounded-xl border-2 border-black bg-amber-300 text-[13px] font-bold whitespace-nowrap">
+              <i class="fa-solid fa-dice mr-1"></i>Random
+            </button>
+          </div>
+          <p class="text-[10.5px] text-gray-500 mb-3">Minimal 8 karakter, tanpa spasi. Ini password login ke panel hosting kamu.</p>
+
+          <%- include('partials/voucher_checkout', { formId: 'orderForm', service: 'panel', amount: 0 }) %>
+          <button type="submit" id="submitOrderBtn"
+            class="w-full py-3 rounded-xl border-2 border-black bg-blue-500 text-white font-extrabold text-[13.5px] shadow-[3px_3px_0_#14120f] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_#14120f]">
+            <i class="fa-solid fa-cart-shopping mr-1.5"></i> Beli Sekarang
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel { border: 2.5px solid #14120f; border-radius: 18px; background:#fffdf7; box-shadow: 3px 3px 0 #14120f; overflow: hidden; }
+  .comic-panel-head { display:flex; align-items:center; gap:8px; padding:10px 14px; background: var(--comic-yellow, #ffd23f); border-bottom: 2.5px solid #14120f; font-weight:800; font-size:13px; }
+  .step-dot { width:24px; height:24px; border-radius:999px; border:2.5px solid #14120f; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; background:#fff; shrink:0; }
+  .step-dot.active { background:#3b82f6; color:#fff; }
+  input[type=text], input[type=email], input[type=password] { background:#fff; }
+  @media (min-width: 420px) { .xs\:inline { display:inline; } }
+</style>
+
+<script>
+  const PANELS = <%- JSON.stringify(panels.map(p => ({ id: p._id, name: p.name }))) %>;
+  const PACKAGES = <%- JSON.stringify(packages) %>;
+
+  let selectedPanel = null;
+  let selectedPkg = null;
+  let selectedEgg = null; // { id, name } atau null kalau ikut default
+
+  function setStep(step) {
+    document.querySelectorAll('[data-step-indicator]').forEach(el => {
+      const dot = el.querySelector('.step-dot');
+      dot.classList.toggle('active', parseInt(el.dataset.stepIndicator) <= step);
+    });
+    document.getElementById('stepPanel').classList.toggle('hidden', step !== 1);
+    document.getElementById('stepPackage').classList.toggle('hidden', step !== 2);
+    document.getElementById('stepEgg').classList.toggle('hidden', step !== 3);
+    document.getElementById('stepData').classList.toggle('hidden', step !== 4);
+  }
+
+  function backToPanel() { selectedPanel = null; selectedPkg = null; selectedEgg = null; setStep(1); }
+  function backToPackage() { selectedPkg = null; selectedEgg = null; setStep(2); }
+  function backToEgg() { setStep(3); }
+
+  // Generate password acak yang aman (huruf besar/kecil, angka, simbol) buat field password opsional
+  function generateOrderPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    const len = 14;
+    let out = '';
+    if (window.crypto && window.crypto.getRandomValues) {
+      const rnd = new Uint32Array(len);
+      window.crypto.getRandomValues(rnd);
+      for (let i = 0; i < len; i++) out += chars[rnd[i] % chars.length];
+    } else {
+      for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    }
+    const input = document.getElementById('orderPassword');
+    input.value = out;
+    input.type = 'text';
+    const icon = document.getElementById('orderPasswordToggleIcon');
+    if (icon) icon.className = 'fa-solid fa-eye-slash';
+  }
+
+  function toggleOrderPasswordVisibility() {
+    const input = document.getElementById('orderPassword');
+    const icon = document.getElementById('orderPasswordToggleIcon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+
+  function selectPanel(id, name) {
+    selectedPanel = { id, name };
+    document.getElementById('selectedPanelName').textContent = name;
+
+    const list = PACKAGES.filter(p => p.panelId === id);
+    const listEl = document.getElementById('packageList');
+    const emptyEl = document.getElementById('packageEmpty');
+    listEl.innerHTML = '';
+
+    if (list.length === 0) {
+      emptyEl.classList.remove('hidden');
+    } else {
+      emptyEl.classList.add('hidden');
+      listEl.innerHTML = list.map(p => `
+        <button type="button" onclick="selectPackageById('${p._id}')"
+          class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-left transition-transform active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-[1px_1px_0_#14120f]">
+          <span class="min-w-0">
+            <span class="block text-[12.5px] font-bold text-gray-800 truncate">${escHtml(p.name)}</span>
+            <span class="block text-[10.5px] text-gray-500">${p.ram} MB RAM • ${p.disk} MB Disk • ${p.cpu}% CPU</span>
+          </span>
+          <span class="shrink-0 text-[13px] font-extrabold text-blue-600">Rp ${p.price.toLocaleString('id-ID')}</span>
+        </button>
+      `).join('');
+    }
+    setStep(2);
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function selectPackageById(id) {
+    const pkg = PACKAGES.find(p => p._id === id);
+    if (pkg) selectPackage(pkg);
+  }
+
+  function selectPackage(pkg) {
+    selectedPkg = pkg;
+    selectedEgg = null;
+    setStep(3);
+    loadEggs();
+  }
+
+  // Ambil daftar egg dari Nest ID sesuai paket/server yang dipilih, lewat backend
+  // (kredensial PTLA tetap aman di server, tidak pernah dikirim ke browser).
+  async function loadEggs() {
+    const loadingEl = document.getElementById('eggLoading');
+    const errorEl = document.getElementById('eggError');
+    const listEl = document.getElementById('eggList');
+    const continueBtn = document.getElementById('eggContinueBtn');
+
+    loadingEl.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    listEl.classList.add('hidden');
+    continueBtn.classList.add('hidden');
+    listEl.innerHTML = '';
+
+    try {
+      const params = new URLSearchParams({ panel_id: selectedPanel.id, package_id: selectedPkg._id });
+      const res = await fetch('/panel/eggs?' + params.toString());
+      const json = await res.json();
+      loadingEl.classList.add('hidden');
+
+      if (!json.success) {
+        errorEl.textContent = json.error || 'Gagal mengambil daftar egg dari server.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (!json.data || json.data.length === 0) {
+        errorEl.textContent = 'Nest ini tidak punya egg. Hubungi CS Bantuan.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Default: egg yang sudah ditentukan admin untuk paket/server ini (kalau ada di daftar).
+      const defaultEgg = json.data.find(e => e.id === json.defaultEggId) || json.data[0];
+      selectedEgg = defaultEgg;
+
+      listEl.innerHTML = json.data.map(e => `
+        <button type="button" data-egg-id="${e.id}" data-egg-name="${escHtml(e.name)}"
+          onclick="pickEgg(this.dataset.eggId, this.dataset.eggName)"
+          class="egg-option flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black shadow-[2.5px_2.5px_0_#14120f] text-left transition-transform active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-[1px_1px_0_#14120f] ${e.id === defaultEgg.id ? 'bg-blue-50' : 'bg-white'}">
+          <span class="min-w-0">
+            <span class="egg-title block text-[12.5px] font-bold truncate ${e.id === defaultEgg.id ? 'text-white' : 'text-gray-800'}">${escHtml(e.name)}</span>
+            <span class="egg-sub block text-[10.5px] font-semibold ${e.id === defaultEgg.id ? 'text-white opacity-80' : 'text-gray-500'}">Egg ID ${e.id}${e.id === defaultEgg.id ? ' • Rekomendasi' : ''}</span>
+          </span>
+          <i class="fa-solid fa-circle-check text-white ${e.id === defaultEgg.id ? '' : 'opacity-0'}" data-egg-check="${e.id}"></i>
+        </button>
+      `).join('');
+
+      listEl.classList.remove('hidden');
+      continueBtn.classList.remove('hidden');
+    } catch (e) {
+      loadingEl.classList.add('hidden');
+      errorEl.textContent = 'Gagal terhubung ke server. Coba lagi.';
+      errorEl.classList.remove('hidden');
+    }
+  }
+
+  function pickEgg(id, name) {
+    selectedEgg = { id: parseInt(id, 10), name };
+    document.querySelectorAll('.egg-option').forEach(btn => {
+      const match = parseInt(btn.dataset.eggId, 10) === selectedEgg.id;
+      btn.classList.toggle('bg-blue-50', match);
+      btn.classList.toggle('bg-white', !match);
+      const check = btn.querySelector('[data-egg-check]');
+      if (check) check.classList.toggle('opacity-0', !match);
+      const title = btn.querySelector('.egg-title');
+      if (title) {
+        title.classList.toggle('text-white', match);
+        title.classList.toggle('text-gray-800', !match);
+      }
+      const sub = btn.querySelector('.egg-sub');
+      if (sub) {
+        sub.classList.toggle('text-white', match);
+        sub.classList.toggle('opacity-80', match);
+        sub.classList.toggle('text-gray-500', !match);
+      }
+    });
+  }
+
+  function confirmEggAndContinue() {
+    if (!selectedEgg) { alert('Pilih egg dulu.'); return; }
+    document.getElementById('orderPanelId').value = selectedPanel.id;
+    document.getElementById('orderPackageId').value = selectedPkg._id;
+    document.getElementById('orderEggId').value = selectedEgg.id;
+    document.getElementById('summaryPackage').textContent = `${selectedPanel.name} — ${selectedPkg.name}`;
+    document.getElementById('summarySpec').textContent = `${selectedPkg.ram} MB RAM • ${selectedPkg.disk} MB Disk • ${selectedPkg.cpu}% CPU`;
+    document.getElementById('summaryEgg').textContent = `Egg: ${selectedEgg.name}`;
+    document.getElementById('summaryPrice').textContent = 'Rp ' + selectedPkg.price.toLocaleString('id-ID');
+    window.VoucherUI.setAmount('orderForm', selectedPkg.price);
+    setStep(4);
+  }
+
+  document.getElementById('orderForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitOrderBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Memproses...';
+  });
+</script>
+
+<%- include('partials/footer') %>
