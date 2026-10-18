@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html <%- include('partials/htmlattrs') %>>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a" />
+  <%- include('partials/seo_meta', { pageTitle: 'Dokumentasi API - ' + settings.name }) %>
+  <% if (settings.logoUrl) { %><link rel="icon" type="image/jpeg" href="<%= settings.logoUrl %>"><% } %>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; }
+
+    /* ===== Top bar khusus Dokumentasi (terpisah dari header/bottom-nav aplikasi) ===== */
+    .docs-topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      padding: 0 14px;
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .docs-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .docs-topbar-logo { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    .docs-topbar-name { color: #fff; font-weight: 700; font-size: 15px; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .docs-topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .docs-icon-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1;
+      border: none; cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .docs-icon-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .docs-auth-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 14px; height: 38px; border-radius: 10px;
+      font-size: 12.5px; font-weight: 700;
+      text-decoration: none; white-space: nowrap;
+    }
+    .docs-auth-btn.login { background: #2563eb; color: #fff; }
+    .docs-auth-btn.login:hover { background: #1d4ed8; }
+    .docs-auth-btn.logout { background: rgba(255,255,255,0.08); color: #fecaca; }
+    .docs-auth-btn.logout:hover { background: rgba(255,255,255,0.14); }
+
+    /* ===== Search box (muncul di bawah topbar saat ikon search ditekan) ===== */
+    .docs-search-wrap {
+      position: fixed; top: 64px; left: 0; right: 0; z-index: 49;
+      background: #0f172a; border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 14px;
+      display: none;
+    }
+    .docs-search-wrap.open { display: block; }
+    .docs-search-wrap input {
+      width: 100%; height: 38px; border-radius: 10px; border: none;
+      background: rgba(255,255,255,0.08); color: #fff; padding: 0 14px; font-size: 13px; outline: none;
+    }
+    .docs-search-wrap input::placeholder { color: #94a3b8; }
+
+    /* ===== Sidebar ===== */
+    .docs-shell { display: flex; padding-top: 64px; min-height: 100vh; }
+    .docs-sidebar {
+      width: 260px; flex-shrink: 0;
+      background: #0f172a;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      position: fixed; top: 64px; bottom: 0; left: 0; z-index: 45;
+      overflow-y: auto;
+      padding: 18px 12px 40px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+    .docs-sidebar.open { transform: translateX(0); }
+    .docs-sidebar-overlay {
+      position: fixed; inset: 0; top: 64px; z-index: 44;
+      background: rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .docs-sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+    .docs-nav-title {
+      font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+      color: #64748b; margin: 18px 8px 8px;
+    }
+    .docs-nav-title:first-child { margin-top: 4px; }
+    .docs-nav-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 9px 10px; border-radius: 10px; margin-bottom: 2px;
+      font-size: 13px; font-weight: 600; color: #cbd5e1;
+      text-decoration: none;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .docs-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .docs-nav-item.active { background: #1d4ed8; color: #fff; }
+    .docs-nav-badge {
+      font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px;
+      background: rgba(34,197,94,0.15); color: #4ade80; flex-shrink: 0;
+    }
+
+    @media (min-width: 1024px) {
+      .docs-sidebar { transform: translateX(0); position: sticky; top: 64px; height: calc(100vh - 64px); }
+      .docs-sidebar-overlay { display: none !important; }
+      .docs-hamburger-btn { display: none; }
+      .docs-shell { padding-top: 64px; }
+      .docs-main { margin-left: 0; }
+    }
+
+    .docs-main { flex: 1; min-width: 0; }
+
+    /* ===== Unduh JSON & Prompt AI: warna teks/latar selalu berpasangan eksplisit (tidak menyatu) ===== */
+    .ai-box { background:#ffffff; color:#171717; border:2px solid #171717; border-radius:12px; padding:16px; }
+    .ai-box, .ai-box p, .ai-box h2, .ai-box h3, .ai-box li, .ai-box b { color:#171717 !important; }
+    .ai-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .ai-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:10px; font-size:13px; font-weight:800; cursor:pointer; text-decoration:none;
+      background:#edc531 !important; color:#171717 !important; border:2px solid #171717 !important; box-shadow:3px 3px 0 #171717; }
+    .ai-btn:hover { transform:translate(1px,1px); box-shadow:2px 2px 0 #171717; }
+    .ai-btn.alt { background:#ffffff !important; }
+    .ai-btn i { color:#171717 !important; }
+    .ai-card { background:#ffffff; border:2px solid #171717; border-radius:12px; margin-top:14px; overflow:hidden; }
+    .ai-card-head { padding:12px 14px; border-bottom:2px solid #171717; background:#edc531; }
+    .ai-card-head, .ai-card-head * { color:#171717 !important; }
+    .ai-card-head h3 { margin:0; font-size:14px; font-weight:800; }
+    .ai-card-head p { margin:2px 0 0; font-size:12.5px; font-weight:600; }
+    .ai-card pre.ai-prompt-text { margin:0; padding:14px; background:#ffffff !important; color:#171717 !important; font-size:12.5px; line-height:1.6; font-weight:600;
+      white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; max-height:260px; overflow:auto; }
+    .ai-card-foot { display:flex; flex-wrap:wrap; gap:8px; padding:10px 14px; border-top:2px solid #171717; background:#ffffff; }
+    /* Hilangkan garis/outline kuning di kotak kode dokumentasi */
+    pre, .bg-gray-900 pre { border: none !important; outline: none !important; box-shadow: none !important; }
+    /* Blok kode: selalu bisa digeser kiri-kanan di HP */
+    .overflow-x-auto { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scrollbar-width: thin; }
+    .overflow-x-auto > pre { display: inline-block; min-width: 100%; white-space: pre; margin: 0; }
+  </style>
+  <link rel="stylesheet" href="/docs-comic.css">
+</head>
+<body>
+
+  <!-- ===== TOP BAR (khusus halaman Dokumentasi — tidak digabung dengan header/bottom-nav aplikasi) ===== -->
+  <header class="docs-topbar">
+    <div class="docs-topbar-left">
+      <button type="button" class="docs-icon-btn docs-hamburger-btn" id="docsHamburgerBtn" onclick="toggleDocsSidebar()" aria-label="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <a href="/" class="docs-topbar-left" style="text-decoration:none;">
+        <% if (settings.logoUrl) { %><img src="<%= settings.logoUrl %>" alt="Logo" class="docs-topbar-logo"><% } %>
+        <span class="docs-topbar-name"><%= settings.name %></span>
+      </a>
+    </div>
+    <div class="docs-topbar-right">
+      <button type="button" class="docs-icon-btn" onclick="toggleDocsSearch()" aria-label="Cari">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+      <a href="<%= (typeof user !== 'undefined' && user) ? (user.role === 'admin' ? '/admin/dashboard' : '/dashboard') : '/' %>" class="docs-icon-btn" aria-label="Dashboard">
+        <i class="fa-solid fa-house"></i>
+      </a>
+      <% if (typeof user !== 'undefined' && user) { %>
+        <a href="/logout" class="docs-auth-btn logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+      <% } else { %>
+        <a href="/login" class="docs-auth-btn login"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+      <% } %>
+    </div>
+  </header>
+
+  <div class="docs-search-wrap" id="docsSearchWrap">
+    <input type="text" id="docsSearchInput" placeholder="Cari endpoint... (mis. withdraw, saldo, nokos)" oninput="filterDocsNav(this.value)">
+  </div>
+
+  <div class="docs-sidebar-overlay" id="docsSidebarOverlay" onclick="closeDocsSidebar()"></div>
+
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docsSidebar">
+
+      <div class="docs-nav-title">Mulai</div>
+      <a href="#sec-persiapan" class="docs-nav-item" data-nav><i class="fa-solid fa-book w-4"></i>&nbsp; Persiapan</a>
+      <a href="#sec-panduan" class="docs-nav-item" data-nav><i class="fa-solid fa-graduation-cap w-4"></i>&nbsp; Panduan Pemula</a>
+      <a href="#sec-prompt-ai" class="docs-nav-item" data-nav><i class="fa-solid fa-wand-magic-sparkles w-4"></i>&nbsp; Unduh JSON &amp; Prompt AI</a>
+
+      <div class="docs-nav-title">Saldo &amp; Topup</div>
+      <a href="#sec-saldo" class="docs-nav-item" data-nav>Cek Saldo <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-invoice" class="docs-nav-item" data-nav>Buat Invoice <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-invoice-status" class="docs-nav-item" data-nav>Cek Status Invoice <span class="docs-nav-badge">GET</span></a>
+
+      <div class="docs-nav-title">Penarikan</div>
+      <a href="#sec-withdraw-methods" class="docs-nav-item" data-nav>Metode Withdraw <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-withdraw" class="docs-nav-item" data-nav>Melakukan Withdraw <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-withdraw-status" class="docs-nav-item" data-nav>Cek Status Withdraw <span class="docs-nav-badge">GET</span></a>
+
+      <div class="docs-nav-title">Layanan</div>
+      <a href="#sec-nokos" class="docs-nav-item" data-nav>Nokos (Nomor OTP) <span class="docs-nav-badge">GET/POST</span></a>
+      <a href="#sec-gacha-nokos" class="docs-nav-item" data-nav>
+        Gacha Nokos
+        <% if (gachaNokosStatus === 'approved') { %><span class="docs-nav-badge">GET</span><% } else { %><i class="fa-solid fa-lock text-[10px] ml-1 text-gray-400"></i><% } %>
+      </a>
+      <a href="#sec-fix-no" class="docs-nav-item" data-nav>
+        Fix No / Unban WA
+        <% if (fixNoAccess) { %><span class="docs-nav-badge">POST</span><% } else { %><i class="fa-solid fa-lock text-[10px] ml-1 text-gray-400"></i><% } %>
+      </a>
+      <a href="#sec-pterodactyl" class="docs-nav-item" data-nav>Panel Hosting <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-premium" class="docs-nav-item" data-nav>Aplikasi Premium <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-sosmed" class="docs-nav-item" data-nav>Suntik Sosmed <span class="docs-nav-badge">GET</span></a>
+
+      <div class="docs-nav-title">Produk &amp; Reseller</div>
+      <a href="#sec-produk" class="docs-nav-item" data-nav>Produk <span class="docs-nav-badge">GET</span></a>
+      <a href="#sec-panel-role" class="docs-nav-item" data-nav>Panel Role <span class="docs-nav-badge">GET</span></a>
+
+    </aside>
+
+    <main class="docs-main">
+<section class="vc-card" data-comic-owned><h2>Voucher layanan</h2><p>Tambahkan parameter opsional <code>voucherCode=VOCHER10</code> pada API pembelian Nokos, Gacha Nokos, Panel, Premium, Sosmed, atau Produk. Kode dicek berdasarkan layanan dan waktu kedaluwarsa. Harga pesanan adalah total setelah diskon; rincian tersedia pada <code>originalPrice</code>, <code>discountAmount</code>, <code>voucherCode</code>, dan <code>voucherPercent</code>. Voucher tidak berlaku untuk top up, penarikan, atau transfer saldo.</p></section>
+
+
+<div class="px-6 max-w-[480px] md:max-w-3xl mx-auto pb-4">
+
+  <!-- Judul Halaman -->
+  <div class="mb-6">
+    <h1 class="text-base font-medium text-gray-800">Dokumentasi API</h1>
+    <p class="text-[13.5px] font-medium text-gray-700">
+      Panduan lengkap integrasi API pembayaran untuk platform atau aplikasi kamu.
+    </p>
+  </div>
+
+  <!-- A. Persiapan -->
+  <section class="mb-6" id="sec-persiapan">
+    <h2 class="text-base font-medium text-gray-800">A. Persiapan</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed">
+      Langkah pertama yang harus kamu lakukan adalah mendaftar dan login ke dashboard. Setelah itu, dapatkan API Key kamu di menu Profil untuk mulai mengintegrasikan sistem pembayaran ke aplikasi kamu.
+    </p>
+  </section>
+
+  <!-- A1. Panduan untuk Pemula -->
+  <section class="mb-6 bg-white border border-gray-200 rounded-md p-4" id="sec-panduan">
+    <h2 class="text-base mb-2 font-medium text-gray-800">📘 Panduan Cepat untuk Pemula</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-3">
+      Belum pernah pakai API sebelumnya? Tenang, semua endpoint di dokumentasi ini pakai <b>method GET</b> — jadi bisa langsung dicoba lewat browser dengan cara paste URL-nya, tidak wajib nulis kode dulu. Beberapa hal penting yang perlu kamu tahu:
+    </p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium leading-relaxed space-y-1.5 mb-3">
+      <li><b>Base URL</b> = alamat website kamu sendiri (otomatis muncul di tiap contoh kode di bawah, ganti <span class="text-blue-600">BASE_URL</span> kalau kamu salin manual).</li>
+      <li><b>API Key</b> = "kunci" biar sistem tahu itu kamu. Ambil di menu Profil, lalu tempel di parameter <span class="text-blue-600">apikey</span> pada setiap request. <b>Jangan pernah share API Key ke orang lain</b>, siapa saja yang pegang API Key kamu bisa transaksi pakai saldo kamu.</li>
+      <li>Endpoint GET memakai parameter URL (query string), contoh: <span class="text-blue-600">?apikey=XXXX&amp;amount=50000</span>.</li>
+      <li><b>Format respons sukses</b> biasanya: <span class="text-blue-600">{ "success": true, "data": {...} }</span></li>
+      <li><b>Format respons gagal</b> biasanya: <span class="text-blue-600">{ "success": false, "error": "pesan errornya" }</span> — selalu cek dulu field <span class="text-blue-600">success</span>/<span class="text-blue-600">error</span> sebelum lanjut proses data-nya.</li>
+      <li>Beberapa fitur (Nokos, Beli Panel, Aplikasi Premium) punya <b>beberapa langkah berurutan</b> (mis. pilih layanan → pilih negara → beli, atau pilih produk → beli → cek status), jadi endpoint-nya harus dipanggil satu-satu sesuai urutan, bukan sekali panggil langsung jadi.</li>
+      <li>Tiap contoh kode di bawah ada pilihan bahasa (Node.js / Python / cURL / PHP) — klik tab-nya buat lihat versi yang kamu pakai. Kalau baru belajar, cURL paling gampang dicoba langsung dari terminal/CMD tanpa install apa-apa.</li>
+    </ul>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed">
+      Kalau masih bingung, bisa hubungi <span class="text-blue-600">CS Bantuan</span> di dashboard buat ditemenin nyoba step-by-step.
+    </p>
+  </section>
+
+  <!-- A2. Unduh JSON & Prompt AI -->
+  <section class="mb-6" id="sec-prompt-ai">
+    <div class="ai-box">
+      <h2 class="text-base mb-1 font-medium">🤖 Unduh Dokumentasi (.json) &amp; Prompt AI</h2>
+      <p class="text-[13.5px] font-medium leading-relaxed">
+        Seluruh dokumentasi endpoint tersedia dalam satu file JSON (parameter, contoh request/response, webhook). Unduh, lalu tempelkan ke AI bersama prompt di bawah untuk dibuatkan payment gateway seperti ini.
+      </p>
+      <div class="ai-actions">
+        <a class="ai-btn" href="/docs.json?download=1" download="averpay-api-docs.json"><i class="fa-solid fa-download"></i> Unduh .json</a>
+        <a class="ai-btn alt" href="/docs.json" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Lihat JSON</a>
+        <button type="button" class="ai-btn alt" onclick="copyText(location.origin + '/docs.json', this, 'Link Tersalin')"><i class="fa-solid fa-link"></i> Salin Link JSON</button>
+      </div>
+    </div>
+
+    <% (typeof aiPrompts !== 'undefined' ? aiPrompts : []).forEach(function (ap) { %>
+    <div class="ai-card">
+      <div class="ai-card-head">
+        <h3><%= ap.title %></h3>
+        <p><%= ap.description %></p>
+      </div>
+      <pre class="ai-prompt-text" data-prompt-id="<%= ap.id %>"><%= ap.prompt %></pre>
+      <div class="ai-card-foot">
+        <button type="button" class="ai-btn" onclick="copyPromptEl(this)"><i class="far fa-copy"></i> Salin Prompt</button>
+        <button type="button" class="ai-btn alt" onclick="copyPromptWithSpec(this)"><i class="fa-solid fa-file-code"></i> Salin Prompt + JSON</button>
+      </div>
+    </div>
+    <% }); %>
+    <p class="text-[12.5px] font-medium mt-3 leading-relaxed" style="color:#171717;">
+      Tips: kalau AI kamu tidak bisa membuka link, pakai tombol <b>Salin Prompt + JSON</b> supaya dokumentasinya ikut tertempel. Bagian dalam kurung siku <b>[ISI: ...]</b> ganti sesuai kebutuhanmu.
+    </p>
+  </section>
+
+  <!-- B. Cek Saldo -->
+  <section class="mb-6" id="sec-saldo">
+    <h2 class="text-base mb-1 font-medium text-gray-800">B. Cek Saldo (Balance)</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlBalance" class="text-blue-600 text-[13.5px]">/api/balance</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/balance?apikey=YOUR_API_KEY')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response:
+{
+  "username": "your_username", 
+  "email": "name@gmail.com", 
+  "balance": 150000
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/balance?apikey=YOUR_API_KEY')
+print(response.json())
+
+"""
+Contoh response:
+{
+  "username": "your_username", 
+  "email": "name@gmail.com", 
+  "balance": 150000
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/balance?apikey=YOUR_API_KEY'
+
+# Contoh response:
+# {
+#   "balance": 150000
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/balance?apikey=YOUR_API_KEY');
+echo $response;
+
+/*
+Contoh response:
+{
+  "username": "your_username", 
+  "email": "name@gmail.com", 
+  "balance": 150000
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- C. Membuat Invoice Baru -->
+  <section class="mb-6" id="sec-invoice">
+    <h2 class="text-base mb-1 font-medium text-gray-800">C. Membuat Invoice</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlInvoice" class="text-blue-600 bg-gray-50 px-1.5 py-0.5 rounded border font-medium border-gray-200 text-[13.5px]">/api/invoice</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">amount</span> (integer, wajib) </li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/invoice?apikey=YOUR_API_KEY&amount=50000')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response:
+{
+  "success": true,
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "qris_image": "https://...",
+  "payment_link": "https://...", 
+  "expired_at": "2025-01-01 12:00:00"
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/invoice?apikey=YOUR_API_KEY&amount=50000')
+print(response.json())
+
+"""
+Contoh response:
+{
+  "success": true,
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "qris_image": "https://...",
+  "payment_link": "https://...", 
+  "expired_at": "2025-01-01 12:00:00"
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/invoice?apikey=YOUR_API_KEY&amount=50000'
+
+# Contoh response:
+# {
+#   "success": true,
+#   "invoice_id": "64c8d9e...",
+#   "amount": 50000,
+#   "fee": 500,
+#   "total": 50500,
+#   "qris_image": "https://...",
+#   "payment_link": "https://...", 
+#   "expired_at": "2025-01-01 12:00:00"
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/invoice?apikey=YOUR_API_KEY&amount=50000');
+echo $response;
+
+/*
+Contoh response:
+{
+  "success": true,
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "qris_image": "https://...",
+  "payment_link": "https://...", 
+  "expired_at": "2025-01-01 12:00:00"
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- D. Cek Status Invoice -->
+  <section class="mb-6" id="sec-invoice-status">
+    <h2 class="text-base mb-1 font-medium text-gray-800">D. Cek Status Invoice</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlStatus" class="text-blue-600 text-[13.5px]">/api/invoice/status</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">invoice_id</span> (string, wajib)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/invoice/status?apikey=YOUR_API_KEY&invoice_id=YOUR_INVOICE_ID')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response:
+{
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "status": "paid",
+  "qris_image": "https://...",
+  "payment_link": "https://...",   
+  "expired_at": "2025-01-01 12:00:00",
+  "created_at": "2025-01-01 11:30:00"
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/invoice/status?apikey=YOUR_API_KEY&invoice_id=YOUR_INVOICE_ID')
+print(response.json())
+
+"""
+Contoh response:
+{
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "status": "paid",
+  "qris_image": "https://...",
+  "payment_link": "https://...",   
+  "expired_at": "2025-01-01 12:00:00",
+  "created_at": "2025-01-01 11:30:00"
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/invoice/status?apikey=YOUR_API_KEY&invoice_id=YOUR_INVOICE_ID'
+
+# Contoh response:
+# {
+#   "invoice_id": "64c8d9e...",
+#   "amount": 50000,
+#   "fee": 500,
+#   "total": 50500,
+#   "status": "paid",
+#   "qris_image": "https://...",
+#   "payment_link": "https://...",   
+#   "expired_at": "2025-01-01 12:00:00",
+#   "created_at": "2025-01-01 11:30:00"
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/invoice/status?apikey=YOUR_API_KEY&invoice_id=YOUR_INVOICE_ID');
+echo $response;
+
+/*
+Contoh response:
+{
+  "invoice_id": "64c8d9e...",
+  "amount": 50000,
+  "fee": 500,
+  "total": 50500,
+  "status": "paid",
+  "qris_image": "https://...",
+  "payment_link": "https://...",   
+  "expired_at": "2025-01-01 12:00:00",
+  "created_at": "2025-01-01 11:30:00"
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- E. Lihat Metode Withdraw -->
+  <section class="mb-6" id="sec-withdraw-methods">
+    <h2 class="text-base mb-1 font-medium text-gray-800">E. Lihat Metode Withdraw</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlWithdrawMethods" class="text-blue-600 text-[13.5px]">/api/withdraw/methods</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/methods?apikey=YOUR_API_KEY')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response:
+{
+  "manual_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",      
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ],
+  "instant_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ]
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/methods?apikey=YOUR_API_KEY')
+print(response.json())
+
+"""
+Contoh response:
+{
+  "manual_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",      
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ],
+  "instant_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ]
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/methods?apikey=YOUR_API_KEY'
+
+# Contoh response:
+# {
+#   "manual_methods": [
+#     {
+#       "name": "Dana",
+#       "method": "dana",      
+#       "fee": 100,
+#       "min": 10000,
+#       "max": 1000000
+#     }
+#   ],
+#   "instant_methods": [
+#     {
+#       "name": "Dana",
+#       "method": "dana",
+#       "fee": 100,
+#       "min": 10000,
+#       "max": 1000000
+#     }
+#   ]
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/methods?apikey=YOUR_API_KEY');
+echo $response;
+
+/*
+Contoh response:
+{
+  "manual_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",      
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ],
+  "instant_methods": [
+    {
+      "name": "Dana",
+      "method": "dana",
+      "fee": 100,
+      "min": 10000,
+      "max": 1000000
+    }
+  ]
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- F. Melakukan Withdraw -->
+  <section class="mb-6" id="sec-withdraw">
+    <h2 class="text-base mb-1 font-medium text-gray-800">F. Melakukan Withdraw</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlWithdraw" class="text-blue-600 text-[13.5px]">/api/withdraw</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">amount</span> (integer, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">method</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">account_number</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">instant</span> (boolean, opsional, default false)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request Manual:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=50000&method=dana&account_number=08123456789&instant=false')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response sukses (manual):
+{
+  "success": true,
+  "message": "Permintaan penarikan berhasil diajukan.",
+  "data": {
+    "id": "WDc4e3f2a1b2c3",
+    "amount": 50000,
+    "fee": 1000,
+    "method": "Dana",
+    "account_number": "08123456789",
+    "status": "pending",
+    "created_at": "2025-01-01T12:00:00.000Z"
+  }
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=50000&method=dana&account_number=08123456789&instant=false')
+print(response.json())
+
+"""
+Contoh response sukses (manual):
+{
+  "success": true,
+  "message": "Permintaan penarikan berhasil diajukan.",
+  "data": {
+    "id": "WDc4e3f2a1b2c3",
+    "amount": 50000,
+    "fee": 1000,
+    "method": "Dana",
+    "account_number": "08123456789",
+    "status": "pending",
+    "created_at": "2025-01-01T12:00:00.000Z"
+  }
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=50000&method=dana&account_number=08123456789&instant=false'
+
+# Contoh response sukses (manual):
+# {
+#   "success": true,
+#   "message": "Permintaan penarikan berhasil diajukan.",
+#   "data": {
+#     "id": "WDc4e3f2a1b2c3",
+#     "amount": 50000,
+#     "fee": 1000,
+#     "method": "Dana",
+#     "account_number": "08123456789",
+#     "status": "pending",
+#     "created_at": "2025-01-01T12:00:00.000Z"
+#   }
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=50000&method=dana&account_number=08123456789&instant=false');
+echo $response;
+
+/*
+Contoh response sukses (manual):
+{
+  "success": true,
+  "message": "Permintaan penarikan berhasil diajukan.",
+  "data": {
+    "id": "WDc4e3f2a1b2c3",
+    "amount": 50000,
+    "fee": 1000,
+    "method": "Dana",
+    "account_number": "08123456789",
+    "status": "pending",
+    "created_at": "2025-01-01T12:00:00.000Z"
+  }
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request Instan:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=20000&method=gopay&account_number=08129876543&instant=true')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response sukses (instant):
+{
+  "success": true,
+  "message": "Permintaan withdraw instan sedang diproses.",
+  "data": {
+    "id": "WDf3a1b2c3d4e5",
+    "amount": 20000,
+    "fee": 2000,
+    "method": "GoPay",
+    "account_number": "08129876543",
+    "status": "pending",
+    "created_at": "2025-01-01T12:05:00.000Z"
+  }
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=20000&method=gopay&account_number=08129876543&instant=true')
+print(response.json())
+
+"""
+Contoh response sukses (instant):
+{
+  "success": true,
+  "message": "Permintaan withdraw instan sedang diproses.",
+  "data": {
+    "id": "WDf3a1b2c3d4e5",
+    "amount": 20000,
+    "fee": 2000,
+    "method": "GoPay",
+    "account_number": "08129876543",
+    "status": "pending",
+    "created_at": "2025-01-01T12:05:00.000Z"
+  }
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=20000&method=gopay&account_number=08129876543&instant=true'
+
+# Contoh response sukses (instant):
+# {
+#   "success": true,
+#   "message": "Permintaan withdraw instan sedang diproses.",
+#   "data": {
+#     "id": "WDf3a1b2c3d4e5",
+#     "amount": 20000,
+#     "fee": 2000,
+#     "method": "GoPay",
+#     "account_number": "08129876543",
+#     "status": "pending",
+#     "created_at": "2025-01-01T12:05:00.000Z"
+#   }
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw?apikey=YOUR_API_KEY&amount=20000&method=gopay&account_number=08129876543&instant=true');
+echo $response;
+
+/*
+Contoh response sukses (instant):
+{
+  "success": true,
+  "message": "Permintaan withdraw instan sedang diproses.",
+  "data": {
+    "id": "WDf3a1b2c3d4e5",
+    "amount": 20000,
+    "fee": 2000,
+    "method": "GoPay",
+    "account_number": "08129876543",
+    "status": "pending",
+    "created_at": "2025-01-01T12:05:00.000Z"
+  }
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- G. Cek Status Withdraw -->
+  <section class="mb-6" id="sec-withdraw-status">
+    <h2 class="text-base mb-1 font-medium text-gray-800">G. Cek Status Withdraw</h2>
+
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlWithdrawStatus" class="text-blue-600 text-[13.5px]">/api/withdraw/status</span></li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) – ID withdraw</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request:</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+axios.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/status?apikey=YOUR_API_KEY&id=WDc4e3f2a1b2c3')
+  .then(response => console.log(response.data));
+
+/*
+Contoh response:
+{
+  "id": "WDc4e3f2a1b2c3",
+  "amount": 50000,
+  "fee": 1000,
+  "method": "Dana",
+  "account_number": "08123456789",
+  "instant": false,
+  "status": "success",
+  "admin_note": null,
+  "created_at": "2025-01-01T12:00:00.000Z",
+  "completed_at": "2025-01-01T12:30:00.000Z"
+}
+*/</code><code class="copy-content hidden" data-code="python">import requests
+response = requests.get('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/status?apikey=YOUR_API_KEY&id=WDc4e3f2a1b2c3')
+print(response.json())
+
+"""
+Contoh response:
+{
+  "id": "WDc4e3f2a1b2c3",
+  "amount": 50000,
+  "fee": 1000,
+  "method": "Dana",
+  "account_number": "08123456789",
+  "instant": false,
+  "status": "success",
+  "admin_note": null,
+  "created_at": "2025-01-01T12:00:00.000Z",
+  "completed_at": "2025-01-01T12:30:00.000Z"
+}
+"""</code><code class="copy-content hidden" data-code="curl">curl -X GET '<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/status?apikey=YOUR_API_KEY&id=WDc4e3f2a1b2c3'
+
+# Contoh response:
+# {
+#   "id": "WDc4e3f2a1b2c3",
+#   "amount": 50000,
+#   "fee": 1000,
+#   "method": "Dana",
+#   "account_number": "08123456789",
+#   "instant": false,
+#   "status": "success",
+#   "admin_note": null,
+#   "created_at": "2025-01-01T12:00:00.000Z",
+#   "completed_at": "2025-01-01T12:30:00.000Z"
+# }</code><code class="copy-content hidden" data-code="php">&lt;?php
+$response = file_get_contents('<span class="base-url-placeholder">BASE_URL</span>/api/withdraw/status?apikey=YOUR_API_KEY&id=WDc4e3f2a1b2c3');
+echo $response;
+
+/*
+Contoh response:
+{
+  "id": "WDc4e3f2a1b2c3",
+  "amount": 50000,
+  "fee": 1000,
+  "method": "Dana",
+  "account_number": "08123456789",
+  "instant": false,
+  "status": "success",
+  "admin_note": null,
+  "created_at": "2025-01-01T12:00:00.000Z",
+  "completed_at": "2025-01-01T12:30:00.000Z"
+}
+*/
+?&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-6" id="sec-nokos">
+    <h2 class="text-base mb-3 font-bold">H. Nokos — Dibanana</h2>
+    <%- include('partials/nokos_docs_picker') %>
+    <p class="mb-4">Pilih server → layanan → negara → harga/stok → beli nomor. Server: <b>ekonomi, premium, khusus, wa_luar</b>. Semua harga rupiah. API key yang dipakai klien adalah API key website ini, bukan key Dibanana admin.</p>
+    <div style="overflow-x:auto"><table class="w-full text-sm"><thead><tr><th>Method</th><th>Endpoint</th><th>Parameter selain apikey</th></tr></thead><tbody>
+    <tr><td>GET</td><td>/api/nokos/servers</td><td>Daftar server</td></tr>
+    <tr><td>GET</td><td id="urlNokosServices">/api/nokos/services</td><td>server; gunakan code layanan apa adanya, termasuk kode angka server khusus</td></tr>
+    <tr><td>GET</td><td id="urlNokosCountries">/api/nokos/countries</td><td>Daftar lengkap kode negara/wilayah; bukan daftar stok provider</td></tr>
+    <tr><td>GET</td><td id="urlNokosProducts">/api/nokos/products</td><td>server, service, country (contoh id, my, sg, us, uk)</td></tr>
+    <tr><td>POST</td><td id="urlNokosOrder">/api/nokos/order</td><td>JSON quote_id dari products, operator opsional untuk premium, voucherCode opsional</td></tr>
+    <tr><td>GET</td><td id="urlNokosStatus">/api/nokos/status</td><td>id = _id transaksi lokal</td></tr>
+    <tr><td>POST</td><td>/api/nokos/cancel</td><td>JSON id; minimal 120 detik, belum ada OTP</td></tr>
+    <tr><td>POST</td><td>/api/nokos/resend</td><td>JSON id; OTP kedua sekali, setelah OTP pertama diterima</td></tr>
+    </tbody></table></div>
+    <p class="my-4">Respons website memakai <code>success</code> dan <code>data</code>. Untuk POST Nokos, kirim body JSON dengan Content-Type: application/json; API key juga bisa melalui header x-api-key. Produk mengembalikan <code>id</code> provider yang opaque serta <code>quote_id</code> pembelian khusus akunmu (berlaku 5 menit). Harga <code>price</code> sudah termasuk markup. Jangan ubah ID atau kirim harga buatan sendiri. Operator premium: any, telkomsel, indosat, axis, three, smartfren, byu.</p>
+    <p class="my-4">Status lokal: ACTIVE menunggu; OTP_RECEIVED berisi otpCode; OTP kedua di otpCode2; CANCELED/EXPIRED dikembalikan ke saldo asal sekali; RESEND_CANCELED mengakhiri permintaan OTP kedua tanpa refund pembelian yang sudah menerima OTP pertama. REVIEW berarti hasil provider belum pasti: hubungi admin dengan ID transaksi, jangan langsung order ulang. GET order lama tidak lagi membuat pesanan; gunakan POST.</p>
+    <pre class="p-4 border rounded-xl overflow-x-auto"><code>const BASE = '<span class="base-url-placeholder">BASE_URL</span>';
+const apikey = 'API_KEY_WEBSITE_ANDA';
+async function get(path, params = {}) {
+  const r = await fetch(BASE + path + '?' + new URLSearchParams({apikey, ...params}));
+  const j = await r.json(); if (!j.success) throw new Error(j.error); return j.data;
+}
+const services = await get('/api/nokos/services', {server:'ekonomi'});
+const service = services[0].code;
+const products = await get('/api/nokos/products', {server:'ekonomi', service, country:'id'});
+if (!products.length) throw new Error('Stok kosong');
+const response = await fetch(BASE + '/api/nokos/order', {
+  method:'POST', headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({apikey, quote_id:products[0].quote_id})
+});
+const result = await response.json();
+if (!result.success) throw new Error(result.error);
+const id = result.data._id;
+console.log(result.data.phoneNumber);
+// Panggil setiap 5 detik selama masih menunggu, tanpa membuat order ulang.
+const status = await get('/api/nokos/status', {id});
+console.log(status.status, status.otpCode, status.otpCode2);</code></pre>
+  </section>
+
+  <!-- Gacha Nokos (Nomor Virtual ACAK, numberpanel.tech — wajib approval admin) -->
+  <section class="mb-8" id="sec-gacha-nokos">
+    <h2 class="text-base mb-1 font-medium text-gray-800 flex items-center gap-2">
+      Gacha Nokos — Nomor Virtual Acak
+      <% if (gachaNokosStatus !== 'approved') { %><span class="text-[10.5px] font-bold text-gray-400 border border-gray-300 rounded-full px-2 py-0.5"><i class="fa-solid fa-lock mr-1"></i>Terkunci</span><% } %>
+    </h2>
+
+    <% if (gachaNokosStatus !== 'approved') { %>
+      <div class="bg-gray-50 border border-gray-200 rounded-md p-4 text-[13.5px] font-medium text-gray-600 leading-relaxed">
+        <% if (gachaNokosStatus === 'pending') { %>
+          Pendaftaran kamu untuk fitur <b>Gacha Nokos</b> masih menunggu review Admin. Dokumentasi API di bawah akan otomatis terbuka begitu akun kamu di-ACC.
+        <% } else if (gachaNokosStatus === 'rejected') { %>
+          Pendaftaran kamu untuk fitur <b>Gacha Nokos</b> ditolak Admin. Daftar ulang lewat halaman <span class="text-blue-600">/gacha-nokos</span>, dokumentasi API di bawah akan terbuka begitu di-ACC.
+        <% } else { %>
+          Dokumentasi endpoint ini terkunci. Silakan daftar &amp; dapatkan akses lewat halaman <span class="text-blue-600">/gacha-nokos</span> dulu — begitu akun kamu disetujui (ACC admin / otomatis / setelah bayar, tergantung mode pendaftaran yang aktif), dokumentasi lengkapnya otomatis terbuka di sini.
+        <% } %>
+      </div>
+    <% } else { %>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Fitur Gacha Nokos memberikan 1 nomor virtual dengan <b>layanan &amp; negara dipilih ACAK</b> dari stok numberpanel.tech setiap kali endpoint "Tarik" dipanggil. Endpoint ini hanya bisa dipakai akun yang sudah disetujui (approved) untuk Gacha Nokos.
+    </p>
+
+    <!-- Cek Status Akses -->
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">1. Cek Status Akses</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/gacha-nokos/status</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/gacha-nokos/status?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{
+  "success": true,
+  "data": { "status": "approved", "note": "", "applied_at": "...", "reviewed_at": "..." }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Tarik Nomor Acak -->
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">2. Tarik Nomor Acak</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>POST</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/gacha-nokos/tarik</span></li>
+        <li>Saldo otomatis terpotong sesuai biaya per-tarik yang diset admin (0 = gratis).</li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">POST /api/gacha-nokos/tarik?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "_id": "GACHA...",
+    "service": "whatsapp",
+    "country": "random",
+    "phoneNumber": "+6281234567890",
+    "cost": 0,
+    "status": "ACTIVE",
+    "expiresAt": "2026-09-17T10:20:00.000Z"
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Cek OTP -->
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">3. Cek OTP</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/gacha-nokos/otp</span></li>
+        <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi dari endpoint Tarik</li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/gacha-nokos/otp?id=GACHA...&api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{
+  "success": true,
+  "data": { "_id": "GACHA...", "status": "OTP_RECEIVED", "otpCode": "123456", "otpMessage": "..." }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Lepas Nomor -->
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">4. Lepas Nomor</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>POST</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/gacha-nokos/release</span></li>
+        <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi yang ingin dilepas lebih awal</li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">POST /api/gacha-nokos/release?id=GACHA...&api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": { "_id": "GACHA...", "status": "RELEASED" } }</pre>
+      </div>
+    </div>
+
+    <!-- Riwayat -->
+    <div>
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">5. Riwayat Tarik</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/gacha-nokos/riwayat</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/gacha-nokos/riwayat?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": [ { "_id": "GACHA...", "phoneNumber": "+6281234567890", "status": "COMPLETED" } ] }</pre>
+      </div>
+    </div>
+    <% } %>
+  </section>
+
+  <!-- Fix No / Unban WA (permohonan via email, wajib buka akses dulu di /fix-no) -->
+  <section class="mb-8" id="sec-fix-no">
+    <h2 class="text-base mb-1 font-medium text-gray-800 flex items-center gap-2">
+      Fix No / Unban WA
+      <% if (!fixNoAccess) { %><span class="text-[10.5px] font-bold text-gray-400 border border-gray-300 rounded-full px-2 py-0.5"><i class="fa-solid fa-lock mr-1"></i>Terkunci</span><% } %>
+    </h2>
+
+    <% if (!fixNoAccess) { %>
+      <div class="bg-gray-50 border border-gray-200 rounded-md p-4 text-[13.5px] font-medium text-gray-600 leading-relaxed">
+        Dokumentasi endpoint ini terkunci. Buka akses fitur Fix No/Unban WA dulu lewat halaman <span class="text-blue-600">/fix-no</span> — begitu akses terbuka, dokumentasi lengkapnya otomatis muncul di sini.
+      </div>
+    <% } else { %>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Fitur ini mengirim email permohonan <b>Fix Nomor Merah</b> atau <b>Unban Akun WhatsApp</b> ke daftar Gmail tujuan yang diatur admin, memakai Sender Private (Gmail kamu sendiri) atau Sender Global (Gmail resmi admin, perlu paket harian aktif — lewat dari expired otomatis error). Isi email yang dikirim otomatis memakai <b>template masing-masing jenis</b> (template Fix Nomor Merah dan template Unban beda, diatur terpisah oleh admin).
+    </p>
+
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">1. Cek Status Akses &amp; Paket Global</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/fix-no/status</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/fix-no/status?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": { "access": true, "global_active": false, "global_expires_at": null } }</pre>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">2. Daftar Paket Sender Global</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/fix-no/paket</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/fix-no/paket?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": [ { "_id": "FNPKG...", "name": "7 Hari", "days": 7, "price": 15000 } ] }</pre>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">3. Kirim Permohonan</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>POST</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/fix-no/kirim</span></li>
+        <li><span class="text-blue-600 text-[13.5px]">jenis</span> (wajib) — <code>fix_merah</code> atau <code>unban</code></li>
+        <li><span class="text-blue-600 text-[13.5px]">phone_number</span> (wajib) — nomor WhatsApp yang kena merah/banned</li>
+        <li><span class="text-blue-600 text-[13.5px]">sender_type</span> (wajib) — <code>private</code> atau <code>global</code></li>
+        <li><span class="text-blue-600 text-[13.5px]">private_email</span>, <span class="text-blue-600 text-[13.5px]">private_password</span> — wajib kalau sender_type = private (Gmail + App Password)</li>
+        <li>Kalau sender_type = <code>global</code> dan paket kamu sudah lewat hari (expired), request akan otomatis error.</li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">POST /api/fix-no/kirim?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+Content-Type: application/x-www-form-urlencoded
+
+jenis=fix_merah&phone_number=6281234567890&sender_type=global
+
+Response:
+{ "success": true, "data": { "_id": "FIXNO...", "status": "PROCESSING", "targetsTotal": 3 } }
+
+Error (paket global expired):
+{ "error": "Paket Sender Global kamu sudah habis/expired. Beli paket lagi via /fix-no." }</pre>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">4. Cek Status Pengiriman</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/fix-no/cek/:id</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/fix-no/cek/FIXNO...?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": { "_id": "FIXNO...", "status": "SENT", "targetsSent": 3, "targetsFailed": 0 } }</pre>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="text-[13.5px] font-bold text-gray-800 mb-1.5">5. Riwayat Permohonan</h3>
+      <ul class="text-[12.5px] text-gray-600 mb-2 space-y-0.5">
+        <li>Method: <b>GET</b></li>
+        <li>URL: <span class="text-blue-600 text-[13.5px]">/api/fix-no/riwayat</span></li>
+      </ul>
+      <div class="bg-gray-900 rounded-md p-3 overflow-x-auto">
+        <pre class="text-[12px] text-gray-100 font-mono">GET /api/fix-no/riwayat?api_key=<%= userApiKey || 'API_KEY_KAMU' %>
+
+Response:
+{ "success": true, "data": [ { "_id": "FIXNO...", "jenis": "unban", "status": "SENT" } ] }</pre>
+      </div>
+    </div>
+    <% } %>
+  </section>
+
+  <!-- I. Pterodactyl (Beli Panel Hosting Otomatis) -->
+  <section class="mb-8" id="sec-pterodactyl">
+    <h2 class="text-base mb-1 font-medium text-gray-800">I. Pterodactyl — Beli Panel Hosting Otomatis</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Fitur ini menjual akses panel hosting (Pterodactyl) secara otomatis. Admin mengatur server panel (domain + API key) dan paket (RAM/Disk/CPU/Harga) di menu Admin &rarr; Pterodactyl.
+      User beli paket pakai saldo; sistem otomatis membuatkan akun &amp; server di panel (username, password, email), dan transaksinya tersimpan di database.
+      Alur pemakaian: <b>pilih server &rarr; pilih paket &rarr; beli &rarr; cek status/riwayat</b>. Panel punya masa expired (auto delete server &amp; user) dan berstatus NON GARANSI.
+    </p>
+
+    <!-- I1. Daftar Server Panel -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">1. Daftar Server Panel</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-4">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroPanels" class="text-blue-600 text-[13.5px]">/api/pterodactyl/panels</span></li>
+    </ul>
+
+    <!-- I2. Daftar Paket -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">2. Daftar Paket</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroPackages" class="text-blue-600 text-[13.5px]">/api/pterodactyl/packages</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">panel_id</span> (opsional) — filter paket milik satu server panel</li>
+    </ul>
+
+    <!-- I3. Daftar Egg -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">3. Daftar Egg (Pilihan Egg) <span class="text-gray-400 font-normal">(opsional)</span></p>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-2">
+      Mengambil daftar egg (tipe software, mis. Node.js, Python, dll) yang tersedia di <b>Nest</b> server panel tersebut. Nest mengikuti pengaturan admin: kalau paket punya Nest khusus dipakai Nest paket, kalau tidak dipakai Nest default server panel. Pakai <span class="text-blue-600">id</span> egg dari hasil endpoint ini sebagai <span class="text-blue-600">egg_id</span> di endpoint Beli Panel.
+    </p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroEggs" class="text-blue-600 text-[13.5px]">/api/pterodactyl/eggs</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">panel_id</span> (wajib) — dari endpoint Daftar Server Panel</li>
+      <li><span class="text-blue-600 text-[13.5px]">package_id</span> (opsional) — dari endpoint Daftar Paket. Kirim kalau mau daftar egg mengikuti Nest &amp; egg default paket tersebut</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request (cURL):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">curl -s '<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/eggs?apikey=YOUR_API_KEY&amp;panel_id=650f1a2b3c4d5e6f7a8b9c0d&amp;package_id=650f1a2b3c4d5e6f7a8b9c0e'</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-3">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "panel_id": "650f1a2b3c4d5e6f7a8b9c0d",
+    "package_id": "650f1a2b3c4d5e6f7a8b9c0e",
+    "nest_id": 5,
+    "default_egg_id": 15,
+    "eggs": [
+      { "id": 15, "name": "Nodejs Generic", "is_default": true },
+      { "id": 16, "name": "Python Generic", "is_default": false }
+    ]
+  }
+}</pre>
+    </div>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">nest_id</span> — Nest yang dipakai (Nest paket kalau diset, kalau tidak Nest default server panel)</li>
+      <li><span class="text-blue-600 text-[13.5px]">default_egg_id</span> — egg default yang dipakai kalau <span class="text-blue-600">egg_id</span> tidak dikirim di Beli Panel</li>
+      <li><span class="text-blue-600 text-[13.5px]">eggs</span> — semua egg di Nest tersebut (<span class="text-blue-600">is_default</span> = true untuk egg default)</li>
+    </ul>
+
+    <!-- I4. Beli Panel -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">4. Beli Panel</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroOrder" class="text-blue-600 text-[13.5px]">/api/pterodactyl/order</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">panel_id</span> (wajib) — dari endpoint Daftar Server Panel</li>
+      <li><span class="text-blue-600 text-[13.5px]">package_id</span> (wajib) — dari endpoint Daftar Paket</li>
+      <li><span class="text-blue-600 text-[13.5px]">username</span> (wajib) — huruf/angka/underscore, 3-20 karakter</li>
+      <li><span class="text-blue-600 text-[13.5px]">email</span> (wajib) — email pemilik akun panel</li>
+      <li><span class="text-blue-600 text-[13.5px]">password</span> (opsional) — 8-32 karakter tanpa spasi. Kalau tidak dikirim, password dibuatkan otomatis (acak &amp; aman) dan dikembalikan di response.</li>
+      <li><span class="text-blue-600 text-[13.5px]">egg_id</span> (opsional) — pilih tipe software/egg tertentu, ambil <span class="text-blue-600">id</span>-nya dari endpoint Daftar Egg (harus salah satu egg yang ada di Nest paket/server tersebut). Kalau tidak dikirim atau id-nya tidak valid, otomatis pakai egg default paket/server.</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-600 font-medium mb-4">Saldo otomatis terpotong sesuai harga paket. Kalau pembuatan akun/server gagal, saldo otomatis dikembalikan.</p>
+
+    <!-- I5. Cek Status -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">5. Cek Status Transaksi</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroStatus" class="text-blue-600 text-[13.5px]">/api/pterodactyl/status</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (wajib) — ID transaksi dari endpoint Beli Panel</li>
+    </ul>
+
+    <!-- I6. Klaim Garansi -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">6. Klaim Garansi</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPteroClaim" class="text-blue-600 text-[13.5px]">/api/pterodactyl/claim-warranty</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-2">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (wajib) — ID transaksi</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-600 font-medium mb-5">Panel sekarang NON GARANSI, jadi endpoint ini selalu menolak klaim. Panel otomatis dihapus saat masa expired (<code>expiresAt</code>) habis.</p>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Alur (Node.js):</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+const BASE = '<span class="base-url-placeholder">BASE_URL</span>';
+const apikey = 'YOUR_API_KEY';
+
+// 1. Pilih server panel
+const { data: panels } = await axios.get(`${BASE}/api/pterodactyl/panels?apikey=${apikey}`);
+const panelId = panels.data[0].id;
+
+// 2. Ambil daftar paket untuk server tersebut
+const { data: packages } = await axios.get(`${BASE}/api/pterodactyl/packages?apikey=${apikey}&panel_id=${panelId}`);
+console.log(packages.data); // tampilkan tiap item sebagai opsi paket
+
+// 3. (opsional) Pilih egg sesuai Nest paket
+const chosenPackageId = packages.data[0].id;
+const { data: eggRes } = await axios.get(`${BASE}/api/pterodactyl/eggs?apikey=${apikey}&panel_id=${panelId}&package_id=${chosenPackageId}`);
+console.log(eggRes.data.eggs); // tampilkan tiap item sebagai opsi egg
+const eggId = eggRes.data.eggs[0].id;
+
+// 4. Beli paket yang dipilih (password & egg_id opsional — kosongkan kalau mau ikut default)
+const { data: order } = await axios.get(`${BASE}/api/pterodactyl/order?apikey=${apikey}&panel_id=${panelId}&package_id=${chosenPackageId}&username=budi123&email=budi@gmail.com&password=RahasiaAman123!&egg_id=${eggId}`);
+console.log(order.data.panelUsername, order.data.panelPassword);
+
+// 5. (opsional) klaim garansi kalau akun/server ternyata hilang
+const { data: claim } = await axios.get(`${BASE}/api/pterodactyl/claim-warranty?apikey=${apikey}&id=${order.data._id}`);
+console.log(claim.data);</code><code class="copy-content hidden" data-code="python">import requests
+
+BASE = '<span class="base-url-placeholder">BASE_URL</span>'
+apikey = 'YOUR_API_KEY'
+
+# 1. Pilih server panel
+panels = requests.get(f'{BASE}/api/pterodactyl/panels?apikey={apikey}').json()
+panel_id = panels['data'][0]['id']
+
+# 2. Ambil daftar paket untuk server tersebut
+packages = requests.get(f'{BASE}/api/pterodactyl/packages?apikey={apikey}&panel_id={panel_id}').json()
+print(packages['data'])  # tampilkan tiap item sebagai opsi paket
+
+# 3. (opsional) Pilih egg sesuai Nest paket
+chosen_package_id = packages['data'][0]['id']
+egg_res = requests.get(f'{BASE}/api/pterodactyl/eggs?apikey={apikey}&panel_id={panel_id}&package_id={chosen_package_id}').json()
+print(egg_res['data']['eggs'])  # tampilkan tiap item sebagai opsi egg
+egg_id = egg_res['data']['eggs'][0]['id']
+
+# 4. Beli paket yang dipilih (password & egg_id opsional — kosongkan kalau mau ikut default)
+params = {
+    'apikey': apikey,
+    'panel_id': panel_id,
+    'package_id': chosen_package_id,
+    'username': 'budi123',
+    'email': 'budi@gmail.com',
+    'password': 'RahasiaAman123!',  # opsional, hapus baris ini kalau mau dibuatkan otomatis
+    'egg_id': egg_id,               # opsional, hapus baris ini kalau mau ikut egg default
+}
+order = requests.get(f'{BASE}/api/pterodactyl/order', params=params).json()
+print(order['data']['panelUsername'], order['data']['panelPassword'])
+
+# 5. (opsional) klaim garansi kalau akun/server ternyata hilang
+claim = requests.get(f'{BASE}/api/pterodactyl/claim-warranty?apikey={apikey}&id={order["data"]["_id"]}').json()
+print(claim['data'])</code><code class="copy-content hidden" data-code="curl"># 1. Daftar server panel
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/panels?apikey=YOUR_API_KEY"
+
+# 2. Daftar paket
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/packages?apikey=YOUR_API_KEY&panel_id=650f1a2b3c4d5e6f7a8b9c0d"
+
+# 3. Daftar egg (opsional, package_id opsional)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/eggs?apikey=YOUR_API_KEY&panel_id=650f1a2b3c4d5e6f7a8b9c0d&package_id=650f1a2b3c4d5e6f7a8b9c0e"
+
+# 4. Beli panel (password & egg_id opsional)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/order?apikey=YOUR_API_KEY&panel_id=650f1a2b3c4d5e6f7a8b9c0d&package_id=650f1a2b3c4d5e6f7a8b9c0e&username=budi123&email=budi@gmail.com&password=RahasiaAman123!&egg_id=16"
+
+# 5. Klaim garansi
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/pterodactyl/claim-warranty?apikey=YOUR_API_KEY&id=PTEROxxxxxxxx"</code><code class="copy-content hidden" data-code="php">&lt;?php
+$base = '<span class="base-url-placeholder">BASE_URL</span>';
+$apikey = 'YOUR_API_KEY';
+
+// 1. Pilih server panel
+$panels = json_decode(file_get_contents("$base/api/pterodactyl/panels?apikey=$apikey"), true);
+$panelId = $panels['data'][0]['id'];
+
+// 2. Ambil daftar paket untuk server tersebut
+$packages = json_decode(file_get_contents("$base/api/pterodactyl/packages?apikey=$apikey&panel_id=$panelId"), true);
+print_r($packages['data']); // tampilkan tiap item sebagai opsi paket
+
+// 3. (opsional) Pilih egg sesuai Nest paket
+$chosenPackageId = $packages['data'][0]['id'];
+$eggRes = json_decode(file_get_contents("$base/api/pterodactyl/eggs?apikey=$apikey&panel_id=$panelId&package_id=$chosenPackageId"), true);
+print_r($eggRes['data']['eggs']); // tampilkan tiap item sebagai opsi egg
+$eggId = $eggRes['data']['eggs'][0]['id'];
+
+// 4. Beli paket yang dipilih (password & egg_id opsional — kosongkan kalau mau ikut default)
+$params = http_build_query([
+    'apikey' => $apikey,
+    'panel_id' => $panelId,
+    'package_id' => $chosenPackageId,
+    'username' => 'budi123',
+    'email' => 'budi@gmail.com',
+    'password' => 'RahasiaAman123!', // opsional, hapus baris ini kalau mau dibuatkan otomatis
+    'egg_id' => $eggId,              // opsional, hapus baris ini kalau mau ikut egg default
+]);
+$order = json_decode(file_get_contents("$base/api/pterodactyl/order?$params"), true);
+echo $order['data']['panelUsername'] . ' ' . $order['data']['panelPassword'];
+
+// 5. (opsional) klaim garansi kalau akun/server ternyata hilang
+$claim = json_decode(file_get_contents("$base/api/pterodactyl/claim-warranty?apikey=$apikey&id=" . $order['data']['_id']), true);
+print_r($claim['data']);
+?&gt;</code></pre>
+      </div>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Beli Panel:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "_id": "PTEROa1b2c3d4",
+    "panelName": "Panel Node 1",
+    "packageName": "Paket Bronze",
+    "ram": 1024, "disk": 2048, "cpu": 50,
+    "price": 15000,
+    "panelUsername": "budi123ab12",
+    "panelPassword": "Xy7dK2pqAa1!",
+    "panelEmail": "budi@gmail.com",
+    "status": "ACTIVE",
+    "warrantyMaxClaims": 3,
+    "warrantyClaimsUsed": 0,
+    "warrantyExpiresAt": "2026-10-17T10:00:00.000Z"
+  }
+}</pre>
+    </div>
+  </section>
+
+  <!-- J. Aplikasi Premium (Reseller Akun Premium) -->
+  <section class="mb-8" id="sec-premium">
+    <h2 class="text-base mb-1 font-medium text-gray-800">J. Aplikasi Premium — Beli Akun Premium Otomatis</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Fitur ini menjual akun aplikasi premium (Capcut, Netflix, Alight Motion, dll) yang diambil realtime dari katalog produk pemasok. Saldo akun otomatis terpotong sesuai harga (sudah termasuk markup) saat pesanan dibuat, lalu akun (username/password) dikirim otomatis begitu transaksi selesai.
+      Alur pemakaiannya: <b>lihat daftar produk</b> &rarr; <b>buat pesanan</b> &rarr; <b>cek status sampai akun tersedia</b>.
+    </p>
+
+    <!-- J1. Daftar Produk -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">1. Daftar Produk / Harga</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPremiumProducts" class="text-blue-600 text-[13.5px]">/api/premium/products</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-2">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-600 font-medium mb-4">Mengembalikan seluruh produk yang berstatus tersedia lengkap dengan nama, deskripsi, gambar, stok realtime, dan harga (sudah termasuk markup admin).</p>
+
+    <!-- J2. Cek Stok -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">2. Cek Stok Produk Spesifik <span class="text-gray-400 font-normal">(opsional)</span></p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPremiumStock" class="text-blue-600 text-[13.5px]">/api/premium/stock</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">product_id</span> (integer, wajib) — didapat dari endpoint Daftar Produk</li>
+    </ul>
+
+    <!-- J3. Buat Pesanan -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">3. Buat Pesanan (Beli Akun)</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPremiumOrder" class="text-blue-600 text-[13.5px]">/api/premium/order</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">product_id</span> (integer, wajib) — didapat dari endpoint Daftar Produk</li>
+      <li><span class="text-blue-600 text-[13.5px]">qty</span> (integer, opsional, default 1) — jumlah akun yang ingin dibeli sekaligus</li>
+    </ul>
+
+    <!-- J4. Cek Status -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">4. Cek Status Pesanan / Ambil Akun</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPremiumStatus" class="text-blue-600 text-[13.5px]">/api/premium/status</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi Aplikasi Premium yang dikembalikan endpoint Buat Pesanan</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Alur (Node.js):</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+const BASE = '<span class="base-url-placeholder">BASE_URL</span>';
+const apikey = 'YOUR_API_KEY';
+
+// 1. Ambil daftar produk yang tersedia
+const { data: products } = await axios.get(`${BASE}/api/premium/products?apikey=${apikey}`);
+console.log(products.data); // tampilkan tiap item sebagai pilihan produk
+
+// 2. Setelah user memilih produk, buat pesanan (saldo otomatis terpotong)
+const chosenProductId = products.data[0].id; // ganti dengan pilihan user
+const { data: order } = await axios.get(`${BASE}/api/premium/order?apikey=${apikey}&product_id=${chosenProductId}&qty=1`);
+console.log(order.data._id, order.data.premkuInvoice);
+
+// 3. Polling status sampai akun tersedia (status jadi success)
+const orderId = order.data._id;
+const check = async () => {
+  const { data: status } = await axios.get(`${BASE}/api/premium/status?apikey=${apikey}&id=${orderId}`);
+  console.log(status.data.status, status.data.accounts);
+  if (!['success','failed','canceled'].includes(status.data.status)) setTimeout(check, 5000);
+};
+check();</code><code class="copy-content hidden" data-code="python">import requests
+import time
+
+BASE = '<span class="base-url-placeholder">BASE_URL</span>'
+apikey = 'YOUR_API_KEY'
+
+# 1. Ambil daftar produk yang tersedia
+products = requests.get(f'{BASE}/api/premium/products?apikey={apikey}').json()
+print(products['data'])  # tampilkan tiap item sebagai pilihan produk
+
+# 2. Setelah user memilih produk, buat pesanan (saldo otomatis terpotong)
+chosen_product_id = products['data'][0]['id']  # ganti dengan pilihan user
+order = requests.get(f'{BASE}/api/premium/order?apikey={apikey}&product_id={chosen_product_id}&qty=1').json()
+print(order['data']['_id'], order['data']['premkuInvoice'])
+
+# 3. Polling status sampai akun tersedia (status jadi success)
+order_id = order['data']['_id']
+while True:
+    status = requests.get(f'{BASE}/api/premium/status?apikey={apikey}&id={order_id}').json()
+    print(status['data']['status'], status['data'].get('accounts'))
+    if status['data']['status'] in ('success', 'failed', 'canceled'):
+        break
+    time.sleep(5)</code><code class="copy-content hidden" data-code="curl"># 1. Daftar produk yang tersedia
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/premium/products?apikey=YOUR_API_KEY"
+
+# 2. Cek stok produk spesifik (opsional)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/premium/stock?apikey=YOUR_API_KEY&product_id=1"
+
+# 3. Beli produk (qty opsional, default 1)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/premium/order?apikey=YOUR_API_KEY&product_id=1&qty=1"
+
+# 4. Cek status / ambil akun
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/premium/status?apikey=YOUR_API_KEY&id=PREMxxxxxxxx"</code><code class="copy-content hidden" data-code="php">&lt;?php
+$base = '<span class="base-url-placeholder">BASE_URL</span>';
+$apikey = 'YOUR_API_KEY';
+
+// 1. Ambil daftar produk yang tersedia
+$products = json_decode(file_get_contents("$base/api/premium/products?apikey=$apikey"), true);
+print_r($products['data']); // tampilkan tiap item sebagai pilihan produk
+
+// 2. Setelah user memilih produk, buat pesanan (saldo otomatis terpotong)
+$chosenProductId = $products['data'][0]['id']; // ganti dengan pilihan user
+$order = json_decode(file_get_contents("$base/api/premium/order?apikey=$apikey&product_id=$chosenProductId&qty=1"), true);
+echo $order['data']['_id'] . ' ' . $order['data']['premkuInvoice'];
+
+// 3. Polling status sampai akun tersedia (status jadi success)
+$orderId = $order['data']['_id'];
+while (true) {
+    $status = json_decode(file_get_contents("$base/api/premium/status?apikey=$apikey&id=$orderId"), true);
+    echo $status['data']['status'] . "\n";
+    if (in_array($status['data']['status'], ['success', 'failed', 'canceled'])) break;
+    sleep(5);
+}
+?&gt;</code></pre>
+      </div>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Buat Pesanan:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-5">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "_id": "PREMa1b2c3d4",
+    "premkuInvoice": "API-20260918194500-a1b2c3d4",
+    "productName": "Capcut Pro 1 Bulan",
+    "qty": 1,
+    "sellPrice": 11500,
+    "status": "pending"
+  }
+}</pre>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Cek Status (setelah akun tersedia):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "_id": "PREMa1b2c3d4",
+    "productName": "Capcut Pro 1 Bulan",
+    "status": "success",
+    "accounts": [
+      { "username": "email@example.com", "password": "pass123" }
+    ]
+  }
+}</pre>
+    </div>
+  </section>
+
+  <!-- K. Suntik Sosmed (SMM Panel via Heru Pedia) -->
+  <section class="mb-8" id="sec-sosmed">
+    <h2 class="text-base mb-1 font-medium text-gray-800">K. Suntik Sosmed — Followers / Likes / Views Otomatis</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Fitur ini menjual jasa penambah Followers, Likes, Views, Comment, Subscribe, dll untuk Instagram, TikTok, Facebook, YouTube, dan platform sosial media lainnya, diambil realtime dari katalog layanan pemasok. Saldo akun otomatis terpotong sesuai rate (sudah termasuk markup) saat pesanan dibuat.
+      Alur pemakaiannya: <b>lihat daftar layanan</b> &rarr; <b>buat pesanan</b> &rarr; <b>cek status sampai selesai</b> &rarr; <b>(opsional) ajukan refill</b> kalau jumlahnya turun setelah selesai.
+    </p>
+
+    <!-- K1. Daftar Layanan -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">1. Daftar Layanan</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlSosmedServices" class="text-blue-600 text-[13.5px]">/api/sosmed/services</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-2">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-600 font-medium mb-4">Mengembalikan seluruh layanan lengkap dengan ID layanan, nama, kategori, batas min/max jumlah, harga per 1000 (sudah termasuk markup admin), dan apakah layanan mendukung refill.</p>
+
+    <!-- K2. Buat Pesanan -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">2. Buat Pesanan</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlSosmedOrder" class="text-blue-600 text-[13.5px]">/api/sosmed/order</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">service_id</span> (integer, wajib) — didapat dari endpoint Daftar Layanan</li>
+      <li><span class="text-blue-600 text-[13.5px]">target</span> (string, wajib) — link/username/ID target yang mau ditambah</li>
+      <li><span class="text-blue-600 text-[13.5px]">quantity</span> (integer, wajib) — harus di antara min/max layanan tersebut</li>
+    </ul>
+
+    <!-- K3. Cek Status -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">3. Cek Status Pesanan</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlSosmedStatus" class="text-blue-600 text-[13.5px]">/api/sosmed/status</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi Suntik Sosmed yang dikembalikan endpoint Buat Pesanan</li>
+    </ul>
+
+    <!-- K4. Refill -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">4. Ajukan Refill <span class="text-gray-400 font-normal">(opsional, cuma untuk layanan yang mendukung refill)</span></p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlSosmedRefill" class="text-blue-600 text-[13.5px]">/api/sosmed/refill</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi Suntik Sosmed, hanya bisa diajukan kalau status pesanan sudah <span class="text-blue-600">completed</span></li>
+    </ul>
+
+    <!-- K5. Cek Status Refill -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">5. Cek Status Refill</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlSosmedRefillStatus" class="text-blue-600 text-[13.5px]">/api/sosmed/refill/status</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi Suntik Sosmed (bukan ID refill) yang sudah pernah diajukan refill-nya</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Alur (Node.js):</p>
+    <div class="bg-white border border-gray-300 rounded-md overflow-hidden mb-4" data-code-switcher>
+      <div class="flex bg-gray-100 border-b border-gray-300 px-1 pt-1 overflow-x-scroll gap-1">
+        <button onclick="switchCodeTab(this, 'nodejs')" data-lang="nodejs" class="code-tab active flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm bg-white border border-b-0 border-gray-300 text-gray-800 -mb-px relative z-10">
+          <i class="fab fa-node-js text-green-600 text-sm"></i> Node.js
+        </button>
+        <button onclick="switchCodeTab(this, 'python')" data-lang="python" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-python text-blue-500 text-sm"></i> Python
+        </button>
+        <button onclick="switchCodeTab(this, 'curl')" data-lang="curl" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fas fa-terminal text-gray-500 text-sm"></i> cURL
+        </button>
+        <button onclick="switchCodeTab(this, 'php')" data-lang="php" class="code-tab flex items-center gap-1.5 px-3 py-1.5 text-[13.5px] font-medium rounded-t-sm text-gray-500 hover:text-gray-700 border border-transparent">
+          <i class="fab fa-php text-indigo-500 text-sm"></i> PHP
+        </button>
+      </div>
+      <div class="relative bg-gray-50 p-3 group">
+        <button onclick="copyCode(this)" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer z-10" title="Salin">
+          <i class="far fa-copy text-sm"></i>
+        </button>
+        <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed"><code class="copy-content" data-code="nodejs">const axios = require('axios');
+const BASE = '<span class="base-url-placeholder">BASE_URL</span>';
+const apikey = 'YOUR_API_KEY';
+
+// 1. Ambil daftar layanan yang tersedia
+const { data: services } = await axios.get(`${BASE}/api/sosmed/services?apikey=${apikey}`);
+console.log(services.data); // tampilkan tiap item sebagai pilihan layanan
+
+// 2. Setelah user pilih layanan + isi target & jumlah, buat pesanan (saldo otomatis terpotong)
+const chosenServiceId = services.data[0].id; // ganti dengan pilihan user
+const { data: order } = await axios.get(`${BASE}/api/sosmed/order?apikey=${apikey}&service_id=${chosenServiceId}&target=https://instagram.com/username&quantity=100`);
+console.log(order.data._id, order.data.fayupediaOrderId);
+
+// 3. Polling status sampai pesanan selesai
+const orderId = order.data._id;
+const checkStatus = async () => {
+  const { data: status } = await axios.get(`${BASE}/api/sosmed/status?apikey=${apikey}&id=${orderId}`);
+  console.log(status.data.status, status.data.remains);
+  if (!['completed','canceled','failed'].includes(status.data.status)) setTimeout(checkStatus, 5000);
+};
+checkStatus();
+
+// 4. (Opsional) Ajukan refill kalau jumlahnya turun setelah selesai
+const { data: refill } = await axios.get(`${BASE}/api/sosmed/refill?apikey=${apikey}&id=${orderId}`);
+console.log(refill.data.refillStatus);
+
+// 5. (Opsional) Cek status refill
+const { data: refillStatus } = await axios.get(`${BASE}/api/sosmed/refill/status?apikey=${apikey}&id=${orderId}`);
+console.log(refillStatus.data.refillStatus);</code><code class="copy-content hidden" data-code="python">import requests
+import time
+
+BASE = '<span class="base-url-placeholder">BASE_URL</span>'
+apikey = 'YOUR_API_KEY'
+
+# 1. Ambil daftar layanan yang tersedia
+services = requests.get(f'{BASE}/api/sosmed/services?apikey={apikey}').json()
+print(services['data'])  # tampilkan tiap item sebagai pilihan layanan
+
+# 2. Setelah user pilih layanan + isi target & jumlah, buat pesanan (saldo otomatis terpotong)
+chosen_service_id = services['data'][0]['id']  # ganti dengan pilihan user
+order = requests.get(f'{BASE}/api/sosmed/order?apikey={apikey}&service_id={chosen_service_id}&target=https://instagram.com/username&quantity=100').json()
+print(order['data']['_id'], order['data']['fayupediaOrderId'])
+
+# 3. Polling status sampai pesanan selesai
+order_id = order['data']['_id']
+while True:
+    status = requests.get(f'{BASE}/api/sosmed/status?apikey={apikey}&id={order_id}').json()
+    print(status['data']['status'], status['data'].get('remains'))
+    if status['data']['status'] in ('completed', 'canceled', 'failed'):
+        break
+    time.sleep(5)
+
+# 4. (Opsional) Ajukan refill kalau jumlahnya turun setelah selesai
+refill = requests.get(f'{BASE}/api/sosmed/refill?apikey={apikey}&id={order_id}').json()
+print(refill['data']['refillStatus'])
+
+# 5. (Opsional) Cek status refill
+refill_status = requests.get(f'{BASE}/api/sosmed/refill/status?apikey={apikey}&id={order_id}').json()
+print(refill_status['data']['refillStatus'])</code><code class="copy-content hidden" data-code="curl"># 1. Daftar layanan yang tersedia
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/sosmed/services?apikey=YOUR_API_KEY"
+
+# 2. Buat pesanan
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/sosmed/order?apikey=YOUR_API_KEY&service_id=1234&target=https://instagram.com/username&quantity=100"
+
+# 3. Cek status pesanan
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/sosmed/status?apikey=YOUR_API_KEY&id=SOSxxxxxxxx"
+
+# 4. Ajukan refill (opsional, hanya kalau status sudah completed)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/sosmed/refill?apikey=YOUR_API_KEY&id=SOSxxxxxxxx"
+
+# 5. Cek status refill (opsional)
+curl -s "<span class="base-url-placeholder">BASE_URL</span>/api/sosmed/refill/status?apikey=YOUR_API_KEY&id=SOSxxxxxxxx"</code><code class="copy-content hidden" data-code="php">&lt;?php
+$base = '<span class="base-url-placeholder">BASE_URL</span>';
+$apikey = 'YOUR_API_KEY';
+
+// 1. Ambil daftar layanan yang tersedia
+$services = json_decode(file_get_contents("$base/api/sosmed/services?apikey=$apikey"), true);
+print_r($services['data']); // tampilkan tiap item sebagai pilihan layanan
+
+// 2. Setelah user pilih layanan + isi target & jumlah, buat pesanan (saldo otomatis terpotong)
+$chosenServiceId = $services['data'][0]['id']; // ganti dengan pilihan user
+$target = urlencode('https://instagram.com/username');
+$order = json_decode(file_get_contents("$base/api/sosmed/order?apikey=$apikey&service_id=$chosenServiceId&target=$target&quantity=100"), true);
+echo $order['data']['_id'] . ' ' . $order['data']['fayupediaOrderId'];
+
+// 3. Polling status sampai pesanan selesai
+$orderId = $order['data']['_id'];
+while (true) {
+    $status = json_decode(file_get_contents("$base/api/sosmed/status?apikey=$apikey&id=$orderId"), true);
+    echo $status['data']['status'] . "\n";
+    if (in_array($status['data']['status'], ['completed', 'canceled', 'failed'])) break;
+    sleep(5);
+}
+
+// 4. (Opsional) Ajukan refill kalau jumlahnya turun setelah selesai
+$refill = json_decode(file_get_contents("$base/api/sosmed/refill?apikey=$apikey&id=$orderId"), true);
+echo $refill['data']['refillStatus'];
+
+// 5. (Opsional) Cek status refill
+$refillStatus = json_decode(file_get_contents("$base/api/sosmed/refill/status?apikey=$apikey&id=$orderId"), true);
+echo $refillStatus['data']['refillStatus'];
+?&gt;</code></pre>
+      </div>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Buat Pesanan:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-5">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "_id": "SOSa1b2c3d4",
+    "fayupediaOrderId": "123456",
+    "serviceName": "Instagram Followers Indo [Real]",
+    "target": "https://instagram.com/username",
+    "quantity": 100,
+    "sellPrice": 12000,
+    "status": "pending",
+    "canRefill": true
+  }
+}</pre>
+    </div>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Cek Status (setelah selesai):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "_id": "SOSa1b2c3d4",
+    "status": "completed",
+    "startCount": 1520,
+    "remains": 0
+  }
+}</pre>
+    </div>
+  </section>
+
+  <!-- L. Produk (khusus role panel Reseller / Admin Panel) -->
+  <section class="mb-8" id="sec-produk">
+    <h2 class="text-base mb-1 font-medium text-gray-800">L. Produk — Khusus Role Panel (Reseller / Admin Panel)</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-3">
+      Endpoint di bagian ini <b>berbeda dari endpoint API lainnya</b>: hanya bisa dipakai oleh akun yang sudah membeli <b>Role Panel</b> di menu Role Panel dashboard — baik role <span class="text-blue-600">reseller</span> (Seller) maupun <span class="text-blue-600">adminpanel</span> (Admin Panel). Akun yang belum beli role panel apa pun (masih role <span class="text-blue-600">user</span>) akan mendapat respons <span class="text-blue-600">403</span>. Produk adalah item digital yang diinput manual oleh admin (bukan produk API pihak ketiga), dibeli memakai saldo akun.
+    </p>
+    <div class="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+      <p class="text-[13.5px] text-amber-800 font-medium leading-relaxed">
+        ⚠️ Kalau role panel akun kamu belum aktif (belum pernah beli Reseller/Admin Panel, atau paketnya sudah kedaluwarsa), semua endpoint di bagian L dan M akan menolak request dengan error 403.
+      </p>
+    </div>
+
+    <!-- L1. Daftar Produk -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">1. Daftar Produk</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlProdukList" class="text-blue-600 text-[13.5px]">/api/produk/list</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+
+    <!-- L2. Beli Produk -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">2. Beli Produk</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlProdukBeli" class="text-blue-600 text-[13.5px]">/api/produk/beli</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID produk, didapat dari endpoint Daftar Produk</li>
+    </ul>
+    <p class="text-[13.5px] text-gray-600 font-medium mb-4">Kalau harga produk 0, dianggap gratis (saldo tidak dipotong). Kalau harga &gt; 0, saldo akan otomatis terpotong sesuai harga produk.</p>
+
+    <!-- L3. Status / Detail Transaksi -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">3. Cek Status / Detail Transaksi</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlProdukStatus" class="text-blue-600 text-[13.5px]">/api/produk/status</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-2">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">id</span> (string, wajib) — ID transaksi (order_id) dari endpoint Beli Produk</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Beli Produk:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "order_id": "PRDa1b2c3d4",
+    "produk_name": "Nama Produk",
+    "price": 15000,
+    "group_link": null,
+    "download_link": "https://..."
+  }
+}</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Ditolak (role panel belum aktif):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "error": "Fitur ini khusus akun dengan role panel: reseller / adminpanel. Role panel kamu saat ini: user."
+}</pre>
+    </div>
+  </section>
+
+  <!-- M. Panel Role — Reseller & Admin Panel -->
+  <section class="mb-8" id="sec-panel-role">
+    <h2 class="text-base mb-1 font-medium text-gray-800">M. Panel Role — Reseller (Pilihan Egg &amp; Add Server) &amp; Admin Panel (Create Admin)</h2>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-4">
+      Endpoint di bagian ini membungkus fitur yang sama dengan menu <b>Kelola Panel</b> (Reseller) dan <b>Admin Panel</b> di dashboard, supaya bisa dipanggil lewat API. Sama seperti bagian L, endpoint ini baru aktif <b>setelah</b> akun membeli role panel yang sesuai. Kalau server offline atau data tidak valid, endpoint akan balas error dengan pesan yang sama seperti di dashboard.
+    </p>
+
+    <!-- M1. Daftar Server -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">1. Daftar Server Reseller Aktif</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPanelServers" class="text-blue-600 text-[13.5px]">/api/panel/servers</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter:</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request (cURL):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">curl '<span class="base-url-placeholder">BASE_URL</span>/api/panel/servers?apikey=YOUR_API_KEY'</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-5">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": [
+    { "slot": 1, "name": "Server 1", "nestId": 5 },
+    { "slot": 2, "name": "Server 2", "nestId": 5 }
+  ]
+}</pre>
+    </div>
+
+    <!-- M2. Daftar Egg -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">2. Daftar Egg (Pilihan Egg) <span class="text-gray-400 font-normal">(role Reseller / Admin Panel)</span></p>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-2">
+      Mengambil daftar egg (tipe software, mis. Node.js, Python, dll) yang tersedia di <b>Nest</b> pada server (slot) yang dipilih. <span class="text-blue-600">Nest ID</span> ditentukan oleh admin di pengaturan server reseller dan tidak bisa diubah dari API — jadi daftar yang kamu dapat selalu sesuai Nest yang sudah diset admin. Pakai <span class="text-blue-600">id</span> egg dari hasil endpoint ini sebagai <span class="text-blue-600">egg_id</span> di Add Server.
+    </p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">GET</span></li>
+      <li>URL: <span id="urlPanelEggs" class="text-blue-600 text-[13.5px]">/api/panel/eggs</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter (query):</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">slot</span> (integer, wajib) — 1, 2, atau 3, didapat dari endpoint Daftar Server</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request (cURL):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">curl '<span class="base-url-placeholder">BASE_URL</span>/api/panel/eggs?apikey=YOUR_API_KEY&amp;slot=1'</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-3">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "slot": 1,
+    "server_name": "Server 1",
+    "nest_id": 5,
+    "default_egg_id": 15,
+    "eggs": [
+      { "id": 15, "name": "Nodejs Generic", "is_default": true },
+      { "id": 16, "name": "Python Generic", "is_default": false }
+    ]
+  }
+}</pre>
+    </div>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-5">
+      <li><span class="text-blue-600 text-[13.5px]">nest_id</span> — Nest yang diset admin untuk server ini</li>
+      <li><span class="text-blue-600 text-[13.5px]">default_egg_id</span> — egg default yang dipakai kalau <span class="text-blue-600">egg_id</span> tidak dikirim di Add Server</li>
+      <li><span class="text-blue-600 text-[13.5px]">eggs</span> — semua egg yang ada di Nest tersebut (<span class="text-blue-600">is_default</span> = true untuk egg default)</li>
+    </ul>
+
+    <!-- M3. Add Server -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">3. Add Server <span class="text-gray-400 font-normal">(role Reseller / Admin Panel)</span></p>
+    <p class="text-[13.5px] font-medium text-gray-700 leading-relaxed mb-2">
+      Menambah server baru ke akun panel (Pterodactyl) yang <b>sudah pernah dibuat</b> akun ini sebelumnya lewat fitur Create Panel, di server (slot) yang sama. <span class="text-blue-600">account_id</span> wajib sudah tercatat di riwayat panel akun ini sendiri — ini untuk mencegah penambahan server ke akun milik orang lain.
+    </p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">POST</span></li>
+      <li>URL: <span id="urlPanelAddServer" class="text-blue-600 text-[13.5px]">/api/panel/add-server</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">reseller</span> atau <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter (body atau query):</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">slot</span> (integer, wajib) — 1, 2, atau 3, didapat dari endpoint Daftar Server</li>
+      <li><span class="text-blue-600 text-[13.5px]">account_id</span> (integer, wajib) — ID akun panel (Pterodactyl user ID) yang sudah dibuat sebelumnya via Create Panel</li>
+      <li><span class="text-blue-600 text-[13.5px]">ram</span> (string, wajib) — angka 1-10 (GB) atau <span class="text-blue-600">unlimited</span></li>
+      <li><span class="text-blue-600 text-[13.5px]">egg_id</span> (integer, opsional) — id egg dari endpoint Daftar Egg. Harus salah satu egg yang ada di Nest server tersebut (sesuai Nest ID yang diset admin). Kalau kosong atau id-nya tidak ada di Nest, otomatis pakai egg default server.</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request (cURL):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">curl -X POST '<span class="base-url-placeholder">BASE_URL</span>/api/panel/add-server' \
+  -d 'apikey=YOUR_API_KEY' \
+  -d 'slot=1' \
+  -d 'account_id=12' \
+  -d 'ram=4' \
+  -d 'egg_id=16'</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-5">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "data": {
+    "domain": "panel.contoh.com",
+    "server_name": "Server 1",
+    "account_id": 12,
+    "username": "reselleruser",
+    "email": "reselleruser@gmail.com",
+    "server_id": 45,
+    "server_identifier": "a1b2c3d4",
+    "ram": "4 GB",
+    "egg_id": 16
+  }
+}</pre>
+    </div>
+
+    <!-- M4. Create Admin -->
+    <p class="text-[13.5px] text-gray-800 font-semibold mb-1">4. Create Admin <span class="text-gray-400 font-normal">(khusus role Admin Panel — dibatasi 1x per akun)</span></p>
+    <div class="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
+      <p class="text-[13.5px] text-amber-800 font-medium leading-relaxed">
+        ⚠️ Setiap akun dengan role <span class="text-blue-600">adminpanel</span> hanya boleh membuat <b>SATU</b> akun Admin (root_admin) seumur hidup akunnya — sama seperti batas di menu Admin Panel pada dashboard. Kalau sudah pernah berhasil dibuat, endpoint ini akan balas error 400 (jatah habis), bukan membuat akun baru. Kalau proses gagal di tengah jalan, jatah <b>tidak</b> terpakai dan kamu boleh coba lagi.
+      </p>
+    </div>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-1 font-medium mb-2">
+      <li>Method: <span class="text-blue-600 font-medium">POST</span></li>
+      <li>URL: <span id="urlPanelCreateAdmin" class="text-blue-600 text-[13.5px]">/api/panel/create-admin</span></li>
+      <li>Role: <span class="text-blue-600 font-medium">adminpanel</span></li>
+    </ul>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Parameter (body atau query):</p>
+    <ul class="list-disc list-inside text-[13.5px] text-gray-700 ml-4 font-medium mb-4">
+      <li><span class="text-blue-600 text-[13.5px]">apikey</span> (string, wajib)</li>
+      <li><span class="text-blue-600 text-[13.5px]">slot</span> (integer, wajib) — server tujuan pembuatan akun Admin</li>
+      <li><span class="text-blue-600 text-[13.5px]">username</span> (string, wajib) — huruf, angka, underscore (3-20 karakter)</li>
+      <li><span class="text-blue-600 text-[13.5px]">email</span> (string, wajib)</li>
+    </ul>
+
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Request (cURL):</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">curl -X POST '<span class="base-url-placeholder">BASE_URL</span>/api/panel/create-admin' \
+  -d 'apikey=YOUR_API_KEY' \
+  -d 'slot=1' \
+  -d 'username=adminbaru' \
+  -d 'email=adminbaru@gmail.com'</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-5">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "success": true,
+  "key_status": "ok",
+  "data": {
+    "domain": "panel.contoh.com",
+    "username": "adminbaru",
+    "email": "adminbaru@gmail.com",
+    "password": "********",
+    "ptla": "ptla_xxxxxxxx",
+    "ptlc": "ptlc_xxxxxxxx",
+    "key_error": null
+  }
+}</pre>
+    </div>
+    <p class="text-[13.5px] text-gray-800 font-medium mb-2">Contoh Response — Jatah Sudah Habis:</p>
+    <div class="relative bg-gray-50 border border-gray-300 rounded-md p-3 mb-4">
+      <pre class="text-[13.5px] text-gray-800 font-medium leading-relaxed">{
+  "error": "Akun kamu sudah pernah membuat Admin Panel. Pembuatan hanya bisa 1x (jatah habis)."
+}</pre>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const baseUrl = window.location.origin;
+
+  // Update URL endpoints
+  document.getElementById('urlBalance').textContent = baseUrl + '/api/balance';
+  document.getElementById('urlInvoice').textContent = baseUrl + '/api/invoice';
+  document.getElementById('urlStatus').textContent = baseUrl + '/api/invoice/status';
+  document.getElementById('urlWithdrawMethods').textContent = baseUrl + '/api/withdraw/methods';
+  document.getElementById('urlWithdraw').textContent = baseUrl + '/api/withdraw';
+  document.getElementById('urlWithdrawStatus').textContent = baseUrl + '/api/withdraw/status';
+  document.getElementById('urlNokosCountries').textContent = baseUrl + '/api/nokos/countries';
+  document.getElementById('urlNokosServices').textContent = baseUrl + '/api/nokos/services';
+  document.getElementById('urlNokosProducts').textContent = baseUrl + '/api/nokos/products';
+  document.getElementById('urlNokosOrder').textContent = baseUrl + '/api/nokos/order';
+  document.getElementById('urlNokosStatus').textContent = baseUrl + '/api/nokos/status';
+  document.getElementById('urlPteroPanels').textContent = baseUrl + '/api/pterodactyl/panels';
+  document.getElementById('urlPteroPackages').textContent = baseUrl + '/api/pterodactyl/packages';
+  document.getElementById('urlPteroEggs').textContent = baseUrl + '/api/pterodactyl/eggs';
+  document.getElementById('urlPteroOrder').textContent = baseUrl + '/api/pterodactyl/order';
+  document.getElementById('urlPteroStatus').textContent = baseUrl + '/api/pterodactyl/status';
+  document.getElementById('urlPteroClaim').textContent = baseUrl + '/api/pterodactyl/claim-warranty';
+  document.getElementById('urlPremiumProducts').textContent = baseUrl + '/api/premium/products';
+  document.getElementById('urlPremiumStock').textContent = baseUrl + '/api/premium/stock';
+  document.getElementById('urlPremiumOrder').textContent = baseUrl + '/api/premium/order';
+  document.getElementById('urlPremiumStatus').textContent = baseUrl + '/api/premium/status';
+  document.getElementById('urlSosmedServices').textContent = baseUrl + '/api/sosmed/services';
+  document.getElementById('urlSosmedOrder').textContent = baseUrl + '/api/sosmed/order';
+  document.getElementById('urlSosmedStatus').textContent = baseUrl + '/api/sosmed/status';
+  document.getElementById('urlSosmedRefill').textContent = baseUrl + '/api/sosmed/refill';
+  document.getElementById('urlSosmedRefillStatus').textContent = baseUrl + '/api/sosmed/refill/status';
+  document.getElementById('urlProdukList').textContent = baseUrl + '/api/produk/list';
+  document.getElementById('urlProdukBeli').textContent = baseUrl + '/api/produk/beli';
+  document.getElementById('urlProdukStatus').textContent = baseUrl + '/api/produk/status';
+  document.getElementById('urlPanelServers').textContent = baseUrl + '/api/panel/servers';
+  document.getElementById('urlPanelEggs').textContent = baseUrl + '/api/panel/eggs';
+  document.getElementById('urlPanelAddServer').textContent = baseUrl + '/api/panel/add-server';
+  document.getElementById('urlPanelCreateAdmin').textContent = baseUrl + '/api/panel/create-admin';
+
+  // ===== Prompt AI: isi token {{BASE_URL}}/{{SPEC_URL}} dengan alamat situs ini =====
+  document.querySelectorAll('.ai-prompt-text').forEach(el => {
+    el.textContent = el.textContent.replace(/\{\{BASE_URL\}\}/g, baseUrl).replace(/\{\{SPEC_URL\}\}/g, baseUrl + '/docs.json');
+  });
+
+  function copyText(text, btn, doneLabel) {
+    const label = btn.innerHTML;
+    const done = () => {
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> ' + (doneLabel || 'Tersalin');
+      setTimeout(() => { btn.innerHTML = label; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else { fallbackCopy(text, done); }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta); done();
+  }
+  function copyPromptEl(btn) {
+    const pre = btn.closest('.ai-card').querySelector('.ai-prompt-text');
+    copyText(pre.textContent, btn, 'Prompt Tersalin');
+  }
+  async function copyPromptWithSpec(btn) {
+    const pre = btn.closest('.ai-card').querySelector('.ai-prompt-text');
+    let spec = '';
+    try { spec = await (await fetch('/docs.json')).text(); } catch (e) { spec = '(gagal memuat JSON, buka ' + baseUrl + '/docs.json)'; }
+    copyText(pre.textContent + '\n\n=== DOKUMENTASI API (JSON) ===\n' + spec, btn, 'Prompt + JSON Tersalin');
+  }
+
+  // Replace all BASE_URL placeholders in code blocks
+  document.querySelectorAll('.base-url-placeholder').forEach(el => {
+    el.textContent = baseUrl;
+  });
+
+  function switchCodeTab(btn, lang) {
+    const switcher = btn.closest('[data-code-switcher]');
+    if (!switcher) return;
+
+    switcher.querySelectorAll('.code-tab').forEach(tab => {
+      tab.classList.remove('active', 'bg-white', 'border', 'border-b-0', 'border-gray-300', 'text-gray-800', '-mb-px', 'relative', 'z-10');
+      tab.classList.add('text-gray-500', 'border-transparent');
+    });
+
+    btn.classList.add('active', 'bg-white', 'border', 'border-b-0', 'border-gray-300', 'text-gray-800', '-mb-px', 'relative', 'z-10');
+    btn.classList.remove('text-gray-500', 'border-transparent');
+
+    switcher.querySelectorAll('.copy-content[data-code]').forEach(code => {
+      if (code.getAttribute('data-code') === lang) {
+        code.classList.remove('hidden');
+      } else {
+        code.classList.add('hidden');
+      }
+    });
+  }
+
+  function copyCode(btn) {
+    const container = btn.closest('[data-code-switcher]') || btn.closest('.relative');
+    let codeElement = null;
+
+    if (container && container.hasAttribute('data-code-switcher')) {
+      codeElement = container.querySelector('.copy-content:not(.hidden)');
+    } else {
+      codeElement = container ? container.querySelector('.copy-content') : null;
+    }
+
+    const text = codeElement ? (codeElement.innerText || codeElement.textContent) : '';
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+      const icon = btn.querySelector('i');
+      if (icon) {
+        icon.className = 'fas fa-check text-sm text-green-500';
+        setTimeout(() => { icon.className = 'far fa-copy text-sm'; }, 1500);
+      }
+    }).catch(() => {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      const icon = btn.querySelector('i');
+      if (icon) {
+        icon.className = 'fas fa-check text-sm text-green-500';
+        setTimeout(() => { icon.className = 'far fa-copy text-sm'; }, 1500);
+      }
+    });
+  }
+
+  // ===== Sidebar (off-canvas di mobile, selalu terlihat di desktop) =====
+  function toggleDocsSidebar() {
+    document.getElementById('docsSidebar').classList.toggle('open');
+    document.getElementById('docsSidebarOverlay').classList.toggle('open');
+  }
+  function closeDocsSidebar() {
+    document.getElementById('docsSidebar').classList.remove('open');
+    document.getElementById('docsSidebarOverlay').classList.remove('open');
+  }
+
+  // ===== Search box di top bar: filter link-link di sidebar =====
+  function toggleDocsSearch() {
+    const wrap = document.getElementById('docsSearchWrap');
+    wrap.classList.toggle('open');
+    if (wrap.classList.contains('open')) {
+      document.getElementById('docsSearchInput').focus();
+    } else {
+      document.getElementById('docsSearchInput').value = '';
+      filterDocsNav('');
+    }
+  }
+  function filterDocsNav(query) {
+    const q = query.trim().toLowerCase();
+    document.querySelectorAll('.docs-nav-item').forEach(item => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+  }
+
+  // ===== Highlight menu sidebar sesuai section yang lagi kelihatan (scrollspy) =====
+  (function() {
+    const navItems = Array.from(document.querySelectorAll('.docs-nav-item[data-nav]'));
+    const sections = navItems
+      .map(a => document.querySelector(a.getAttribute('href')))
+      .filter(Boolean);
+    if (!sections.length) return;
+
+    function setActive(id) {
+      navItems.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-80px 0px -70% 0px' });
+
+    sections.forEach(sec => observer.observe(sec));
+
+    // Klik menu sidebar: tutup sidebar (di mobile) supaya konten kelihatan
+    navItems.forEach(a => a.addEventListener('click', () => {
+      if (window.innerWidth < 1024) closeDocsSidebar();
+    }));
+  })();
+</script>
+
+<footer style="padding: 28px 16px 40px; text-align: center; border-top: 1px solid #e5e7eb; margin-top: 24px;">
+  <p style="font-size: 13px; font-weight: 600; color: #374151; margin: 0;">
+    Butuh Bantuan? <a href="<%= settings.contactDeveloper %>" style="color:#2563eb; text-decoration: underline;">Hubungi Tim Support</a>
+  </p>
+  <p style="font-size: 12px; color: #9ca3af; margin: 6px 0 0;">&copy; 2026 <%= settings.name %>. All rights reserved.</p>
+</footer>
+
+    </main>
+  </div>
+
+</body>
+</html>
