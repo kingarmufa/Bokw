@@ -1,0 +1,62 @@
+<%- include('partials/header', { title: 'Riwayat Suntik Sosmed' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Riwayat Suntik Sosmed</h1>
+    <a href="/sosmed" class="text-[11.5px] font-bold text-blue-600 flex items-center gap-1">
+      <i class="fa-solid fa-plus"></i> Pesan Baru
+    </a>
+  </div>
+
+  <div class="flex flex-col gap-2.5">
+    <% if (orders.length === 0) { %>
+      <div class="comic-panel p-6 text-center">
+        <p class="text-xs font-medium text-gray-500">Belum ada transaksi Suntik Sosmed.</p>
+      </div>
+    <% } %>
+    <% orders.forEach(o => { %>
+      <a href="/sosmed/transaksi/<%= o._id %>" class="riwayat-item">
+        <div class="min-w-0">
+          <p class="text-[12.5px] font-bold text-gray-800 truncate"><%= o.serviceName %></p>
+          <p class="text-[10.5px] text-gray-500 truncate"><%= o.quantity.toLocaleString('id-ID') %>x — Rp <%= o.sellPrice.toLocaleString('id-ID') %></p>
+          <% if (o.refillRequestedAt) { %>
+            <p class="text-[10px] font-bold mt-0.5 refill-tag <%= (o.refillStatus || 'pending').replace(/\s+/g,'-') %>">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              Refill: <%= ({pending:'Diproses',completed:'Berhasil',rejected:'Ditolak',canceled:'Dibatalkan'})[o.refillStatus] || o.refillStatus || 'Diproses' %>
+            </p>
+          <% } %>
+        </div>
+        <span class="status-badge <%= (o.status || '').replace(/\s+/g,'-') %>">
+          <%= ({pending:'Diproses','in-progress':'Berjalan',processing:'Diproses',completed:'Selesai',partial:'Sebagian',canceled:'Batal',failed:'Gagal'})[(o.status || '').replace(/\s+/g,'-')] || o.status %>
+        </span>
+      </a>
+    <% }) %>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); }
+  .riwayat-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 14px;
+    border: 2.5px solid var(--comic-black);
+    border-radius: 16px;
+    background: #fffdf7;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black);
+    text-decoration: none;
+  }
+  .status-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--comic-black); background: #fff; white-space: nowrap; flex-shrink: 0; }
+  .status-badge.pending { background: var(--comic-yellow); }
+  .status-badge.in-progress, .status-badge.processing { background: #38bdf8; color: #fff; }
+  .status-badge.completed { background: #22c55e; color: #fff; }
+  .status-badge.partial { background: #f97316; color: #fff; }
+  .status-badge.canceled, .status-badge.failed { background: var(--comic-red); color: #fff; }
+  .refill-tag { display: inline-flex; align-items: center; gap: 3px; color: #6b7280; }
+  .refill-tag.pending { color: #d97706; }
+  .refill-tag.completed { color: #16a34a; }
+  .refill-tag.rejected, .refill-tag.canceled { color: #dc2626; }
+</style>
+
+<%- include('partials/footer') %>
