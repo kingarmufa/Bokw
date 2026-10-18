@@ -1,0 +1,25 @@
+<fieldset class="cm-template-picker" aria-describedby="templateHelp">
+  <legend class="cm-template-legend">Template Tampilan</legend>
+  <p id="templateHelp" class="cm-template-intro"><%= comicTemplates.length %> template komik siap pakai. Satu pilihan mengubah warna website, latar, aksen tombol, dan animasi.</p>
+  <div class="cm-template-grid" id="themeTemplatePicker">
+    <% comicTemplates.forEach(function(t, index) { %>
+    <label class="cm-template-option" data-preview-template="<%= t.id %>">
+      <input type="radio" name="themeTemplate" value="<%= t.id %>" class="cm-template-radio" <%= comicSettings.themeTemplate === t.id ? 'checked' : '' %>>
+      <span class="cm-template-card">
+        <span class="cm-template-art" aria-hidden="true">
+          <span class="cm-template-number"><%= String(index + 1).padStart(2, '0') %></span>
+          <span class="cm-template-check">✓</span>
+          <span class="cm-template-symbol cm-symbol-<%= t.icon %>"><%= t.id === 'default' ? 'POW!' : t.id === 'halloween' ? 'BOO!' : t.id === 'lebaran' ? '☾' : t.id === 'sakura' ? '✿' : ({ neon: 'VOLT', arcade: 'PLAY', graffiti: 'FRESH', mecha: 'CORE', aurora: 'FLOW' }[t.id] || '') %></span>
+          <span class="cm-template-mini"><i></i><i></i><i></i></span>
+        </span>
+        <span class="cm-template-copy"><strong><%= t.name %></strong><span><%= t.subtitle %></span></span>
+      </span>
+    </label>
+    <% }); %>
+  </div>
+  <div class="cm-template-status" role="status" aria-live="polite" aria-atomic="true">
+    <strong id="templatePreviewName"><%= comicTemplates.find(t => t.id === comicSettings.themeTemplate).name %></strong>
+    <span id="templatePreviewDescription"><%= comicTemplates.find(t => t.id === comicSettings.themeTemplate).description %></span>
+  </div>
+  <p class="cm-template-help">Ini pratinjau. Klik <b>Simpan Pengaturan</b> untuk menerapkannya ke pengunjung. Animasi menyesuaikan pengaturan kurangi gerakan perangkat.</p>
+</fieldset>
