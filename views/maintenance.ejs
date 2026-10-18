@@ -1,0 +1,10 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title><%= maintenance.title %> · <%= settings.name || 'AVERPAY' %></title><link rel="stylesheet" href="/maintenance.css?v=3" data-comic-owned></head>
+<body class="mt-screen" data-comic-owned><main class="mt-scene">
+<header class="mt-brand"><b><%= settings.name || 'AVERPAY' %><span> / SYSTEM NOTICE</span></b><span class="mt-live"><i></i><%= preview?'PRATINJAU ADMIN':'MAINTENANCE' %></span></header>
+<div class="mt-stripe" aria-hidden="true"></div>
+<div class="mt-public-grid"><section class="mt-visual" aria-label="Ilustrasi server dalam perbaikan"><span class="mt-issue">ISSUE 404 / TEMPORARY PAUSE</span><strong class="mt-big404" aria-hidden="true">404</strong><%- include('partials/maintenance_art') %><div class="mt-visual-note"><span>!</span><p>SERVER LAGI<br><b>DI-UPGRADE!</b></p><span>✦</span></div></section>
+<section class="mt-story"><span class="mt-sticker">SEBENTAR, YA!</span><h1><%= maintenance.title %></h1><div class="mt-scope"><span class="mt-dot on"></span><span><small>AKSES DITUNDA SEMENTARA</small><b><%= maintenance.scope %></b></span></div>
+<section class="mt-message"><h2><span>✎</span> CATATAN TIM</h2><p><%= maintenance.message %></p></section><p class="mt-caption">Kami sedang merapikan mesin di balik layar. Terima kasih sudah sabar menunggu!</p>
+<div class="mt-actions"><a class="mt-btn" href="<%= retryPath %>"><%= preview?'Kembali ke pengaturan':'Coba akses lagi' %><span>↻</span></a><% if(!preview && maintenance.mode==='services'){ %><a class="mt-btn secondary" href="/dashboard">Jelajahi layanan lain <span>↗</span></a><% } %><% if(!preview){ %><a class="mt-exit" href="/logout">Keluar akun →</a><% } %></div></section></div>
+<footer class="mt-foot"><b>PAUSE SEBENTAR.</b><span>✦</span><b>LANJUT LEBIH LANCAR.</b></footer><div class="mt-stripe" aria-hidden="true"></div>
+</main></body></html>
