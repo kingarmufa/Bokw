@@ -1,0 +1,337 @@
+<%- include('partials/header', { title: 'Suntik Sosmed' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800">Suntik Sosmed</h1>
+      <p class="text-[12px] font-medium text-gray-500">Followers, Likes, Views, Comment &amp; lainnya — otomatis</p>
+    </div>
+    <a href="/sosmed/riwayat" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-[11.5px] font-bold text-gray-800">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+    </a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+
+  <!-- ===== STEPPER ===== -->
+  <div class="flex items-center gap-2 mb-5" id="sosmedStepper">
+    <div class="flex items-center gap-2 flex-1" data-step-indicator="1">
+      <div class="step-dot active">1</div>
+      <span class="text-[11px] font-bold uppercase tracking-wide">Platform</span>
+    </div>
+    <div class="flex-1 h-[3px] bg-black/15 rounded-full stepper-line"></div>
+    <div class="flex items-center gap-2 flex-1 justify-center" data-step-indicator="2">
+      <div class="step-dot">2</div>
+      <span class="text-[11px] font-bold uppercase tracking-wide">Layanan</span>
+    </div>
+    <div class="flex-1 h-[3px] bg-black/15 rounded-full stepper-line"></div>
+    <div class="flex items-center gap-2 flex-1 justify-end" data-step-indicator="3">
+      <span class="text-[11px] font-bold uppercase tracking-wide text-right">Pesan</span>
+      <div class="step-dot">3</div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: PILIH PLATFORM ===== -->
+  <div id="stepPlatform">
+    <div class="comic-panel">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-grid-2"></i>
+        <span>Pilih Platform</span>
+      </div>
+      <div class="p-3">
+        <div id="platformError" class="hidden text-center text-xs text-red-500 py-6"></div>
+        <div id="platformList" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[460px] overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: PILIH LAYANAN ===== -->
+  <div id="stepService" class="hidden">
+    <button type="button" onclick="backToPlatform()" class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-700">
+      <i class="fa-solid fa-arrow-left"></i> Ganti platform
+    </button>
+
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i id="selectedPlatformIcon" class="fa-solid fa-bullhorn text-base"></i>
+        <span>Layanan <span id="selectedPlatformName" class="font-extrabold">-</span></span>
+      </div>
+      <div class="p-3">
+        <div class="relative mb-3">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+          <input type="text" id="serviceSearch" placeholder="Cari layanan (Followers, Likes, dll)..." class="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-black text-xs font-medium outline-none focus:ring-2 focus:ring-blue-300">
+        </div>
+        <div id="serviceList" class="flex flex-col gap-2 max-h-[440px] overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: TARGET & JUMLAH ===== -->
+  <div id="stepOrder" class="hidden">
+    <button type="button" onclick="backToService()" class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-700">
+      <i class="fa-solid fa-arrow-left"></i> Ganti layanan
+    </button>
+
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-paper-plane text-base"></i>
+        <span id="selectedServiceName">-</span>
+      </div>
+      <div class="p-4">
+        <div class="rounded-xl border-2 border-black p-3 bg-white mb-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Kategori</span><span id="ordCategory" class="text-gray-800 text-right"></span></div>
+          <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Harga / 1000</span><span id="ordRate" class="text-blue-600"></span></div>
+          <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Min - Max</span><span id="ordMinMax" class="text-gray-800"></span></div>
+        </div>
+
+        <label class="block text-xs font-medium text-gray-700 mb-2">Link / Username / Target</label>
+        <input type="text" id="ordTarget" placeholder="https://instagram.com/namamu" class="w-full mb-3 px-3 py-3 rounded-xl border-2 border-black text-xs font-medium outline-none focus:ring-2 focus:ring-blue-300">
+
+        <label class="block text-xs font-medium text-gray-700 mb-2">Jumlah</label>
+        <input type="number" id="ordQuantity" class="w-full mb-1.5 px-3 py-3 rounded-xl border-2 border-black text-xs font-medium outline-none focus:ring-2 focus:ring-blue-300" oninput="renderOrderTotal()">
+        <p id="ordQuantityHint" class="text-[10.5px] text-gray-500 mb-3"></p>
+
+        <div class="rounded-xl border-2 border-black p-3 bg-white mb-3 flex justify-between items-center">
+          <span class="text-xs font-semibold text-gray-500">Total Harga</span>
+          <span id="ordTotal" class="text-sm font-extrabold text-blue-600">Rp 0</span>
+        </div>
+
+        <div id="orderInlineError" class="hidden bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-3 text-[11px] text-red-600 font-medium"></div>
+
+        <button type="button" onclick="openConfirm()" class="w-full py-3 rounded-xl border-2 border-black bg-blue-500 text-xs font-bold text-white shadow-[2.5px_2.5px_0_#14120f]">
+          Pesan Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form tersembunyi buat submit pesanan -->
+  <form id="orderForm" method="POST" action="/sosmed/order">
+    <input type="hidden" name="service_id" id="orderServiceId">
+    <input type="hidden" name="target" id="orderTarget">
+    <input type="hidden" name="quantity" id="orderQuantity">
+  </form>
+
+  <!-- ===== MODAL KONFIRMASI ===== -->
+  <div id="confirmOverlay" class="fixed inset-0 bg-black/50 z-[80] hidden" onclick="closeConfirm()"></div>
+  <div id="confirmModal" class="fixed left-1/2 -translate-x-1/2 bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-[380px] max-w-full bg-[#fffdf7] border-2 border-black sm:rounded-2xl rounded-t-2xl shadow-[0_-6px_0_rgba(20,18,15,0.12)] sm:shadow-[6px_6px_0_#14120f] z-[81] hidden p-5">
+    <h3 class="text-lg text-gray-800 mb-1">Konfirmasi Pesanan</h3>
+    <p class="text-[12px] text-gray-500 mb-4">Cek detail sebelum saldo kamu dipotong.</p>
+    <div class="rounded-xl border-2 border-black p-3 mb-4 bg-white">
+      <div class="flex justify-between text-xs font-semibold mb-1.5"><span class="text-gray-500">Layanan</span><span id="cfService" class="text-gray-800 text-right"></span></div>
+      <div class="flex justify-between text-xs font-semibold mb-1.5"><span class="text-gray-500">Target</span><span id="cfTarget" class="text-gray-800 text-right break-all"></span></div>
+      <div class="flex justify-between text-xs font-semibold mb-1.5"><span class="text-gray-500">Jumlah</span><span id="cfQty" class="text-gray-800"></span></div>
+      <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Total</span><span id="cfPrice" class="text-blue-600"></span></div>
+    </div>
+    <%- include('partials/voucher_checkout', { formId: 'orderForm', service: 'sosmed', amount: 0 }) %>
+    <div id="confirmError" class="hidden bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-3 text-[11px] text-red-600 font-medium"></div>
+    <div class="flex gap-2">
+      <button type="button" onclick="closeConfirm()" class="flex-1 py-3 rounded-xl border-2 border-black bg-white text-xs font-bold text-gray-800">Batal</button>
+      <button type="button" onclick="submitOrder()" class="flex-1 py-3 rounded-xl border-2 border-black bg-blue-500 text-xs font-bold text-white shadow-[2.5px_2.5px_0_#14120f]">Pesan Sekarang</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel {
+    background: #fffdf7;
+    border: 3px solid var(--comic-black);
+    border-radius: 20px;
+    box-shadow: 4px 4px 0 var(--comic-black);
+    overflow: hidden;
+  }
+  .comic-panel-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    background: var(--comic-yellow);
+    border-bottom: 3px solid var(--comic-black);
+    font-size: 13px; font-weight: 800;
+  }
+  .step-dot {
+    width: 22px; height: 22px; border-radius: 999px;
+    border: 2px solid var(--comic-black);
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #9ca3af;
+    flex-shrink: 0;
+  }
+  .step-dot.active { background: #3b82f6; color: #fff; border-color: var(--comic-black); }
+  .platform-item, .service-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px; border-radius: 12px;
+    border: 2px solid var(--comic-black);
+    background: #fff;
+    box-shadow: 2.5px 2.5px 0 #14120f;
+    text-align: left;
+    transition: transform 0.1s ease;
+  }
+  .platform-item:active, .service-item:active { transform: translate(1.5px, 1.5px); box-shadow: 1px 1px 0 #14120f; }
+  .service-item { flex-direction: column; align-items: stretch; gap: 4px; }
+</style>
+
+<script>
+  const ALL_SERVICES = <%- services %>;
+  let selectedPlatform = null;
+  let selectedService = null;
+  let pendingOrder = null;
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function platformEmoji(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('instagram')) return '📸';
+    if (n.includes('tiktok')) return '🎵';
+    if (n.includes('facebook')) return '👥';
+    if (n.includes('youtube')) return '▶️';
+    if (n.includes('twitter')) return '🐦';
+    if (n.includes('threads')) return '🧵';
+    if (n.includes('telegram')) return '✈️';
+    if (n.includes('spotify')) return '🎧';
+    if (n.includes('shopee')) return '🛍️';
+    if (n.includes('whatsapp')) return '💬';
+    if (n.includes('linkedin')) return '💼';
+    if (n.includes('website')) return '🌐';
+    if (n.includes('soundcloud')) return '🔊';
+    return '📢';
+  }
+
+  function setStep(n) {
+    document.getElementById('stepPlatform').classList.toggle('hidden', n !== 1);
+    document.getElementById('stepService').classList.toggle('hidden', n !== 2);
+    document.getElementById('stepOrder').classList.toggle('hidden', n !== 3);
+    document.querySelectorAll('#sosmedStepper [data-step-indicator]').forEach(el => {
+      const step = parseInt(el.dataset.stepIndicator);
+      el.querySelector('.step-dot').classList.toggle('active', step <= n);
+    });
+  }
+
+  function renderPlatforms() {
+    const listEl = document.getElementById('platformList');
+    const errEl = document.getElementById('platformError');
+    if (!ALL_SERVICES.length) {
+      errEl.textContent = 'Belum ada layanan tersedia saat ini. Coba lagi nanti.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const platforms = [...new Set(ALL_SERVICES.map(s => s.platform))].sort();
+    listEl.innerHTML = platforms.map(p => {
+      const count = ALL_SERVICES.filter(s => s.platform === p).length;
+      return `
+        <button type="button" class="platform-item" data-platform="${escHtml(p)}" onclick="selectPlatform(this)">
+          <span class="text-xl">${platformEmoji(p)}</span>
+          <span class="min-w-0">
+            <span class="block text-[12.5px] font-bold text-gray-800 truncate">${escHtml(p)}</span>
+            <span class="block text-[10.5px] text-gray-500">${count} layanan</span>
+          </span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function selectPlatform(btn) {
+    selectedPlatform = btn.dataset.platform;
+    document.getElementById('selectedPlatformName').textContent = selectedPlatform;
+    document.getElementById('serviceSearch').value = '';
+    renderServices('');
+    setStep(2);
+  }
+
+  function backToPlatform() { setStep(1); }
+  function backToService() { setStep(2); }
+
+  function renderServices(query) {
+    const listEl = document.getElementById('serviceList');
+    const q = (query || '').toLowerCase();
+    const items = ALL_SERVICES.filter(s => s.platform === selectedPlatform && s.name.toLowerCase().includes(q));
+    if (items.length === 0) {
+      listEl.innerHTML = `<p class="text-center text-xs text-gray-500 py-6">Tidak ada layanan yang cocok.</p>`;
+      return;
+    }
+    listEl.innerHTML = items.map(s => `
+      <button type="button" class="service-item" data-service-id="${s.id}" onclick="selectService(${s.id})">
+        <span class="text-[12.5px] font-bold text-gray-800">${escHtml(s.name)}</span>
+        <span class="flex justify-between items-center text-[10.5px] text-gray-500">
+          <span>Min ${s.min.toLocaleString('id-ID')} — Max ${s.max.toLocaleString('id-ID')}${s.refill ? ' • Refill' : ''}</span>
+          <span class="text-[12px] font-extrabold text-blue-600">Rp ${s.pricePer1000.toLocaleString('id-ID')}/1000</span>
+        </span>
+      </button>
+    `).join('');
+  }
+
+  document.getElementById('serviceSearch').addEventListener('input', function () {
+    renderServices(this.value);
+  });
+
+  function selectService(id) {
+    selectedService = ALL_SERVICES.find(s => s.id === id);
+    if (!selectedService) return;
+    document.getElementById('selectedServiceName').textContent = selectedService.name;
+    document.getElementById('ordCategory').textContent = selectedService.category;
+    document.getElementById('ordRate').textContent = 'Rp ' + selectedService.pricePer1000.toLocaleString('id-ID');
+    document.getElementById('ordMinMax').textContent = selectedService.min.toLocaleString('id-ID') + ' - ' + selectedService.max.toLocaleString('id-ID');
+    document.getElementById('ordQuantityHint').textContent = `Masukkan jumlah antara ${selectedService.min.toLocaleString('id-ID')} sampai ${selectedService.max.toLocaleString('id-ID')}.`;
+    document.getElementById('ordTarget').value = '';
+    document.getElementById('ordQuantity').value = selectedService.min;
+    document.getElementById('orderInlineError').classList.add('hidden');
+    renderOrderTotal();
+    setStep(3);
+  }
+
+  function renderOrderTotal() {
+    if (!selectedService) return;
+    const qty = parseInt(document.getElementById('ordQuantity').value) || 0;
+    const total = Math.ceil(selectedService.pricePer1000 / 1000 * qty);
+    document.getElementById('ordTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
+  }
+
+  function openConfirm() {
+    const target = document.getElementById('ordTarget').value.trim();
+    const qty = parseInt(document.getElementById('ordQuantity').value) || 0;
+    const errEl = document.getElementById('orderInlineError');
+    errEl.classList.add('hidden');
+
+    if (!target) { errEl.textContent = 'Link / username / target wajib diisi.'; errEl.classList.remove('hidden'); return; }
+    if (!qty || qty < selectedService.min || qty > selectedService.max) {
+      errEl.textContent = `Jumlah harus antara ${selectedService.min.toLocaleString('id-ID')} - ${selectedService.max.toLocaleString('id-ID')}.`;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    pendingOrder = { target, qty, total: Math.ceil(selectedService.pricePer1000 / 1000 * qty) };
+
+    document.getElementById('confirmError').classList.add('hidden');
+    document.getElementById('cfService').textContent = selectedService.name;
+    document.getElementById('cfTarget').textContent = target;
+    document.getElementById('cfQty').textContent = qty.toLocaleString('id-ID');
+    document.getElementById('cfPrice').textContent = 'Rp ' + pendingOrder.total.toLocaleString('id-ID');
+    window.VoucherUI.setAmount('orderForm', pendingOrder.total);
+    document.getElementById('confirmOverlay').classList.remove('hidden');
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.add('hidden');
+    document.getElementById('confirmModal').classList.add('hidden');
+    document.getElementById('confirmError').classList.add('hidden');
+  }
+
+  function submitOrder() {
+    if (!pendingOrder || !selectedService) return;
+    document.getElementById('orderServiceId').value = selectedService.id;
+    document.getElementById('orderTarget').value = pendingOrder.target;
+    document.getElementById('orderQuantity').value = pendingOrder.qty;
+    document.getElementById('orderForm').submit();
+  }
+
+  renderPlatforms();
+</script>
+
+<%- include('partials/footer') %>
