@@ -1,0 +1,48 @@
+<%- include('partials/header', { title: 'Chat Private' }) %>
+<link rel="stylesheet" href="/chat-ui.css?v=4" data-comic-owned>
+<link rel="stylesheet" href="/story-ui.css?v=1" data-comic-owned>
+<%
+  const cfg = {
+    mode: 'private', admin: false, unread: unread || 0,
+    me: { id: String(user._id), username: user.username, role: user.role, avatarUrl: user.avatarUrl || '' },
+    peer: peer, messages: messages, hasMore: messages.length >= 60
+  };
+  const _peerAv = (peer.avatarUrl && peer.avatarUrl.trim()) ? peer.avatarUrl :
+    ('data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#edc531"/><text x="32" y="43" font-size="32" font-family="Arial,sans-serif" font-weight="800" text-anchor="middle" fill="#171717">' + peer.username.charAt(0).toUpperCase().replace(/[<>&]/g, '?') + '</text></svg>'));
+%>
+<div class="cu-wrap">
+  <%- include('partials/chat_tabs', { active: 'private', unread: unread, user: user }) %>
+
+  <div class="cu-banner">
+    <div class="cu-peer">
+      <a href="/chat/private" class="cu-back" aria-label="Kembali"><i class="fa-solid fa-arrow-left"></i></a>
+      <button type="button" class="cu-peer-btn" id="cuPeerBtn" aria-label="Lihat story atau profil <%= peer.username %>">
+        <img class="cu-peer-av" id="cuPeerAv" src="<%= _peerAv %>" alt="">
+        <div style="min-width:0">
+          <div class="cu-peer-name"><%= peer.displayName || peer.username %></div>
+          <span class="cu-role <%= peer.role %>" style="display:inline-block;margin-top:3px"><%= peer.role %></span>
+          <span class="rt-status" data-rt-status="<%= peer._id || peer.id %>" style="margin-left:6px"></span>
+        </div>
+      </button>
+    </div>
+    <p style="margin:0"><i class="fa-solid fa-lock"></i> Chat private &middot; 7 hari</p>
+  </div>
+
+  <div class="cu-box">
+    <div class="cu-list" id="cuList"></div>
+    <%- include('partials/chat_composer', { placeholder: 'Tulis pesan private...' }) %>
+  </div>
+</div>
+
+<script>window.CHAT_CFG = <%- JSON.stringify(cfg).replace(/</g, '\\u003c') %>;</script>
+<script src="/chat-ui.js?v=5"></script>
+<%- include('partials/story_boot') %>
+<script>
+  (function () {
+    var peer = <%- JSON.stringify(peer).replace(/</g, '\\u003c') %>;
+    Story.peerRing(peer.id, document.getElementById('cuPeerAv'));
+    document.getElementById('cuPeerBtn').addEventListener('click', function () { Story.peerMenu(peer); });
+  })();
+</script>
+
+<%- include('partials/footer') %>
