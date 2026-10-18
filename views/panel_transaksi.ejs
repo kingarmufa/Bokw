@@ -1,0 +1,72 @@
+<%- include('partials/header', { title: 'Detail Panel' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/panel/riwayat" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Detail Panel</h1>
+  </div>
+  <%- include('partials/voucher_receipt', { order }) %>
+
+
+  <div id="alertBox" class="hidden mb-4 rounded-2xl border-2 border-black px-4 py-3 text-xs font-medium shadow-[3px_3px_0_#14120f]"></div>
+
+  <!-- Ringkasan -->
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <i class="fa-solid fa-box text-base"></i>
+      <span><%= order.packageName %></span>
+    </div>
+    <div class="p-4 text-[12.5px] font-medium text-gray-700 flex flex-col gap-1.5">
+      <div class="flex justify-between"><span class="text-gray-500">Server</span><span class="font-bold"><%= order.panelName %></span></div>
+      <div class="flex justify-between"><span class="text-gray-500">Spesifikasi</span><span class="font-bold"><%= order.ram %> MB RAM • <%= order.disk %> MB Disk • <%= order.cpu %>% CPU</span></div>
+      <div class="flex justify-between"><span class="text-gray-500">Harga</span><span class="font-bold">Rp <%= order.price.toLocaleString('id-ID') %></span></div>
+      <div class="flex justify-between"><span class="text-gray-500">Status</span>
+        <span class="font-bold <%= order.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600' %>"><%= order.status %></span>
+      </div>
+      <div class="flex justify-between"><span class="text-gray-500">Dibeli</span><span class="font-bold"><%= new Date(order.createdAt).toLocaleString('id-ID') %></span></div>
+    </div>
+  </div>
+
+  <!-- Kredensial -->
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <i class="fa-solid fa-key text-base"></i>
+      <span>Kredensial Login Panel</span>
+    </div>
+    <div class="p-4 text-[12.5px] font-medium text-gray-700 flex flex-col gap-1.5">
+      <p class="text-[10.5px] text-amber-600 font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Simpan baik-baik, password tidak ditampilkan lagi di tempat lain.</p>
+      <div class="flex justify-between items-center"><span class="text-gray-500">Domain</span><a href="<%= order.panelDomain %>" target="_blank" class="font-bold text-blue-600 underline"><%= order.panelDomain %></a></div>
+      <div class="flex justify-between"><span class="text-gray-500">Username</span><span class="font-bold"><%= order.panelUsername %></span></div>
+      <div class="flex justify-between"><span class="text-gray-500">Password</span><span class="font-bold"><%= order.panelPassword %></span></div>
+      <div class="flex justify-between"><span class="text-gray-500">Email</span><span class="font-bold"><%= order.panelEmail %></span></div>
+      <% if (order.serverName) { %>
+      <div class="flex justify-between"><span class="text-gray-500">Nama Server</span><span class="font-bold"><%= order.serverName %></span></div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Masa Expired & Non Garansi -->
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <span class="lottie-emoji" data-lottie-emoji="clock" data-size="24"></span>
+      <span>Masa Aktif</span>
+    </div>
+    <div class="p-4 text-[12.5px] font-medium text-gray-700">
+      <div class="flex justify-between mb-1.5"><span class="text-gray-500">Status</span><span class="font-bold inline-flex items-center gap-1"><% if (order.status === 'EXPIRED') { %><span class="lottie-emoji" data-lottie-emoji="trash" data-size="18"></span><% } else if (order.status === 'ACTIVE') { %><span class="lottie-emoji" data-lottie-emoji="party" data-size="18"></span><% } %><%= order.status === 'EXPIRED' ? 'EXPIRED (sudah dihapus)' : order.status %></span></div>
+      <div class="flex justify-between mb-3"><span class="text-gray-500"><%= order.status === 'EXPIRED' ? 'Expired pada' : 'Expired pada (auto delete)' %></span><span class="font-bold"><%= order.expiresAt ? new Date(order.expiresAt).toLocaleString('id-ID') : '-' %></span></div>
+      <p class="text-[10.5px] text-gray-500">Setelah masa expired habis, server dan user panel otomatis dihapus. <span class="lottie-emoji" data-lottie-emoji="warning" data-size="14"></span> Produk ini <b>NON GARANSI</b>, klaim garansi tidak tersedia.</p>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel { border: 2.5px solid #14120f; border-radius: 18px; background:#fffdf7; box-shadow: 3px 3px 0 #14120f; overflow: hidden; }
+  .comic-panel-head { display:flex; align-items:center; gap:8px; padding:10px 14px; background: var(--comic-yellow, #ffd23f); border-bottom: 2.5px solid #14120f; font-weight:800; font-size:13px; }
+</style>
+
+
+<%- include('partials/footer') %>
