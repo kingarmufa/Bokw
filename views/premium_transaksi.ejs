@@ -1,0 +1,142 @@
+<%- include('partials/header', { title: 'Transaksi Aplikasi Premium' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Transaksi Aplikasi Premium</h1>
+    <a href="/premium" class="text-[11.5px] font-bold text-blue-600 flex items-center gap-1">
+      <i class="fa-solid fa-plus"></i> Beli Lagi
+    </a>
+  </div>
+  <%- include('partials/voucher_receipt', { order }) %>
+
+
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <i class="fa-solid fa-crown"></i>
+      <span><%= order.productName %><% if (order.qty > 1) { %> &times; <%= order.qty %><% } %></span>
+      <span id="statusBadge" class="ml-auto status-badge"></span>
+    </div>
+
+    <div class="p-4">
+      <!-- Menunggu -->
+      <div id="waitingBox" class="text-center mb-4">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-1">Sedang diproses oleh sistem</p>
+        <p class="text-xs text-gray-600"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Akun akan muncul otomatis di sini begitu selesai.</p>
+      </div>
+
+      <!-- Daftar akun -->
+      <div id="accountsBox" class="hidden mb-4">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">Akun Kamu</p>
+        <div id="accountsList" class="flex flex-col gap-2"></div>
+      </div>
+
+      <!-- Info harga -->
+      <div class="rounded-xl border-2 border-black p-3 bg-white mb-4">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-gray-500">Total Harga</span>
+          <span class="text-gray-800">Rp <%= order.sellPrice.toLocaleString('id-ID') %></span>
+        </div>
+        <div class="flex justify-between text-xs font-semibold mt-1.5">
+          <span class="text-gray-500">ID Transaksi</span>
+          <span class="text-gray-800"><%= order._id %></span>
+        </div>
+        <div class="flex justify-between text-xs font-semibold mt-1.5">
+          <span class="text-gray-500">Invoice</span>
+          <span class="text-gray-800 break-all text-right"><%= order.premkuInvoice %></span>
+        </div>
+      </div>
+
+      <a href="/premium/riwayat" class="block w-full py-3 rounded-xl border-2 border-black bg-blue-500 text-xs font-bold text-white text-center shadow-[2.5px_2.5px_0_#14120f]">
+        <i class="fa-solid fa-clock-rotate-left mr-1"></i>Lihat Riwayat
+      </a>
+    </div>
+  </div>
+
+  <p class="text-[11px] text-gray-500 text-center leading-relaxed">
+    Halaman ini otomatis mengecek status setiap 5 detik sampai transaksi selesai, gagal, atau dibatalkan.
+  </p>
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); overflow: hidden; }
+  .comic-panel-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--comic-yellow); border-bottom: 3px solid var(--comic-black); font-size: 13px; font-weight: 800; }
+  .status-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--comic-black); background: #fff; }
+  .status-badge.pending { background: var(--comic-yellow); }
+  .status-badge.success { background: #22c55e; color: #fff; }
+  .status-badge.failed, .status-badge.canceled { background: var(--comic-red); color: #fff; }
+  .account-item { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 2px solid var(--comic-black); border-radius: 12px; background: #f8fafc; }
+  .account-item .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .account-item .val { font-size: 12px; font-weight: 700; color: #1f2937; word-break: break-all; }
+  .account-item button { flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--comic-black); background: #fff; display: flex; align-items: center; justify-content: center; }
+</style>
+
+<script>
+  const orderId = <%- JSON.stringify(order._id) %>;
+  let currentStatus = <%- JSON.stringify(order.status) %>;
+  let pollTimer = null;
+
+  const STATUS_LABEL = { pending: 'Diproses', success: 'Selesai', failed: 'Gagal', canceled: 'Dibatalkan' };
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderStatus(order) {
+    currentStatus = order.status;
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = STATUS_LABEL[order.status] || order.status;
+    badge.className = 'status-badge ' + order.status;
+
+    if (order.status === 'success' && Array.isArray(order.accounts) && order.accounts.length > 0) {
+      document.getElementById('waitingBox').classList.add('hidden');
+      const box = document.getElementById('accountsBox');
+      box.classList.remove('hidden');
+      document.getElementById('accountsList').innerHTML = order.accounts.map((a, i) => `
+        <div class="account-item">
+          <div class="row">
+            <span class="val">👤 ${escHtml(a.username || '-')}</span>
+            <button type="button" onclick="copyText(this, '${escHtml(a.username || '')}')"><i class="fa-regular fa-copy" style="font-size:10px"></i></button>
+          </div>
+          <div class="row">
+            <span class="val">🔑 ${escHtml(a.password || '-')}</span>
+            <button type="button" onclick="copyText(this, '${escHtml(a.password || '')}')"><i class="fa-regular fa-copy" style="font-size:10px"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const isFinal = ['success', 'failed', 'canceled'].includes(order.status);
+    if (isFinal) {
+      stopPolling();
+      if (order.status !== 'success') {
+        document.getElementById('waitingBox').innerHTML = `<p class="text-xs font-medium text-red-600">Transaksi ${STATUS_LABEL[order.status].toLowerCase()}. ${order.refunded ? 'Saldo sudah dikembalikan.' : ''}</p>`;
+      }
+    }
+  }
+
+  function copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const icon = btn.querySelector('i');
+      icon.className = 'fa-solid fa-check';
+      setTimeout(() => { icon.className = 'fa-regular fa-copy'; }, 1200);
+    });
+  }
+
+  function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+  async function pollStatus() {
+    try {
+      const res = await fetch(`/premium/status/${orderId}`);
+      const json = await res.json();
+      if (json.success) renderStatus(json.data);
+    } catch (e) { /* diamkan, coba lagi di poll berikutnya */ }
+  }
+
+  renderStatus(<%- JSON.stringify(order) %>);
+  if (!['success', 'failed', 'canceled'].includes(currentStatus)) {
+    pollTimer = setInterval(pollStatus, 5000);
+    pollStatus();
+  }
+</script>
+
+<%- include('partials/footer') %>
