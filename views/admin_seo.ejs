@@ -1,0 +1,167 @@
+<%- include('partials/header', { title: 'SEO Pencarian' }) %>
+
+<%
+  var _base = seoInfo.base;
+  var _host = _base.replace(/^https?:\/\//, '');
+  var _inp = 'w-full px-3 py-2 rounded-xl border border-gray-300 text-xs';
+  var _lbl = 'block text-[11px] font-bold text-gray-500 mb-1';
+  var _hint = 'text-[10px] text-gray-400 mt-1';
+%>
+
+<div class="px-6 pb-6 mt-1 max-w-[480px] md:max-w-lg mx-auto">
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <h1 class="text-base font-bold text-gray-800 mb-1">SEO Pencarian</h1>
+  <p class="text-[11.5px] text-gray-500 mb-4">Atur tampilan situs di hasil pencarian Google. Halaman publik (beranda, login, daftar, docs, kebijakan) bisa diindex; halaman admin &amp; akun otomatis <b>noindex</b>.</p>
+
+  <!-- Preview hasil Google -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-brands fa-google mr-1 text-blue-500"></i> Preview di Google</h2>
+    <div class="rounded-xl border border-gray-200 p-3">
+      <p class="text-[10.5px] text-gray-500 truncate"><%= _host %></p>
+      <p id="pvTitle" class="text-[14px] font-semibold text-blue-700 leading-snug"><%= seoInfo.homeTitle %></p>
+      <p id="pvDesc" class="text-[11.5px] text-gray-600 leading-snug mt-1"><%= seoInfo.description %></p>
+    </div>
+  </div>
+
+  <form method="POST" action="/admin/seo/save" class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-solid fa-magnifying-glass mr-1 text-blue-500"></i> Meta Halaman Utama</h2>
+
+    <label class="flex items-center justify-between mb-4 cursor-pointer">
+      <span class="text-[12px] font-semibold text-gray-700">Izinkan Google mengindex situs</span>
+      <input type="checkbox" name="seoIndexEnabled" <%= settings.seoIndexEnabled !== false ? 'checked' : '' %> class="w-4 h-4 accent-blue-600">
+    </label>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">URL Situs (canonical &amp; sitemap)</label>
+      <input type="text" name="seoSiteUrl" value="<%= settings.seoSiteUrl || '' %>" placeholder="<%= _base %>" class="<%= _inp %>">
+      <p class="<%= _hint %>">Pakai domain asli, contoh <code>https://domainkamu.com</code> (tanpa garis miring di akhir). Kosong = <%= _base %>.</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Judul Beranda <span id="cTitle" class="font-normal text-gray-400"></span></label>
+      <input type="text" name="seoTitle" id="fTitle" maxlength="120" value="<%= settings.seoTitle || '' %>" placeholder="<%= (settings.name || '') + ' - ' + (settings.title || '') %>" class="<%= _inp %>">
+      <p class="<%= _hint %>">Ideal 50–60 karakter. Kosong = Nama Situs + Judul dari Pengaturan.</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Deskripsi <span id="cDesc" class="font-normal text-gray-400"></span></label>
+      <textarea name="seoDescription" id="fDesc" rows="3" maxlength="320" placeholder="<%= settings.description || '' %>" class="<%= _inp %>"><%= settings.seoDescription || '' %></textarea>
+      <p class="<%= _hint %>">Ideal 120–160 karakter. Kosong = Deskripsi dari Pengaturan.</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Kata Kunci (pisahkan koma)</label>
+      <textarea name="seoKeywords" rows="3" maxlength="500" class="<%= _inp %>"><%= settings.seoKeywords || '' %></textarea>
+      <p class="<%= _hint %>">Tagar dari menu <a href="/admin/tagar" class="text-blue-600 font-semibold">Tagar</a> otomatis ikut digabung ke sini.</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Penulis / Brand</label>
+      <input type="text" name="seoAuthor" maxlength="80" value="<%= settings.seoAuthor || '' %>" class="<%= _inp %>">
+    </div>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Gambar Preview Share (og:image)</label>
+      <input type="text" name="seoOgImage" value="<%= settings.seoOgImage || '' %>" placeholder="https://.../gambar.png (kosong = logo situs)" class="<%= _inp %>">
+      <p class="<%= _hint %>">Disarankan 1200×630 px.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="<%= _lbl %>">Twitter/X</label>
+        <input type="text" name="seoTwitterHandle" value="<%= settings.seoTwitterHandle || '' %>" placeholder="@akunkamu" class="<%= _inp %>">
+      </div>
+      <div>
+        <label class="<%= _lbl %>">Locale</label>
+        <input type="text" name="seoLocale" value="<%= settings.seoLocale || 'id_ID' %>" placeholder="id_ID" class="<%= _inp %>">
+      </div>
+    </div>
+
+    <label class="flex items-center justify-between mb-4 cursor-pointer">
+      <span class="text-[12px] font-semibold text-gray-700">Structured data (JSON-LD) di beranda</span>
+      <input type="checkbox" name="seoJsonLdEnabled" <%= settings.seoJsonLdEnabled !== false ? 'checked' : '' %> class="w-4 h-4 accent-blue-600">
+    </label>
+
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3 mt-5"><i class="fa-solid fa-shield-halved mr-1 text-blue-500"></i> Verifikasi &amp; Analitik</h2>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Kode Verifikasi Google Search Console</label>
+      <input type="text" name="seoGoogleVerification" value="<%= settings.seoGoogleVerification || '' %>" placeholder="isi content dari meta google-site-verification" class="<%= _inp %>">
+      <p class="<%= _hint %>">Hanya isi <i>content</i>-nya, bukan seluruh tag &lt;meta&gt;.</p>
+    </div>
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Kode Verifikasi Bing Webmaster (opsional)</label>
+      <input type="text" name="seoBingVerification" value="<%= settings.seoBingVerification || '' %>" class="<%= _inp %>">
+    </div>
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Google Analytics 4 ID (opsional)</label>
+      <input type="text" name="seoGaId" value="<%= settings.seoGaId || '' %>" placeholder="G-XXXXXXXXXX" class="<%= _inp %>">
+    </div>
+
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3 mt-5"><i class="fa-solid fa-robot mr-1 text-blue-500"></i> robots.txt &amp; Sitemap</h2>
+
+    <div class="mb-3">
+      <label class="<%= _lbl %>">Path yang diblokir dari crawler (satu per baris)</label>
+      <textarea name="seoRobotsDisallow" rows="5" placeholder="<%= seoDefaults.robots %>" class="<%= _inp %> font-mono"><%= settings.seoRobotsDisallow || '' %></textarea>
+      <p class="<%= _hint %>">Kosong = pakai bawaan (admin, api, dashboard, profile, dll). Harus diawali <code>/</code>.</p>
+    </div>
+    <div class="mb-2">
+      <label class="<%= _lbl %>">Halaman tambahan untuk sitemap (satu per baris)</label>
+      <textarea name="seoSitemapPaths" rows="3" placeholder="/halaman-lain" class="<%= _inp %> font-mono"><%= settings.seoSitemapPaths || '' %></textarea>
+      <p class="<%= _hint %>">Beranda, docs, daftar, login, kebijakan privasi &amp; syarat sudah otomatis masuk.</p>
+    </div>
+
+    <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[12.5px] font-bold mt-3">Simpan Pengaturan SEO</button>
+  </form>
+
+  <!-- Supaya muncul di Google -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-2"><i class="fa-solid fa-list-check mr-1 text-blue-500"></i> Agar Muncul di Google</h2>
+    <ol class="text-[11.5px] text-gray-600 list-decimal pl-4 space-y-1 mb-3">
+      <li>Isi <b>URL Situs</b> dengan domain asli, lalu simpan.</li>
+      <li>Buka Search Console, tambahkan properti domain, lalu verifikasi (kode di atas).</li>
+      <li>Menu <b>Sitemaps</b> → kirim <code><%= _base %>/sitemap.xml</code>.</li>
+      <li>Menu <b>URL Inspection</b> → tempel <code><%= _base %>/</code> → <b>Request Indexing</b>.</li>
+    </ol>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <a href="/sitemap.xml" target="_blank" rel="noopener" class="text-center py-2 rounded-xl border border-gray-300 text-[11.5px] font-bold text-gray-700">Lihat sitemap.xml</a>
+      <a href="/robots.txt" target="_blank" rel="noopener" class="text-center py-2 rounded-xl border border-gray-300 text-[11.5px] font-bold text-gray-700">Lihat robots.txt</a>
+      <a href="https://search.google.com/search-console" target="_blank" rel="noopener" class="text-center py-2 rounded-xl border border-gray-300 text-[11.5px] font-bold text-gray-700">Search Console</a>
+      <a href="https://www.google.com/search?q=site:<%= encodeURIComponent(_host) %>" target="_blank" rel="noopener" class="text-center py-2 rounded-xl border border-gray-300 text-[11.5px] font-bold text-gray-700">Cek site: di Google</a>
+    </div>
+    <p class="text-[10px] text-gray-400">Catatan: Google yang menentukan waktu &amp; peringkat indexing (biasanya beberapa hari sampai minggu). Tidak ada jaminan posisi teratas.</p>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var t = document.getElementById('fTitle'), d = document.getElementById('fDesc');
+  var pt = document.getElementById('pvTitle'), pd = document.getElementById('pvDesc');
+  var ct = document.getElementById('cTitle'), cd = document.getElementById('cDesc');
+  var defT = pt.textContent, defD = pd.textContent;
+  function upd() {
+    var tv = t.value.trim() || defT, dv = d.value.trim() || defD;
+    pt.textContent = tv.length > 60 ? tv.slice(0, 60) + '…' : tv;
+    pd.textContent = dv.length > 160 ? dv.slice(0, 160) + '…' : dv;
+    ct.textContent = t.value ? '(' + t.value.length + '/60)' : '';
+    cd.textContent = d.value ? '(' + d.value.length + '/160)' : '';
+  }
+  t.addEventListener('input', upd); d.addEventListener('input', upd); upd();
+})();
+</script>
+
+<%- include('partials/footer') %>
