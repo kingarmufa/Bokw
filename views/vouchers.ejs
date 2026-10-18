@@ -1,0 +1,10 @@
+<%- include('partials/header', { title: 'Voucher Publik' }) %>
+<main class="vc-page" data-comic-owned>
+  <div class="vc-heading"><div><p class="vc-eyebrow">LEBIH HEMAT, LEBIH SERU</p><h1>Voucher Publik</h1><p>Pilih voucher, salin kode, lalu pakai saat membeli.</p></div><span class="vc-stamp" aria-hidden="true">%</span></div>
+  <p class="vc-alert">Satu voucher per pembelian dan hanya bisa dipakai satu kali per akun. Potongan berlaku untuk layanan yang tertera. Top up, penarikan, dan transfer saldo tidak termasuk.</p>
+  <% if (!vouchers.length) { %><section class="vc-card"><h2>Belum ada voucher publik</h2><p>Cek lagi nanti. Jika punya kode privat, masukkan langsung saat membeli layanan.</p></section><% } %>
+  <div class="vc-public-grid"><% vouchers.forEach(function(v) { %>
+    <%- include('partials/voucher_card', { v, mode: 'public' }) %>
+  <% }); %></div>
+</main>
+<%- include('partials/footer') %>
