@@ -1,0 +1,178 @@
+<%- include('partials/header', { title: 'Kelola Iklan' }) %>
+
+<style>
+  .custom-scroll::-webkit-scrollbar { width: 2px; height: 2px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+  .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+  .custom-scroll:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
+</style>
+
+<div class="max-w-3xl mx-auto px-6 mt-1 pb-10">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Kelola Iklan</h1>
+    <span class="text-[12px] font-semibold text-gray-500"><%= banners.length %> Iklan</span>
+  </div>
+
+  <!-- Alert Success dari server -->
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+
+  <!-- Alert Error dari server -->
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <!-- ===== FORM BUAT IKLAN ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+      <i class="fa-solid fa-bullhorn text-gray-700 text-sm"></i>
+      <h2 class="text-sm font-medium text-gray-800">Buat Iklan</h2>
+    </div>
+
+    <form method="POST" action="/admin/banners" enctype="multipart/form-data" class="flex flex-col gap-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Gambar Banner <span class="text-red-500">*</span></label>
+        <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5">
+          <input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required
+                 class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700">
+        </div>
+        <p class="text-[11px] text-gray-400 mt-1.5">Format JPG/PNG/WEBP/GIF, maksimal 5MB. Disarankan rasio landscape (contoh 1200x600).</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Judul Iklan (opsional)</label>
+        <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5">
+          <input name="title" type="text" maxlength="100" placeholder="Contoh: Promo Cashback 10%"
+                 class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Link Tujuan (opsional)</label>
+        <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5">
+          <input name="linkUrl" type="url" placeholder="https://..."
+                 class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+        </div>
+        <p class="text-[11px] text-gray-400 mt-1.5">Jika diisi, banner akan bisa diklik dan membuka tautan ini di tab baru.</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Urutan Tampil (opsional)</label>
+        <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5">
+          <input name="order" type="number" value="0" placeholder="0"
+                 class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+        </div>
+        <p class="text-[11px] text-gray-400 mt-1.5">Angka lebih kecil tampil lebih dulu.</p>
+      </div>
+
+      <button type="submit"
+              class="comic-btn-primary mt-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-bullhorn"></i> Buat Iklan
+      </button>
+    </form>
+  </div>
+
+  <!-- ===== DAFTAR IKLAN ===== -->
+  <div class="flex items-center gap-2 mb-3 px-1">
+    <i class="fas fa-images text-gray-700 text-sm"></i>
+    <h2 class="text-sm font-medium text-gray-800">Daftar Iklan</h2>
+  </div>
+
+  <% if (!banners || banners.length === 0) { %>
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-8 text-center">
+      <p class="text-sm font-medium text-gray-600">Belum ada iklan. Buat iklan pertama Anda di atas.</p>
+    </div>
+  <% } else { %>
+    <div class="flex flex-col gap-3">
+      <% banners.forEach(function(b, idx) { %>
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 overflow-hidden">
+          <img src="<%= b.imageUrl %>" alt="<%= b.title || 'Iklan' %>" class="w-full h-[140px] object-cover block bg-gray-100">
+          <div class="p-4">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <p class="text-[13.5px] font-bold text-gray-800 truncate"><%= b.title || '(Tanpa judul)' %></p>
+              <span class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border-2 border-black <%= b.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' %>">
+                <%= b.active ? 'Aktif' : 'Nonaktif' %>
+              </span>
+            </div>
+            <% if (b.linkUrl) { %>
+              <p class="text-[12px] text-blue-500 font-medium truncate mb-1"><i class="fa-solid fa-link text-[10px] mr-1"></i><%= b.linkUrl %></p>
+            <% } %>
+            <p class="text-[11px] text-gray-400 mb-3">Urutan: <%= b.order %> &middot; Dibuat <%= new Date(b.createdAt).toLocaleDateString('id-ID') %></p>
+
+            <div class="flex items-center gap-2 mb-2">
+              <button type="button" onclick="document.getElementById('editBanner-<%= idx %>').classList.toggle('hidden')"
+                      class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <form method="POST" action="/admin/banners/<%= b._id %>/toggle" class="flex-1">
+                <button type="submit" class="w-full comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                  <i class="fa-solid <%= b.active ? 'fa-eye-slash' : 'fa-eye' %>"></i> <%= b.active ? 'Nonaktifkan' : 'Aktifkan' %>
+                </button>
+              </form>
+            </div>
+            <form method="POST" action="/admin/banners/<%= b._id %>/delete" onsubmit="return confirm('Hapus iklan ini? Tindakan ini tidak bisa dibatalkan.');">
+              <button type="submit" class="w-full comic-btn-danger px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                <i class="fa-solid fa-trash"></i> Hapus
+              </button>
+            </form>
+
+            <!-- Panel Edit (tersembunyi, dibuka lewat tombol Edit) -->
+            <div id="editBanner-<%= idx %>" class="hidden mt-3 pt-3 border-t border-gray-200">
+              <form method="POST" action="/admin/banners/<%= b._id %>/edit" enctype="multipart/form-data" class="flex flex-col gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Ganti Gambar (opsional)</label>
+                  <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-1.5">
+                    <input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                           class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700">
+                  </div>
+                  <p class="text-[11px] text-gray-400 mt-1.5">Kosongkan jika tidak ingin mengganti gambar.</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Judul Iklan</label>
+                  <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-1.5">
+                    <input name="title" type="text" maxlength="100" value="<%= b.title || '' %>"
+                           class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Link Tujuan</label>
+                  <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-1.5">
+                    <input name="linkUrl" type="url" value="<%= b.linkUrl || '' %>" placeholder="https://..."
+                           class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Urutan Tampil</label>
+                  <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-1.5">
+                    <input name="order" type="number" value="<%= b.order %>"
+                           class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="submit" class="flex-1 comic-btn-primary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                    <i class="fa-solid fa-floppy-disk"></i> Simpan
+                  </button>
+                  <button type="button" onclick="document.getElementById('editBanner-<%= idx %>').classList.add('hidden')"
+                          class="flex-1 comic-btn-secondary px-3 py-2 rounded-xl text-[12.5px] font-bold">
+                    Batal
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+</div>
+
+<%- include('partials/footer') %>
