@@ -1,0 +1,1133 @@
+<%- include('partials/header', { title: 'Penarikan' }) %>
+<%
+  // Aturan biaya penarikan dari Paket user (null = tidak ada paket -> pakai biaya per-metode seperti biasa).
+  const _wdRule = (typeof withdrawFeeRule !== 'undefined' && withdrawFeeRule) ? withdrawFeeRule : null;
+  const _rp = function(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); };
+  const _feeLabel = function(base) { return _wdRule ? (_wdRule.mode === 'percent' ? (_wdRule.percent + '%') : _rp(_wdRule.fixed)) : _rp(base); };
+  const _manualMethods = (typeof withdrawMethods !== 'undefined' && withdrawMethods) ? withdrawMethods : (settings.withdrawMethods || []);
+%>
+
+<style>
+  :root {
+    --blue-500: #3b82f6;
+    --blue-50: #eff6ff;
+  }
+  .text-blue-500 { color: var(--blue-500); }
+  .bg-blue-50 { background-color: var(--blue-50); }
+  
+  .custom-scroll::-webkit-scrollbar { width: 2px; height: 2px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+  .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+  .custom-scroll:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
+  
+  .detail-table td { padding: 10px 14px; border-bottom: 1px solid #dddddd; }
+  .detail-table tr:last-child td { border-bottom: none; }
+</style>
+
+<div class="max-w-3xl mx-auto px-6 pb-6">
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] px-5 py-4 rounded-xl mb-6 text-[13.5px] font-medium flex items-center gap-3">
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-[#f0fdf4] border border-[#bbf7d0] text-[#16a34a] px-5 py-4 rounded-xl mb-6 text-[13.5px] font-medium flex items-center gap-3">
+      <p><%= success %></p>
+    </div>
+  <% } %>
+
+  <div class="flex flex-col gap-1 mb-4">
+    <div class="flex items-center justify-between">
+      <h1 class="text-base font-medium text-gray-800">Penarikan</h1>
+      <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-2 py-1.5 text-[13.5px] font-medium text-gray-800">
+        Saldo: <span class="text-[13.5px] text-gray-800 font-medium">Rp <%= user.balance.toLocaleString('id-ID') %></span>
+      </div>
+    </div>
+
+    <% if (settings.workHoursEnabled) { %>
+    <% const hariNama = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']; %>
+    <div class="<%= withdrawOpen ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700' %> border rounded-2xl px-3 py-2 mt-2 flex items-center gap-2 text-xs font-medium">
+      <i class="fas <%= withdrawOpen ? 'fa-circle-check' : 'fa-clock' %> text-sm"></i>
+      <% if (withdrawOpen) { %>
+        Penarikan <strong>buka</strong> &mdash; Tutup pukul <%= settings.workCloseTime %> WIB
+      <% } else { %>
+        Penarikan <strong>ditutup</strong> &bull; Jam operasional: <%= hariNama[settings.workOpenDay != null ? settings.workOpenDay : 1] %> &ndash; <%= hariNama[settings.workCloseDay != null ? settings.workCloseDay : 5] %>, <%= settings.workOpenTime %> &ndash; <%= settings.workCloseTime %> WIB
+      <% } %>
+    </div>
+    <% } %>
+
+    <div class="flex gap-2 mt-2">
+      <button <% if (withdrawOpen) { %>onclick="openManualModal()"<% } else { %>disabled<% } %>
+        class="btn-manual-withdraw cm-open-btn">
+        <i class="fas <%= withdrawOpen ? 'fa-money-bill-transfer' : 'fa-lock' %> text-xs"></i>
+        Penarikan Manual
+      </button>
+      <button <% if (withdrawOpen) { %>onclick="openInstantModal()"<% } else { %>disabled<% } %>
+        class="cm-open-btn instan">
+        <i class="fas <%= withdrawOpen ? 'fa-bolt' : 'fa-lock' %> text-xs"></i>
+        Penarikan Instan
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-4 mb-6 space-y-3">
+    <div class="max-w-xs mx-auto">
+      <input id="searchInput" type="text" placeholder="Cari ID Transaksi..." 
+             class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-2.5 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-[13.5px] placeholder:font-medium placeholder:text-gray-400">
+    </div>
+
+    <div class="relative max-w-xs mx-auto" id="filterDropdownContainer">
+      <button type="button" id="filterButton" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 text-gray-700 px-3 py-2.5 text-[13.5px] font-medium text-left flex justify-between items-center">
+        <span id="activeFilterText">Semua</span>
+        <i class="fas fa-chevron-down text-[13.5px] text-gray-400"></i>
+      </button>
+
+      <div id="filterMenu" class="absolute left-0 right-0 mt-1 bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 shadow-sm py-1 hidden z-50">
+        <button type="button" data-val="all" class="filter-option w-full text-left px-3 py-2 text-[13.5px] font-medium hover:bg-gray-100 flex justify-between items-center">Semua <i class="fas fa-check text-blue-500 check-icon text-[13.5px]"></i></button>
+        <button type="button" data-val="pending" class="filter-option w-full text-left px-3 py-2 text-[13.5px] font-medium hover:bg-gray-100 flex justify-between items-center">Pending <i class="fas fa-check text-blue-500 check-icon text-[13.5px] hidden"></i></button>
+        <button type="button" data-val="success" class="filter-option w-full text-left px-3 py-2 text-[13.5px] font-medium hover:bg-gray-100 flex justify-between items-center">Berhasil <i class="fas fa-check text-blue-500 check-icon text-[13.5px] hidden"></i></button>
+        <button type="button" data-val="failed" class="filter-option w-full text-left px-3 py-2 text-[13.5px] font-medium hover:bg-gray-100 flex justify-between items-center">Gagal <i class="fas fa-check text-blue-500 check-icon text-[13.5px] hidden"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="border border-gray-100 rounded-2xl shadow-sm mb-6">
+    <div class="overflow-x-auto custom-scroll">
+      <div class="max-h-[60vh] overflow-y-auto custom-scroll">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+            <tr>
+              <th class="py-2.5 px-3 text-[13.5px] font-semibold text-gray-800 border-b border-gray-200">ID Transaksi</th>
+              <th class="py-2.5 px-3 text-[13.5px] font-semibold text-gray-800 border-b border-gray-200">Jumlah</th>
+              <th class="py-2.5 px-3 text-[13.5px] font-semibold text-gray-800 border-b border-gray-200">Status</th>
+              <th class="py-2.5 px-3 text-[13.5px] font-semibold text-gray-800 border-b border-gray-200">Tanggal</th>
+            </tr>
+          </thead>
+          <tbody id="recentTrxContainer">
+            <tr id="emptyTrxState" class="hidden">
+              <td colspan="4" class="py-10 text-center text-[13.5px] text-gray-500">Tidak ada data</td>
+            </tr>
+            <tr id="emptyFilterState" class="hidden">
+              <td colspan="4" class="py-10 text-center text-[13.5px] text-gray-500">Tidak ada transaksi</td>
+            </tr>
+
+            <% if (withdrawals && withdrawals.length > 0) { %>
+              <% withdrawals.forEach((w) => { 
+                   let nominalAsli = Math.abs(w.amount); 
+                   let statusText = w.status === 'paid' || w.status === 'success' ? 'completed' : w.status;
+                   let statusColor = '';
+                   if (w.status === 'paid' || w.status === 'success') {
+                     statusColor = 'text-blue-500';
+                   } else if (w.status === 'pending') {
+                     statusColor = 'text-[#eab308]';
+                   } else {
+                     statusColor = 'text-[#dc2626]';
+                   }
+              %>
+                <tr class="trx-item border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                    data-status="<%= w.status %>" data-id="<%= w._id %>"
+                    data-created="<%= w.createdAt.toISOString() %>"
+                    data-fee="<%= w.fee || 0 %>" data-total="<%= nominalAsli + (w.fee || 0) %>"
+                    data-amount="<%= w.amount %>" data-method="<%= w.method || '' %>"
+                    data-account="<%= w.accountNumber || '' %>"
+                    data-name="<%= w.accountName || '' %>"
+                    data-completed="<%= w.completedAt ? w.completedAt.toISOString() : '' %>"
+                    data-admin-note="<%= (w.adminNote || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') %>"
+                    data-instant="<%= w.instant ? 'true' : 'false' %>"
+                    data-balance-after="<%= w.balanceAfter %>"
+                    onclick="window.location.hash = 'withdraw-' + this.dataset.id">
+                  <td class="py-3 px-3 text-[13.5px] font-medium text-blue-500 underline"><%= w._id %></td>
+                  <td class="py-3 px-3 text-[13.5px] font-medium text-gray-800">Rp <%= nominalAsli.toLocaleString('id-ID') %></td>
+                  <td class="py-3 px-3 text-[13.5px] font-medium <%= statusColor %>">
+                    <%= statusText %> 
+                  </td>
+                  <td class="py-3 px-3 text-[13.5px] font-medium text-gray-800 date-cell" data-timestamp="<%= w.createdAt.toISOString() %>"></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MANUAL -->
+  <div id="manualModal" class="cm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="cm-modal-card">
+      <div class="cm-modal-head">
+        <h3 class="font-comic"><i class="fas fa-money-bill-transfer"></i>Penarikan Manual</h3>
+        <button type="button" data-cp-close class="cm-close comic-btn-secondary" aria-label="Tutup">
+          <i class="fas fa-times text-base"></i>
+        </button>
+      </div>
+      <div class="cm-modal-body">
+        <div class="cm-sum comic-flow-box keluar">
+          <div class="cm-sum-row"><div>Saldo Tersedia</div><div>Rp <%= user.balance.toLocaleString('id-ID') %></div></div>
+          <div class="cm-sum-row"><div>Provider Ewallet</div><div id="manualSelectedMethodDisplay">-</div></div>
+          <div class="cm-sum-row"><div>Biaya Admin</div><div id="manualFeeDisplay">-</div></div>
+          <div class="cm-sum-row"><div>Minimal Penarikan</div><div id="manualMinDisplay">-</div></div>
+        </div>
+
+        <form id="manualForm" method="POST" action="/withdraw/request">
+          <input type="hidden" name="methodName" id="manualMethodName">
+          <input type="hidden" name="amount" id="manualRawAmount">
+
+          <div class="mb-3 mt-4">
+            <label class="cm-label">Provider Ewallet</label>
+            <select id="manualMethodSelect" class="cm-field">
+              <option value="">-- Pilih Ewallet --</option>
+              <% _manualMethods.forEach(function(m) { %>
+                <option value="<%= m.name %>" data-fee="<%= m.fee || 0 %>" data-min="<%= m.min || 0 %>">
+                  <%= m.name %> (Fee <%= _feeLabel(m.fee) %>)
+                </option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="cm-label">No. Rekening</label>
+            <div class="cm-row">
+              <input id="manualDestination" name="accountNumber" type="text" 
+                     class="cm-field" 
+                     placeholder="08xxxxxxxxx">
+              <button type="button" id="manualCekNamaBtn" onclick="cekNamaManual()"
+                      class="cm-cek comic-btn-danger">
+                <span id="manualCekNamaBtnText">Cek Nama</span>
+                <i id="manualCekNamaSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+              </button>
+            </div>
+            <p id="manualCekNamaResult" class="text-[13.5px] mt-1.5 hidden"></p>
+          </div>
+
+          <div class="mb-4">
+            <label class="cm-label">Nominal</label>
+            <input id="manualAmountInput" type="text" inputmode="numeric" 
+                   class="cm-field" 
+                   placeholder="0">
+            <p id="manualAmountError" class="cm-err hidden"></p>                     
+          </div>
+          <div class="cm-note">
+            ➤ Pastikan nomor rekening/e-wallet sudah benar, 
+            Kesalahan nomor tidak bisa Refund.
+            <br>
+            ➤ Penarikan manual akan di proses manual oleh Tim kami, dalam waktu 1-24 jam.
+          </div>
+
+          <button id="manualSubmitBtn" type="submit" 
+                  class="cm-submit comic-btn-primary">
+            <span id="manualBtnText">Proses Penarikan</span>
+            <i id="manualBtnSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL INSTAN -->
+  <div id="instantModal" class="cm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="cm-modal-card">
+      <div class="cm-modal-head">
+        <h3 class="font-comic"><i class="fas fa-bolt"></i>Penarikan Instan</h3>
+        <button type="button" data-cp-close class="cm-close comic-btn-secondary" aria-label="Tutup">
+          <i class="fas fa-times text-base"></i>
+        </button>
+      </div>
+      <div class="cm-modal-body">
+        <div class="cm-sum comic-flow-box keluar">
+          <div class="cm-sum-row"><div>Saldo Tersedia</div><div>Rp <%= user.balance.toLocaleString('id-ID') %></div></div>
+          <div class="cm-sum-row"><div>Provider Ewallet</div><div id="instantSelectedMethodDisplay">-</div></div>
+          <div class="cm-sum-row"><div>Biaya Admin</div><div id="instantFeeDisplay">-</div></div>
+          <div class="cm-sum-row"><div>Total Terpotong</div><div id="instantTotalDisplay">Rp 0</div></div>
+        </div>
+
+        <form id="instantForm" method="POST" action="/withdraw/instant">
+          <input type="hidden" name="productCode" id="instantProductCode">
+          <input type="hidden" name="methodName" id="instantMethodName">
+          <input type="hidden" name="mode" id="instantMode" value="fixed">
+          <input type="hidden" name="amount" id="instantRawAmount">
+
+          <div class="mb-3">
+            <label class="cm-label">Metode Pembayaran</label>
+            <select id="instantMethodPick" class="cm-field">
+              <option value="">-- Pilih Metode --</option>
+            </select>
+            <p class="cm-err hidden" id="instantProviderEmpty">Belum ada metode penarikan instan. Admin harus membuat &amp; menyimpan metodenya dulu.</p>
+          </div>
+
+          <div class="mb-3" id="instantOpenBlock" style="display:none">
+            <label class="cm-label">Nominal</label>
+            <input id="instantAmountInput" type="text" inputmode="numeric"
+                   class="cm-field"
+                   placeholder="0">
+            <p class="cm-hint" id="instantOpenHint">Nominal bebas.</p>
+          </div>
+
+          <div class="mb-3" id="instantFixedBlock">
+            <label class="cm-label">Nominal</label>
+            <select id="instantMethodSelect" disabled class="cm-field">
+              <option value="">-- Pilih Metode dahulu --</option>
+            </select>
+            <p class="cm-hint">Pilih nominal dari daftar — nominal tidak bisa diketik bebas.</p>
+          </div>
+
+          <div class="mb-4">
+            <label class="cm-label">No. Rekening</label>
+            <div class="cm-row">
+              <input id="instantDestination" name="destination" type="text" 
+                     class="cm-field" 
+                     placeholder="08xxxxxxxxx">
+              <button type="button" id="instantCekNamaBtn" onclick="cekNamaInstant()"
+                      class="cm-cek comic-btn-danger">
+                <span id="instantCekNamaBtnText">Cek Nama</span>
+                <i id="instantCekNamaSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+              </button>
+            </div>
+            <p id="instantCekNamaResult" class="text-[13.5px] mt-1.5 hidden"></p>
+            <p class="cm-hint">Opsional — cek dulu untuk memastikan nama penerima, atau langsung tarik saja tanpa cek.</p>
+            <p id="instantAmountError" class="cm-err hidden"></p>
+          </div>
+
+          <div class="cm-note">
+            ➤ Pastikan nomor rekening/e-wallet sudah benar, 
+            Kesalahan nomor tidak bisa Refund.
+            <br>
+            ➤ Penarikan instan akan di proses otomatis oleh sistem, dalam waktu 1-2 menit.
+          </div>          
+
+          <button id="instantSubmitBtn" type="submit" 
+                  class="cm-submit instan">
+            <span id="instantBtnText">Proses Penarikan Instan</span>
+            <i id="instantBtnSpinner" class="fas fa-spinner fa-spin text-[13.5px] hidden"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Withdraw -->
+  <div id="withdrawDetailModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeWithdrawDetailModal()"></div>
+    
+    <div class="relative bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 w-full max-w-lg shadow-sm" id="withdrawDetailContent">
+      <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+        <span class="text-sm font-medium text-gray-800">Detail Penarikan</span>
+        <button onclick="closeWithdrawDetailModal()" class="w-7 h-7 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+
+      <div class="p-5 bg-white">
+        <table class="w-full text-[13.5px] text-left detail-table border border-gray-100 rounded-2xl shadow-sm mb-4">
+          <tbody>
+            <tr>
+              <td class="w-1/1 text-[13.5px] font-medium text-gray-800 border-r border-gray-200">ID Transaksi</td>
+              <td id="modalWithdrawId" class="text-[13.5px] font-medium text-blue-500 px-4">-</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Status</td>
+              <td id="modalWithdrawStatus" class="text-[13.5px] font-medium px-4">-</td>
+            </tr>
+            <tr id="modalWithdrawTypeRow" style="display: none;">
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Tipe</td>
+              <td id="modalWithdrawType" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr id="modalWithdrawAdminNoteRow" style="display: none;">
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Keterangan</td>
+              <td id="modalWithdrawAdminNote" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Tanggal</td>
+              <td id="modalWithdrawTanggal" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr id="modalWithdrawCompletedRow" style="display: none;">
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Tanggal Selesai</td>
+              <td id="modalWithdrawCompleted" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Provider Ewallet</td>
+              <td id="modalWithdrawMethod" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">No. Rekening</td>
+              <td id="modalWithdrawAccount" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr id="modalWithdrawNameRow" class="hidden">
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Atas Nama</td>
+              <td id="modalWithdrawName" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Jumlah</td>
+              <td id="modalWithdrawAmount" class="text-[13.5px] font-medium text-gray-800 px-4">Rp 0</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Biaya Admin</td>
+              <td id="modalWithdrawFee" class="text-[13.5px] font-medium text-gray-800 px-4">Rp 0</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Total Dipotong</td>
+              <td id="modalWithdrawTotalPotong" class="text-[13.5px] font-medium text-gray-800 px-4">Rp 0</td>
+            </tr>
+            <tr>
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Total Diterima</td>
+              <td id="modalWithdrawTotal" class="text-[13.5px] font-medium text-gray-800 px-4">Rp 0</td>
+            </tr>
+            <!-- Saldo Akhir (hanya jika status success/paid) -->
+            <tr id="modalSaldoAkhirRow" class="hidden">
+              <td class="text-[13.5px] font-medium text-gray-800 border-r border-gray-200">Saldo Akhir</td>
+              <td id="modalSaldoAkhir" class="text-[13.5px] font-medium text-gray-800 px-4">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>window.PIN_ENABLED = <%= (typeof pinEnabled !== 'undefined' && pinEnabled) ? 'true' : 'false' %>;</script>
+<script src="/pin-guard.js?v=3"></script>
+<script>
+  // PIN keamanan: dipasang SETELAH validasi form bawaan, jadi hanya form yang valid yang meminta PIN.
+  window.addEventListener('load', function () {
+    if (!window.PinGuard) return;
+    PinGuard.guardForm(document.getElementById('manualForm'), 'withdraw');
+    PinGuard.guardForm(document.getElementById('instantForm'), 'withdraw');
+  });
+</script>
+<%- include('partials/footer') %>
+
+<script>
+  const instantGatewayConfigured = <%= (settings.fr3ApiKey || (settings.vipApiId && settings.vipApiKey) || settings.austinApiKey || settings.sekalipayApiKey) ? 'true' : 'false' %>;
+  const instantMethodsAvailable = <%= ((typeof instantMethods !== 'undefined' && instantMethods.length > 0) || (typeof austinMethods !== 'undefined' && austinMethods.length > 0) || (typeof sekalipayMethods !== 'undefined' && sekalipayMethods.length > 0)) ? 'true' : 'false' %>;
+  const instantMethodsData = <%- JSON.stringify(
+    (typeof instantMethods !== 'undefined' ? instantMethods : []).map(function(m){ return { key: 'fixed:' + m.name, name: m.name, fee: m.fee || 0, mode: 'fixed', provider: (m.provider === 'vipreseller' ? 'vipreseller' : 'fr3'), products: (m.products||[]).map(function(p){ return { code: p.code, amount: p.amount }; }) }; })
+    .concat((typeof austinMethods !== 'undefined' ? austinMethods : []).map(function(m){ return { key: 'austin:' + m.name, name: m.name, fee: m.fee || 0, mode: 'open', provider: 'austin', min: m.min || 0, max: m.max || 1000000, products: [] }; }))
+    .concat((typeof sekalipayMethods !== 'undefined' ? sekalipayMethods : []).map(function(m){ return { key: 'sekalipay:' + m.name, name: m.name, fee: m.fee || 0, mode: 'open', provider: 'sekalipay', min: m.min || 0, max: m.max || 1000000, products: [] }; }))
+  ) %>;
+  const MAX_WITHDRAW = 1000000;
+  // Aturan biaya dari Paket (null = tidak ada). Rumus sama dengan server (paketFee di server.js).
+  const WD_RULE = <%- JSON.stringify(_wdRule) %>;
+  function calcFee(amount, baseFee) {
+    if (!WD_RULE) return baseFee || 0;
+    if (WD_RULE.mode === 'percent') {
+      const raw = (Number(amount) || 0) * (Number(WD_RULE.percent) || 0) / 100;
+      return Math.ceil(Math.round(raw * 1e6) / 1e6);
+    }
+    return Math.round(Number(WD_RULE.fixed) || 0);
+  }
+  function feeText(amount, baseFee) {
+    if (WD_RULE && WD_RULE.mode === 'percent' && !(Number(amount) > 0)) return WD_RULE.percent + '%';
+    return 'Rp ' + calcFee(amount, baseFee).toLocaleString('id-ID');
+  }
+
+  function formatDateCell(cell) {
+    const timestamp = cell.dataset.timestamp;
+    if (!timestamp) return;
+    const d = new Date(timestamp);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const dateNum = String(d.getDate()).padStart(2, '0');
+    const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+    cell.textContent = `${year}-${month}-${dateNum} ${timeStr}`;
+  }
+
+  // ========== MODAL MANUAL ==========
+  const manualModal = document.getElementById('manualModal');
+  const manualMethodSelect = document.getElementById('manualMethodSelect');
+  const manualMethodName = document.getElementById('manualMethodName');
+  const manualSelectedMethodDisplay = document.getElementById('manualSelectedMethodDisplay');
+  const manualFeeDisplay = document.getElementById('manualFeeDisplay');
+  const manualMinDisplay = document.getElementById('manualMinDisplay');
+  const manualDestination = document.getElementById('manualDestination');
+  const manualAmountInput = document.getElementById('manualAmountInput');
+  const manualRawAmount = document.getElementById('manualRawAmount');
+  const manualForm = document.getElementById('manualForm');
+  const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+  const manualBtnText = document.getElementById('manualBtnText');
+  const manualBtnSpinner = document.getElementById('manualBtnSpinner');
+  const manualAmountError = document.getElementById('manualAmountError');
+
+  window.openManualModal = function() {
+    ComicPopup.open(manualModal);
+    if (manualMethodSelect) manualMethodSelect.value = '';
+    if (manualDestination) manualDestination.value = '';
+    if (manualAmountInput) manualAmountInput.value = '';
+    if (manualRawAmount) manualRawAmount.value = '';
+    if (manualAmountError) manualAmountError.classList.add('hidden');
+    resetManualCekNama();
+    updateManualInfo();
+  };
+
+  window.closeManualModal = function() {
+    ComicPopup.close(manualModal);
+  };
+
+  function updateManualInfo() {
+    const selected = manualMethodSelect?.options[manualMethodSelect.selectedIndex];
+    const name = selected?.value || '-';
+    const baseFee = parseInt(selected?.dataset.fee) || 0;
+    const min = parseInt(selected?.dataset.min) || 0;
+    const typedAmount = parseInt(manualRawAmount?.value) || 0;
+    if (manualSelectedMethodDisplay) manualSelectedMethodDisplay.textContent = name;
+    if (manualFeeDisplay) manualFeeDisplay.textContent = feeText(typedAmount, baseFee);
+    if (manualMinDisplay) manualMinDisplay.textContent = min > 0 ? `Rp ${min.toLocaleString('id-ID')}` : '-';
+    if (manualMethodName) manualMethodName.value = name;
+  }
+
+  if (manualMethodSelect) manualMethodSelect.addEventListener('change', function() { updateManualInfo(); resetManualCekNama(); });
+
+  if (manualAmountInput && manualRawAmount) {
+    manualAmountInput.addEventListener('input', function() {
+      let raw = this.value.replace(/[^0-9]/g, '');
+      if (raw) {
+        this.value = parseInt(raw, 10).toLocaleString('id-ID');
+        manualRawAmount.value = raw;
+      } else {
+        this.value = '';
+        manualRawAmount.value = '';
+      }
+      updateManualInfo();
+    });
+  }
+
+  if (manualDestination) {
+    manualDestination.addEventListener('input', function() {
+      let val = this.value;
+      if (val.startsWith('+62')) this.value = '0' + val.slice(3);
+      else if (val.startsWith('62')) this.value = '0' + val.slice(2);
+      resetManualCekNama();
+    });
+  }
+
+  // ===== CEK NAMA (MANUAL) =====
+  // Validasi atas nama pemilik nomor tujuan lewat FR3 NEWERA sebelum menekan tombol
+  // tarik. Ini pratinjau di sisi klien; server tetap memvalidasi ulang saat submit.
+  let manualNameVerified = false;
+  function resetManualCekNama() {
+    manualNameVerified = false;
+    const el = document.getElementById('manualCekNamaResult');
+    if (el) { el.classList.add('hidden'); el.textContent = ''; }
+  }
+
+  window.cekNamaManual = async function() {
+    const selected = manualMethodSelect?.options[manualMethodSelect.selectedIndex];
+    if (!selected || !selected.value) { alert('Pilih provider ewallet terlebih dahulu.'); return; }
+    const destination = manualDestination?.value.trim();
+    if (!destination) { alert('Isi nomor tujuan terlebih dahulu.'); manualDestination?.focus(); return; }
+
+    const btn = document.getElementById('manualCekNamaBtn');
+    const btnText = document.getElementById('manualCekNamaBtnText');
+    const spinner = document.getElementById('manualCekNamaSpinner');
+    const resultEl = document.getElementById('manualCekNamaResult');
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.textContent = 'Mengecek...';
+    if (spinner) spinner.classList.remove('hidden');
+    manualNameVerified = false;
+
+    try {
+      const res = await fetch('/withdraw/cek-nama', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'manual', methodName: selected.value, destination })
+      });
+      const data = await res.json();
+      if (resultEl) {
+        resultEl.classList.remove('hidden');
+        if (data.ok && data.name) {
+          manualNameVerified = true;
+          resultEl.className = 'text-[13.5px] mt-1.5 text-green-600 font-medium';
+          resultEl.textContent = `✓ Atas nama: ${data.name}`;
+        } else if (data.skip) {
+          resultEl.className = 'text-[13.5px] mt-1.5 text-gray-500 font-medium';
+          resultEl.textContent = data.message || 'Cek nama tidak tersedia untuk metode ini.';
+        } else {
+          resultEl.className = 'text-[13.5px] mt-1.5 text-[#dc2626] font-medium';
+          resultEl.textContent = data.message || 'Nomor tidak ditemukan atau tidak valid.';
+        }
+      }
+    } catch (err) {
+      if (resultEl) {
+        resultEl.classList.remove('hidden');
+        resultEl.className = 'text-[13.5px] mt-1.5 text-[#dc2626] font-medium';
+        resultEl.textContent = 'Gagal menghubungi server. Coba lagi.';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.textContent = 'Cek Nama';
+      if (spinner) spinner.classList.add('hidden');
+    }
+  };
+
+  if (manualForm) {
+    manualForm.addEventListener('submit', function(e) {
+      const selected = manualMethodSelect?.options[manualMethodSelect.selectedIndex];
+      if (!manualNameVerified) {
+        const proceed = confirm('Anda belum cek nama penerima. Pastikan nomor tujuan sudah benar — lanjutkan tarik saldo?');
+        if (!proceed) { e.preventDefault(); return false; }
+      }
+      if (!selected || !selected.value) {
+        e.preventDefault();
+        alert('Pilih provider ewallet terlebih dahulu.');
+        return false;
+      }
+      const destination = manualDestination?.value.trim();
+      if (!destination) {
+        e.preventDefault();
+        alert('Nomor tujuan harus diisi.');
+        return false;
+      }
+      const minFromMethod = parseInt(selected?.dataset.min) || 0;
+      const value = parseInt(manualRawAmount?.value, 10);
+      if (manualAmountError) manualAmountError.classList.add('hidden');
+      if (isNaN(value) || value <= 0) {
+        e.preventDefault();
+        if (manualAmountError) {
+          manualAmountError.textContent = 'Nominal harus lebih dari 0.';
+          manualAmountError.classList.remove('hidden');
+        }
+        manualAmountInput?.focus();
+        return false;
+      }
+      if (minFromMethod > 0 && value < minFromMethod) {
+        e.preventDefault();
+        if (manualAmountError) {
+          manualAmountError.textContent = `Minimal penarikan Rp ${minFromMethod.toLocaleString('id-ID')}`;
+          manualAmountError.classList.remove('hidden');
+        }
+        manualAmountInput?.focus();
+        return false;
+      }
+      if (value > MAX_WITHDRAW) {
+        e.preventDefault();
+        if (manualAmountError) {
+          manualAmountError.textContent = 'Maksimal penarikan Rp 1.000.000';
+          manualAmountError.classList.remove('hidden');
+        }
+        manualAmountInput?.focus();
+        return false;
+      }
+      const balance = <%= user.balance %>;
+      const fee = calcFee(value, parseInt(selected?.dataset.fee) || 0);
+      if (value + fee > balance) {
+        e.preventDefault();
+        if (manualAmountError) {
+          manualAmountError.textContent = 'Saldo tidak mencukupi (termasuk biaya admin).';
+          manualAmountError.classList.remove('hidden');
+        }
+        manualAmountInput?.focus();
+        return false;
+      }
+      manualSubmitBtn.disabled = true;
+      manualBtnText.textContent = 'Memproses...';
+      manualBtnSpinner.classList.remove('hidden');
+    });
+  }
+
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted && manualSubmitBtn) {
+      manualSubmitBtn.disabled = false;
+      manualBtnText.textContent = 'Proses Penarikan';
+      manualBtnSpinner.classList.add('hidden');
+    }
+  });
+
+  // ========== MODAL INSTAN ==========
+  const instantModal = document.getElementById('instantModal');
+  const instantMethodPick = document.getElementById('instantMethodPick');
+  const instantProviderEmpty = document.getElementById('instantProviderEmpty');
+  // Daftar metode sudah difilter server sesuai provider yang dipilih admin di Pengaturan.
+  function populateMethods() {
+    if (!instantMethodPick) return;
+    if (instantProviderEmpty) instantProviderEmpty.classList.add('hidden');
+    if (!instantMethodsData.length) {
+      instantMethodPick.innerHTML = '<option value="">-- Belum ada metode --</option>';
+      instantMethodPick.disabled = true;
+      if (instantProviderEmpty) instantProviderEmpty.classList.remove('hidden');
+      return;
+    }
+    let html = '<option value="">-- Pilih Metode --</option>';
+    instantMethodsData.forEach(m => {
+      const feeLbl = 'Rp ' + (m.fee || 0).toLocaleString('id-ID');
+      html += '<option value="' + m.key + '">' + m.name + (m.mode === 'open' ? ' (Bebas nominal, biaya admin ' + feeLbl + ')' : ' (Biaya admin ' + feeLbl + ')') + '</option>';
+    });
+    instantMethodPick.innerHTML = html;
+    instantMethodPick.disabled = false;
+  }
+  const instantMethodSelect = document.getElementById('instantMethodSelect');
+  const instantProductCode = document.getElementById('instantProductCode');
+  const instantSelectedMethodDisplay = document.getElementById('instantSelectedMethodDisplay');
+  const instantFeeDisplay = document.getElementById('instantFeeDisplay');
+  const instantTotalDisplay = document.getElementById('instantTotalDisplay');
+  const instantDestination = document.getElementById('instantDestination');
+  const instantForm = document.getElementById('instantForm');
+  const instantSubmitBtn = document.getElementById('instantSubmitBtn');
+  const instantBtnText = document.getElementById('instantBtnText');
+  const instantBtnSpinner = document.getElementById('instantBtnSpinner');
+  const instantAmountError = document.getElementById('instantAmountError');
+  const instantFixedBlock = document.getElementById('instantFixedBlock');
+  const instantOpenBlock = document.getElementById('instantOpenBlock');
+  const instantAmountInput = document.getElementById('instantAmountInput');
+  const instantRawAmount = document.getElementById('instantRawAmount');
+  const instantMethodName = document.getElementById('instantMethodName');
+  const instantOpenHint = document.getElementById('instantOpenHint');
+  // Metode yang sedang dipilih (null kalau belum). mode 'open' = nominal bebas (Austin), 'fixed' = pilih dari daftar.
+  function currentInstantMethod() {
+    return instantMethodsData.find(m => m.key === instantMethodPick?.value) || null;
+  }
+
+  window.openInstantModal = function() {
+    if (!instantGatewayConfigured) {
+      alert('Fitur Penarikan Instan belum tersedia.');
+      return;
+    }
+    // Modal tetap dibuka walau belum ada metode: dropdown Metode menampilkan "Belum ada metode" per provider.
+    ComicPopup.open(instantModal);
+    populateMethods();
+    resetNominalSelect();
+    if (instantAmountInput) instantAmountInput.value = '';
+    if (instantRawAmount) instantRawAmount.value = '';
+    toggleInstantMode(null);
+    if (instantDestination) instantDestination.value = '';
+    if (instantAmountError) instantAmountError.classList.add('hidden');
+    resetInstantCekNama();
+    updateInstantInfo();
+  };
+
+  window.closeInstantModal = function() {
+    ComicPopup.close(instantModal);
+  };
+
+  // Langkah 1: pilih metode pembayaran dulu, baru daftar nominal untuk metode
+  // itu dimunculkan di dropdown Nominal (tidak bisa ketik bebas).
+  function resetNominalSelect() {
+    if (!instantMethodSelect) return;
+    instantMethodSelect.innerHTML = '<option value="">-- Pilih Metode dahulu --</option>';
+    instantMethodSelect.disabled = true;
+  }
+
+  function populateNominalSelect(methodName) {
+    const method = instantMethodsData.find(m => m.key === methodName);
+    if (!instantMethodSelect) return;
+    if (!method) {
+      resetNominalSelect();
+      return;
+    }
+    const baseFee = method.fee || 0;
+    let html = '<option value="">-- Pilih Nominal --</option>';
+    method.products.forEach(p => {
+      const fee = calcFee(p.amount, baseFee);
+      html += `<option value="${p.code}" data-name="${method.name}" data-amount="${p.amount}" data-fee="${fee}">Rp ${p.amount.toLocaleString('id-ID')} (Biaya admin Rp ${fee.toLocaleString('id-ID')})</option>`;
+    });
+    instantMethodSelect.innerHTML = html;
+    instantMethodSelect.disabled = false;
+  }
+
+  // Tampilkan input nominal bebas (Austin) atau dropdown nominal tetap (FR3 / VIP Reseller) sesuai metode.
+  function toggleInstantMode(method) {
+    const open = !!(method && method.mode === 'open');
+    if (instantOpenBlock) instantOpenBlock.style.display = open ? '' : 'none';
+    if (instantFixedBlock) instantFixedBlock.style.display = open ? 'none' : '';
+    if (open && instantOpenHint) {
+      instantOpenHint.textContent = 'Nominal bebas. Minimal Rp ' + (method.min || 0).toLocaleString('id-ID') + ' — Maksimal Rp ' + (method.max || 0).toLocaleString('id-ID') + '.';
+    }
+  }
+
+  if (instantMethodPick) {
+    instantMethodPick.addEventListener('change', function() {
+      const method = currentInstantMethod();
+      if (instantAmountInput) instantAmountInput.value = '';
+      if (instantRawAmount) instantRawAmount.value = '';
+      toggleInstantMode(method);
+      if (method && method.mode === 'open') resetNominalSelect(); else populateNominalSelect(this.value);
+      updateInstantInfo();
+      resetInstantCekNama();
+    });
+  }
+
+  if (instantAmountInput) {
+    instantAmountInput.addEventListener('input', function() {
+      const raw = this.value.replace(/[^0-9]/g, '');
+      if (raw) {
+        this.value = parseInt(raw, 10).toLocaleString('id-ID');
+        instantRawAmount.value = raw;
+      } else {
+        this.value = '';
+        instantRawAmount.value = '';
+      }
+      updateInstantInfo();
+    });
+  }
+
+  // Provider FR3/VIP: nominal TIDAK diketik — pilih salah satu (nominal + kode produk) yang didaftarkan admin.
+  // Provider Austin: nominal bebas diketik, dibatasi min-max metode.
+  function updateInstantInfo() {
+    const method = currentInstantMethod();
+    if (instantMethodName) instantMethodName.value = method ? method.name : '';
+    const instantModeEl = document.getElementById('instantMode');
+    if (instantModeEl) instantModeEl.value = (method && method.mode === 'open') ? (method.provider === 'sekalipay' ? 'sekalipay' : 'austin') : 'fixed';
+    if (method && method.mode === 'open') {
+      const amount = parseInt(instantRawAmount?.value) || 0;
+      const fee = amount > 0 ? calcFee(amount, method.fee || 0) : 0;
+      if (instantSelectedMethodDisplay) instantSelectedMethodDisplay.textContent = amount > 0 ? `${method.name} - Rp ${amount.toLocaleString('id-ID')}` : method.name;
+      if (instantFeeDisplay) instantFeeDisplay.textContent = feeText(amount, method.fee || 0);
+      if (instantTotalDisplay) instantTotalDisplay.textContent = `Rp ${(amount + fee).toLocaleString('id-ID')}`;
+      if (instantProductCode) instantProductCode.value = '';
+      return;
+    }
+    const selected = instantMethodSelect?.options[instantMethodSelect.selectedIndex];
+    const name = selected?.dataset.name || '-';
+    const amount = parseInt(selected?.dataset.amount) || 0;
+    const fee = parseInt(selected?.dataset.fee) || 0;
+    if (instantSelectedMethodDisplay) instantSelectedMethodDisplay.textContent = amount > 0 ? `${name} - Rp ${amount.toLocaleString('id-ID')}` : (currentInstantMethod()?.name || '-');
+    if (instantFeeDisplay) instantFeeDisplay.textContent = `Rp ${fee.toLocaleString('id-ID')}`;
+    if (instantTotalDisplay) instantTotalDisplay.textContent = `Rp ${(amount + fee).toLocaleString('id-ID')}`;
+    if (instantProductCode) instantProductCode.value = selected?.value || '';
+  }
+
+  if (instantMethodSelect) instantMethodSelect.addEventListener('change', updateInstantInfo);
+
+  if (instantDestination) {
+    instantDestination.addEventListener('input', function() {
+      let val = this.value;
+      if (val.startsWith('+62')) this.value = '0' + val.slice(3);
+      else if (val.startsWith('62')) this.value = '0' + val.slice(2);
+      resetInstantCekNama();
+    });
+  }
+
+  // ===== CEK NAMA (INSTAN) — sepenuhnya opsional, tidak menghalangi submit =====
+  function resetInstantCekNama() {
+    const el = document.getElementById('instantCekNamaResult');
+    if (el) { el.classList.add('hidden'); el.textContent = ''; }
+  }
+
+  window.cekNamaInstant = async function() {
+    if (!instantMethodPick?.value) { alert('Pilih metode pembayaran terlebih dahulu.'); return; }
+    const destination = instantDestination?.value.trim();
+    if (!destination) { alert('Isi nomor tujuan terlebih dahulu.'); instantDestination?.focus(); return; }
+
+    const btn = document.getElementById('instantCekNamaBtn');
+    const btnText = document.getElementById('instantCekNamaBtnText');
+    const spinner = document.getElementById('instantCekNamaSpinner');
+    const resultEl = document.getElementById('instantCekNamaResult');
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.textContent = 'Mengecek...';
+    if (spinner) spinner.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/withdraw/cek-nama', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: (currentInstantMethod()?.mode === 'open') ? (currentInstantMethod()?.provider === 'sekalipay' ? 'sekalipay' : 'austin') : 'instant', methodName: currentInstantMethod()?.name || '', destination })
+      });
+      const data = await res.json();
+      if (resultEl) {
+        resultEl.classList.remove('hidden');
+        if (data.ok && data.name) {
+          resultEl.className = 'text-[13.5px] mt-1.5 text-green-600 font-medium';
+          resultEl.textContent = `✓ Atas nama: ${data.name}`;
+        } else if (data.skip) {
+          resultEl.className = 'text-[13.5px] mt-1.5 text-gray-500 font-medium';
+          resultEl.textContent = data.message || 'Cek nama tidak tersedia untuk metode ini.';
+        } else {
+          resultEl.className = 'text-[13.5px] mt-1.5 text-[#dc2626] font-medium';
+          resultEl.textContent = data.message || 'Nomor tidak ditemukan atau tidak valid.';
+        }
+      }
+    } catch (err) {
+      if (resultEl) {
+        resultEl.classList.remove('hidden');
+        resultEl.className = 'text-[13.5px] mt-1.5 text-[#dc2626] font-medium';
+        resultEl.textContent = 'Gagal menghubungi server. Coba lagi.';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.textContent = 'Cek Nama';
+      if (spinner) spinner.classList.add('hidden');
+    }
+  };
+
+  if (instantForm) {
+    instantForm.addEventListener('submit', function(e) {
+      const selected = instantMethodSelect?.options[instantMethodSelect.selectedIndex];
+      if (instantAmountError) instantAmountError.classList.add('hidden');
+      if (!instantMethodPick?.value) {
+        e.preventDefault();
+        if (instantAmountError) {
+          instantAmountError.textContent = 'Pilih metode pembayaran terlebih dahulu.';
+          instantAmountError.classList.remove('hidden');
+        }
+        return false;
+      }
+      const openMethod = currentInstantMethod();
+      const isOpen = !!(openMethod && openMethod.mode === 'open');
+      if (isOpen) {
+        const val = parseInt(instantRawAmount?.value, 10);
+        const showErr = (msg) => {
+          e.preventDefault();
+          if (instantAmountError) { instantAmountError.textContent = msg; instantAmountError.classList.remove('hidden'); }
+          instantAmountInput?.focus();
+          return false;
+        };
+        if (isNaN(val) || val <= 0) return showErr('Nominal harus lebih dari 0.');
+        if ((openMethod.min || 0) > 0 && val < openMethod.min) return showErr(`Minimal penarikan Rp ${openMethod.min.toLocaleString('id-ID')}`);
+        if (val > (openMethod.max || 1000000)) return showErr(`Maksimal penarikan Rp ${(openMethod.max || 1000000).toLocaleString('id-ID')}`);
+      } else if (!selected || !selected.value) {
+        e.preventDefault();
+        if (instantAmountError) {
+          instantAmountError.textContent = 'Pilih nominal terlebih dahulu.';
+          instantAmountError.classList.remove('hidden');
+        }
+        return false;
+      }
+      const destination = instantDestination?.value.trim();
+      if (!destination) {
+        e.preventDefault();
+        if (instantAmountError) {
+          instantAmountError.textContent = 'Nomor tujuan harus diisi.';
+          instantAmountError.classList.remove('hidden');
+        }
+        instantDestination?.focus();
+        return false;
+      }
+      const amount = isOpen ? (parseInt(instantRawAmount?.value, 10) || 0) : (parseInt(selected.dataset.amount) || 0);
+      const fee = isOpen ? calcFee(amount, openMethod.fee || 0) : (parseInt(selected.dataset.fee) || 0);
+      const balance = <%= user.balance %>;
+      if (amount + fee > balance) {
+        e.preventDefault();
+        if (instantAmountError) {
+          instantAmountError.textContent = 'Saldo tidak mencukupi (termasuk biaya admin).';
+          instantAmountError.classList.remove('hidden');
+        }
+        return false;
+      }
+      instantSubmitBtn.disabled = true;
+      instantBtnText.textContent = 'Memproses...';
+      instantBtnSpinner.classList.remove('hidden');
+    });
+  }
+
+  // ========== PENCARIAN & FILTER ==========
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.addEventListener('input', applyCurrentFilterAndSearch);
+
+  let currentFilterStatus = 'all';
+  const filterButton = document.getElementById('filterButton');
+  const filterMenu = document.getElementById('filterMenu');
+  let isFilterOpen = false;
+
+  if (filterButton) {
+    filterButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      isFilterOpen = !isFilterOpen;
+      filterMenu.classList.toggle('hidden', !isFilterOpen);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (filterButton && filterMenu && !filterButton.contains(e.target) && !filterMenu.contains(e.target)) {
+      isFilterOpen = false;
+      filterMenu.classList.add('hidden');
+    }
+  });
+
+  document.querySelectorAll('.filter-option').forEach(opt => {
+    opt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const val = this.dataset.val;
+      const text = this.innerText.trim().split(' ')[0];
+      selectFilter(val, text);
+    });
+  });
+
+  window.selectFilter = function(val, text) {
+    currentFilterStatus = val;
+    document.getElementById('activeFilterText').innerText = text;
+    document.querySelectorAll('.filter-option').forEach(btn => {
+      const icon = btn.querySelector('.check-icon');
+      icon.classList.toggle('hidden', btn.dataset.val !== val);
+    });
+    applyCurrentFilterAndSearch();
+    isFilterOpen = false;
+    filterMenu?.classList.add('hidden');
+  };
+
+  function applyCurrentFilterAndSearch() {
+    const searchText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const trxItems = document.querySelectorAll('.trx-item');
+    const emptyTrx = document.getElementById('emptyTrxState');
+    const emptyFilter = document.getElementById('emptyFilterState');
+
+    if (trxItems.length === 0) {
+      emptyTrx?.classList.remove('hidden');
+      emptyFilter?.classList.add('hidden');
+      return;
+    }
+
+    let visible = 0;
+    trxItems.forEach(item => {
+      const status = item.dataset.status;
+      const id = item.dataset.id.toLowerCase();
+      let showByStatus = currentFilterStatus === 'all' ||
+        (currentFilterStatus === 'success' && (status === 'paid' || status === 'success')) ||
+        (currentFilterStatus === 'pending' && status === 'pending') ||
+        (currentFilterStatus === 'failed' && (status === 'expired' || status === 'rejected'));
+      let showBySearch = searchText === '' || id.includes(searchText);
+      const show = showByStatus && showBySearch;
+      item.style.display = show ? 'table-row' : 'none';
+      if (show) visible++;
+    });
+
+    emptyTrx?.classList.toggle('hidden', visible > 0 || trxItems.length > 0);
+    emptyFilter?.classList.toggle('hidden', visible > 0);
+  }
+
+  // ========== MODAL DETAIL (DENGAN SALDO AKHIR) ==========
+  function getWithdrawDataFromElement(el) {
+    return {
+      id: el.dataset.id,
+      amount: el.dataset.amount,
+      fee: el.dataset.fee,
+      total: el.dataset.total,
+      method: el.dataset.method,
+      account: el.dataset.account,
+      name: el.dataset.name,
+      status: el.dataset.status,
+      createdAt: el.dataset.created,
+      completedAt: el.dataset.completed || null,
+      adminNote: el.dataset.adminNote || '',
+      instant: el.dataset.instant === 'true',
+      balanceAfter: el.dataset.balanceAfter
+    };
+  }
+
+  function openDetailModalWithData(data) {
+    document.getElementById('modalWithdrawId').innerText = data.id;
+
+    const createdDate = new Date(data.createdAt);
+    const year = createdDate.getFullYear();
+    const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+    const dateNum = String(createdDate.getDate()).padStart(2, '0');
+    const time = createdDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+    document.getElementById('modalWithdrawTanggal').innerText = `${year}-${month}-${dateNum} ${time}`;
+
+    const completedRow = document.getElementById('modalWithdrawCompletedRow');
+    const completedEl = document.getElementById('modalWithdrawCompleted');
+    if (data.completedAt) {
+      const compDate = new Date(data.completedAt);
+      const cy = compDate.getFullYear();
+      const cm = String(compDate.getMonth() + 1).padStart(2, '0');
+      const cd = String(compDate.getDate()).padStart(2, '0');
+      const ct = compDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+      completedEl.innerText = `${cy}-${cm}-${cd} ${ct}`;
+      completedRow.style.display = 'table-row';
+    } else {
+      completedRow.style.display = 'none';
+    }
+
+    document.getElementById('modalWithdrawMethod').innerText = data.method || '-';
+    document.getElementById('modalWithdrawAccount').innerText = data.account || '-';
+
+    const nameRow = document.getElementById('modalWithdrawNameRow');
+    const nameEl = document.getElementById('modalWithdrawName');
+    if (data.name && data.name.trim() !== '') {
+      nameEl.innerText = data.name;
+      nameRow.classList.remove('hidden');
+    } else {
+      nameRow.classList.add('hidden');
+    }
+
+    const nominal = Math.abs(parseInt(data.amount));
+    const fee = parseInt(data.fee) || 0;
+    const totalPotong = nominal + fee;
+
+    document.getElementById('modalWithdrawAmount').innerText = `Rp ${nominal.toLocaleString('id-ID')}`;
+    document.getElementById('modalWithdrawFee').innerText = `Rp ${fee.toLocaleString('id-ID')}`;
+    document.getElementById('modalWithdrawTotalPotong').innerText = `Rp ${totalPotong.toLocaleString('id-ID')}`;
+    document.getElementById('modalWithdrawTotal').innerText = `Rp ${nominal.toLocaleString('id-ID')}`;
+
+    const st = data.status;
+    let statusText = (st === 'paid' || st === 'success') ? 'completed' : st;
+    let statusColor = st === 'paid' || st === 'success' ? 'text-blue-500' : (st === 'pending' ? 'text-[#eab308]' : 'text-[#dc2626]');
+    const statusEl = document.getElementById('modalWithdrawStatus');
+    statusEl.innerText = statusText;
+    statusEl.className = `text-[13.5px] font-medium px-4 ${statusColor}`;
+
+    const typeRow = document.getElementById('modalWithdrawTypeRow');
+    const typeEl = document.getElementById('modalWithdrawType');
+    typeEl.innerText = data.instant ? 'Instan' : 'Manual';
+    typeRow.style.display = 'table-row';
+
+    const adminRow = document.getElementById('modalWithdrawAdminNoteRow');
+    const adminEl = document.getElementById('modalWithdrawAdminNote');
+    adminEl.innerText = (data.adminNote && data.adminNote.trim() !== '') ? data.adminNote : '-';
+    adminRow.style.display = 'table-row';
+
+    // === SALDO AKHIR ===
+    const saldoAkhirRow = document.getElementById('modalSaldoAkhirRow');
+    const saldoAkhirEl = document.getElementById('modalSaldoAkhir');
+    if (st === 'paid' || st === 'success') {
+      saldoAkhirEl.innerText = data.balanceAfter ? `Rp ${parseInt(data.balanceAfter).toLocaleString('id-ID')}` : "-";
+      saldoAkhirRow.classList.remove('hidden');
+    } else {
+      saldoAkhirRow.classList.add('hidden');
+    }
+
+    document.getElementById('withdrawDetailModal').classList.remove('hidden');
+  }
+
+  function closeWithdrawDetailModal() {
+    document.getElementById('withdrawDetailModal').classList.add('hidden');
+    if (window.location.hash.startsWith('#withdraw-')) {
+      history.back();
+      setTimeout(() => {
+        if (window.location.hash.startsWith('#withdraw-')) window.location.hash = '';
+      }, 100);
+    }
+  }
+
+  function handleWithdrawRouter() {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#withdraw-')) return;
+    const trxId = hash.replace('#withdraw-', '');
+    const element = document.querySelector(`.trx-item[data-id="${trxId}"]`);
+    if (!element) {
+      closeWithdrawDetailModal();
+      history.replaceState(null, null, window.location.pathname + window.location.search);
+      return;
+    }
+    const data = getWithdrawDataFromElement(element);
+    openDetailModalWithData(data);
+  }
+
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash.startsWith('#withdraw-')) {
+      handleWithdrawRouter();
+    } else {
+      if (!document.getElementById('withdrawDetailModal').classList.contains('hidden')) {
+        closeWithdrawDetailModal();
+      }
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.date-cell').forEach(formatDateCell);
+    if (window.location.hash.startsWith('#withdraw-')) handleWithdrawRouter();
+    applyCurrentFilterAndSearch();
+
+    // Datang dari Menu (comic bottom-sheet) -> langsung buka modal yang sesuai
+    const _qp = new URLSearchParams(window.location.search);
+    const _buka = _qp.get('buka');
+    if (_buka === 'manual') {
+      openManualModal();
+    } else if (_buka === 'instant') {
+      openInstantModal();
+    }
+    if (_buka) {
+      const _url = new URL(window.location.href);
+      _url.searchParams.delete('buka');
+      window.history.replaceState({}, '', _url);
+    }
+  });
+</script>
