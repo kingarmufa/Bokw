@@ -1,0 +1,71 @@
+<%- include('partials/header', { title: 'History Panel Reseller' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/reseller" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">History Panel</h1>
+    <a href="/reseller/kelola" class="ml-auto text-[11.5px] font-bold text-blue-600">
+      <i class="fa-solid fa-plus mr-1"></i> Buat Panel
+    </a>
+  </div>
+
+  <p class="text-[11px] text-gray-500 mb-3">Data akun panel yang kamu buat. History otomatis terhapus kalau panelnya sudah tidak aktif.</p>
+
+  <% if (logs.length === 0) { %>
+    <div class="text-center py-16">
+      <i class="fa-solid fa-server text-3xl text-gray-300 mb-3"></i>
+      <p class="text-xs font-medium text-gray-500">Belum ada history panel.</p>
+    </div>
+  <% } %>
+
+  <div class="flex flex-col gap-3">
+    <% logs.forEach(function(l) { %>
+      <div class="px-4 py-3 rounded-2xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold <%= l.type === 'create' ? 'bg-green-100 text-green-700' : '' %>" <% if (l.type !== 'create') { %>style="background:#fde68a !important;color:#78350f !important;border:1.5px solid #14120f;"<% } %>>
+            <%= l.type === 'create' ? 'CREATE PANEL' : 'ADD SERVER' %>
+          </span>
+          <span class="text-[10px] text-gray-400"><%= new Date(l.createdAt).toLocaleString('id-ID') %></span>
+        </div>
+        <div class="text-[12px] flex flex-col gap-1">
+          <div class="flex justify-between gap-3"><span class="text-gray-500">Server</span><b><%= l.serverName %></b></div>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">Domain</span><b class="break-all text-right"><%= l.domain %></b></div>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">Username</span><b><%= l.username %></b></div>
+          <% if (l.type === 'create') { %>
+            <div class="flex justify-between gap-3 items-center">
+              <span class="text-gray-500">Password</span>
+              <span class="flex items-center gap-2">
+                <b class="break-all text-right pw-text" data-pw="<%= l.password %>">••••••••••••</b>
+                <button type="button" onclick="togglePw(this)" class="text-gray-500"><i class="fa-solid fa-eye"></i></button>
+              </span>
+            </div>
+          <% } %>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">Email</span><b class="break-all text-right"><%= l.email %></b></div>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">ID Akun Panel</span><b><%= l.pteroUserId %></b></div>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">ID Server</span><b><%= l.pteroServerId %></b></div>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">RAM</span><b><%= l.ramLabel || (l.ramMB ? (l.ramMB / 1024) + ' GB' : 'Unlimited') %></b></div>
+        </div>
+        <a href="/reseller/kelola?tab=add&slot=<%= l.slot %>&account_id=<%= l.pteroUserId %>"
+          class="mt-3 block text-center px-3 py-2 rounded-xl border-2 border-black bg-amber-300 text-[12px] font-bold">
+          <i class="fa-solid fa-plus mr-1"></i> Tambah Server ke Akun Ini
+        </a>
+      </div>
+    <% }); %>
+  </div>
+
+</div>
+
+<script>
+  function togglePw(btn) {
+    var el = btn.parentNode.querySelector('.pw-text');
+    var shown = el.getAttribute('data-shown') === '1';
+    el.textContent = shown ? '••••••••••••' : el.getAttribute('data-pw');
+    el.setAttribute('data-shown', shown ? '0' : '1');
+    btn.innerHTML = shown ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+  }
+</script>
+
+<%- include('partials/footer') %>
