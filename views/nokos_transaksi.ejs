@@ -1,0 +1,9 @@
+<%- include('partials/header', { title: 'Transaksi Nokos' }) %>
+<link rel="stylesheet" href="/nokos-dibanana.css?v=1">
+<main class="bn-page" data-comic-owned data-order="<%= order._id %>" id="bn-transaction">
+ <header class="bn-hero"><span class="bn-tag">RUANG OTP</span><h1>Nomormu siap?</h1><p><%= order.productName %> • <%= order.server || 'Pesanan lama' %> • <%= order.countryName || '' %></p></header>
+ <p id="bn-status-error" role="status" aria-live="polite"></p>
+ <section class="bn-panel"><div class="bn-meta"><strong id="bn-status"><%= order.status %></strong><span id="bn-timer"></span></div><div id="bn-phone" class="bn-phone"><%= order.phoneNumber || 'Menunggu nomor…' %></div><button class="bn-btn" type="button" id="bn-copy-phone">Salin nomor</button><hr><p>OTP pertama</p><div id="bn-otp1" class="bn-otp"><%= order.otpCode || '—' %></div><p>OTP kedua</p><div id="bn-otp2" class="bn-otp"><%= order.otpCode2 || '—' %></div><p id="bn-sms" class="bn-note"></p><div class="bn-meta"><span>Harga pembelian</span><strong>Rp <%= Number(order.sellPrice).toLocaleString('id-ID') %></strong></div><p class="bn-note">ID: <%= order._id %></p><div class="bn-actions"><button class="bn-btn" id="bn-cancel" type="button">Batalkan</button><button class="bn-btn" id="bn-resend" type="button" hidden>Minta OTP kedua</button><button class="bn-btn" id="bn-refresh" type="button">Cek status</button><a class="bn-btn" href="/nokos/riwayat">Riwayat</a></div><p class="bn-note" id="bn-help">Status diperiksa setiap 5 detik. Pembatalan minimal 120 detik dan sebelum OTP masuk.</p></section>
+</main>
+<script src="/nokos-status.js?v=1" defer></script>
+<%- include('partials/footer') %>
