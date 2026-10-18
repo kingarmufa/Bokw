@@ -1,0 +1,4 @@
+<%# Kredit pembuat — nama diatur di Admin > Pengaturan > Nama Pembuat %>
+<% if (typeof settings !== 'undefined' && settings && settings.creatorName) { %>
+<div class="cm-credit"><i class="fas fa-bolt"></i>Dibuat oleh <b><%= settings.creatorName %></b></div>
+<% } %>
