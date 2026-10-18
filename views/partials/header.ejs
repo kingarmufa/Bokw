@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html <%- include('htmlattrs') %>>
+<head>
+  <script>
+    // Set mode tampilan (HP / Laptop) sedini mungkin biar gak ada flicker.
+    // Default ngikutin lebar layar asli, tapi bisa di-override manual lewat tombol icon HP/Laptop di header,
+    // dan pilihannya disimpen supaya kepake terus tiap buka halaman baru.
+    (function () {
+      try {
+        var m = localStorage.getItem('averpayUiMode');
+        if (m !== 'desktop' && m !== 'mobile') {
+          m = (window.innerWidth >= 1024) ? 'desktop' : 'mobile';
+        }
+        document.documentElement.classList.add(m === 'desktop' ? 'ui-desktop' : 'ui-mobile');
+      } catch (e) {
+        document.documentElement.classList.add(window.innerWidth >= 1024 ? 'ui-desktop' : 'ui-mobile');
+      }
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffd400" />
+  <%- include('seo_meta', { pageTitle: (typeof title !== 'undefined' ? title + ' - ' + settings.name : settings.name + ' - ' + settings.title), jsonLd: (typeof seoJsonLd !== 'undefined') ? seoJsonLd : '' }) %>
+
+  <% if (settings.logoUrl) { %>
+  <link rel="icon" type="image/jpeg" href="<%= settings.logoUrl %>">
+  <% } %>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@200..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+  <!-- Comic / cartoon fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/comic-theme.css">
+  <script src="/comic-fx.js" defer></script>
+  <script src="/comic-popup.js"></script>
+  <script src="/comic-dialog.js?v=1"></script>
+  <script src="/lottie-emoji.js?v=1" defer></script>
+  <% if (typeof user !== 'undefined' && user) { %>
+  <link rel="stylesheet" href="/realtime.css?v=2" data-comic-owned>
+  <script>window.AVERPAY_SERVERLESS = <%- JSON.stringify(!!locals.serverless) %>;</script>
+  <% if (!locals.serverless) { %><script src="/socket.io/socket.io.js"></script><% } %>
+  <% if (locals.serverless) { %><script src="/vercel-client.js" defer></script><% } %>
+  <script src="/realtime.js?v=1"></script>
+  <script src="/media-focus.js?v=1"></script>
+  <script src="/push.js?v=1" defer></script>
+  <% } %>
+  <script src="https://kit.fontawesome.com/7a016967ee.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Baloo 2', 'sans-serif'],
+            'comic': ['Bangers', 'cursive']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+
+    body {
+      position: relative;
+      padding-top: 98px;
+    }
+
+    body.no-chrome { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+    /* Halaman padat teks (mis. Dokumentasi API) — hilangkan pola titik komik biar teks gak numpuk sama dot-nya, warna dasar tetap sama */
+    body.no-dots { background-image: none !important; }
+
+    body.has-bnav { padding-bottom: 122px; }
+
+    html.ui-mobile body { padding-top: 90px; }
+    html.ui-mobile body.no-chrome { padding-top: 0 !important; }
+
+    .fixed-navbar {
+      top: 0; left: 0; width: 100%; z-index: 40;
+      position: fixed;
+      background: var(--comic-yellow);
+      border-bottom: 3px solid var(--comic-black);
+      box-shadow: 0 4px 0 rgba(20, 18, 15, 0.12);
+      transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+    }
+
+    .comic-logo-text {
+      font-family: 'Bangers', 'Baloo 2', sans-serif;
+      letter-spacing: 1px;
+      -webkit-text-stroke: 0.6px var(--comic-black);
+      color: var(--comic-blue) !important;
+      text-shadow: 1.5px 1.5px 0 var(--comic-black);
+    }
+
+    .comic-login-btn {
+      background: var(--comic-blue) !important;
+      color: #fff !important;
+      border: 2.5px solid var(--comic-black);
+      box-shadow: 3px 3px 0 var(--comic-black);
+    }
+    .comic-login-btn:hover { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--comic-black); }
+    .comic-login-btn { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+    .comic-login-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--comic-black); }
+
+    /* Ikon grup di header atas (Channel/API/Logout, dsb) — pakai icon + label supaya teksnya jelas kelihatan */
+    .comic-top-icons { display: flex; align-items: center; gap: 6px; }
+    .comic-top-icon-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      min-width: 46px;
+      padding: 5px 6px;
+      border-radius: 12px;
+      border: 2.5px solid var(--comic-black);
+      background: #fffdf7;
+      color: var(--comic-black) !important;
+      box-shadow: 2.5px 2.5px 0 var(--comic-black);
+      font-size: 8.5px;
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
+      white-space: nowrap;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+    }
+    .comic-top-icon-btn i { font-size: 14px; }
+    .comic-top-icon-btn:active { transform: translate(1.5px, 1.5px) scale(0.96); box-shadow: 1px 1px 0 var(--comic-black); }
+    .comic-top-icon-btn.logout { background: var(--comic-black); color: var(--comic-yellow) !important; }
+
+    /* Tombol CS Bantuan / Tiket - beranimasi biar kelihatan mencolok & mengundang untuk diklik */
+    .comic-top-icon-btn.cs-help { position: relative; background: var(--comic-yellow); }
+    .comic-top-icon-btn.cs-help i {
+      animation: csHelpWiggle 1.8s ease-in-out infinite;
+      transform-origin: 50% 85%;
+    }
+    @keyframes csHelpWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      10% { transform: rotate(-14deg); }
+      20% { transform: rotate(11deg); }
+      30% { transform: rotate(-8deg); }
+      40% { transform: rotate(5deg); }
+      50%, 100% { transform: rotate(0deg); }
+    }
+    .comic-top-icon-btn .cs-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 3px;
+      border-radius: 999px;
+      background: var(--comic-red);
+      color: #fff;
+      border: 1.5px solid var(--comic-black);
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 13px;
+      text-align: center;
+      animation: csBadgePulse 1.4s ease-in-out infinite;
+    }
+    @keyframes csBadgePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .comic-top-icon-btn.cs-help i, .comic-top-icon-btn .cs-badge { animation: none !important; }
+    }
+
+    /* ===== Bottom comic nav bar — versi floating pill dgn indikator geser mulus ===== */
+    .comic-bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      z-index: 45;
+      width: calc(100% - 32px);
+      max-width: 360px;
+      background: #fffdf7;
+      border: 3px solid var(--comic-black);
+      border-radius: 24px;
+      box-shadow: 4px 4px 0 var(--comic-black);
+      padding: 6px;
+    }
+    /* Nav admin punya lebih banyak menu -> kasih lebar lebih supaya tetap muat & rapi */
+    .comic-bottom-nav.comic-bottom-nav-wide { max-width: 560px; }
+    .comic-bottom-nav-inner {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 2px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .comic-bottom-nav-inner::-webkit-scrollbar { display: none; }
+    /* Pil biru yang meluncur mulus ke item yang lagi aktif */
+    .comic-nav-indicator {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 0; width: 0;
+      border-radius: 18px;
+      background: linear-gradient(150deg, var(--comic-blue) 0%, var(--comic-blue-dark) 100%);
+      border: 2.5px solid var(--comic-black);
+      box-shadow: 2px 2px 0 var(--comic-black);
+      z-index: 0;
+      opacity: 0;
+      transition: left 0.32s cubic-bezier(.34,1.15,.64,1), width 0.32s cubic-bezier(.34,1.15,.64,1), opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .comic-nav-item {
+      position: relative;
+      z-index: 1;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      min-width: 52px;
+      padding: 6px 4px;
+      border-radius: 18px;
+      border: none;
+      background: transparent;
+      color: rgba(20, 18, 15, 0.5);
+      font-size: 9.5px;
+      font-weight: 700;
+      box-shadow: none;
+      transition: transform 0.12s ease, color 0.2s ease;
+    }
+    .comic-nav-item i { font-size: 14.5px; color: rgba(20, 18, 15, 0.5); transition: color 0.2s ease; }
+    .comic-nav-item:active { transform: scale(0.93); }
+    .comic-nav-item.active { color: #fff; }
+    .comic-nav-item.active i { color: #fff; }
+    .comic-nav-item.logout { background: var(--comic-black); color: var(--comic-yellow); border-radius: 18px; }
+    .comic-nav-item.logout i { color: var(--comic-yellow); }
+    @media (prefers-reduced-motion: reduce) {
+      .comic-nav-indicator { transition: none !important; }
+    }
+
+
+    /* ===== Tombol Menu di header atas: HANYA muncul kalau mode DESKTOP (dipilih lewat tombol icon HP/Laptop) ===== */
+    /* Mode HP: menu tetap di bar bawah tengah (Home / Menu / Profil), header atas tidak ada tombol Menu */
+    .menu-toggle-btn { display: none; }
+    html.ui-desktop .menu-toggle-btn { display: flex; }
+    html.ui-desktop .comic-bottom-nav { display: none !important; }
+    html.ui-desktop body.has-bnav { padding-bottom: 0 !important; }
+
+    /* Menu sheet jadi sidebar nempel di kiri, di bawah header atas — cuma pas mode desktop */
+    html.ui-desktop .comic-menu-sheet {
+      left: 0;
+      right: auto;
+      top: 98px;
+      bottom: 0;
+      width: 300px;
+      max-width: 300px;
+      height: auto;
+      max-height: none;
+      border-radius: 0 22px 22px 0;
+      border-top: 3px solid var(--comic-black);
+      border-left: none;
+      box-shadow: 6px 0 0 rgba(20, 18, 15, 0.12);
+      transform: translateX(-105%);
+    }
+    html.ui-desktop .comic-menu-sheet.open { transform: translateX(0); }
+    html.ui-desktop .comic-menu-overlay.open { top: 98px; }
+
+    /* ===== Tombol switch mode tampilan (1 tombol, icon ganti sesuai mode aktif) di header atas ===== */
+    .ui-mode-switch {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 2.5px solid var(--comic-black);
+      border-radius: 12px;
+      background: #fffdf7;
+      color: var(--comic-black);
+      box-shadow: 2.5px 2.5px 0 var(--comic-black);
+      margin-right: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+    }
+    .ui-mode-switch:active { transform: translate(1.5px, 1.5px); box-shadow: 1px 1px 0 var(--comic-black); }
+    html.ui-desktop .ui-mode-switch { background: var(--comic-blue); color: #fff; }
+
+    /* ===== Animasi masuk halaman (berlaku otomatis di SEMUA halaman via <main>) ===== */
+    @keyframes comicPageIn {
+      0%   { opacity: 0; transform: translateY(14px); }
+      100% { opacity: 1; transform: none; }
+    }
+    main { animation: comicPageIn 0.35s ease both; }
+    @media (prefers-reduced-motion: reduce) {
+      main { animation: none !important; }
+    }
+  </style>
+</head>
+<body class="<%
+const isAdmin = (typeof user !== 'undefined' && user && user.role === 'admin');
+const isLoggedIn = (typeof user !== 'undefined' && user);
+const activePath = (typeof currentPath !== 'undefined') ? currentPath : '';
+const isHidden = (typeof hideChrome !== 'undefined' && hideChrome);
+const isPlainBg = (typeof plainBackground !== 'undefined' && plainBackground);
+%><%= [isHidden ? 'no-chrome' : (isLoggedIn ? 'has-bnav' : ''), isPlainBg ? 'no-dots' : ''].filter(Boolean).join(' ') %>">
+ <script src="https://kit.fontawesome.com/7a016967ee.js" crossorigin="anonymous"></script>
+<% if (typeof showLoader !== 'undefined' && showLoader) { %><%- include('loader') %><% } %>
+
+<!-- Navbar atas: cuma logo + tombol login, menu dipindah ke bar bawah -->
+<% if (!isHidden) { %>
+<nav class="fixed-navbar">
+  <div class="max-w-7xl mx-auto flex justify-between items-center min-h-[72px] py-2 px-4 md:px-6">
+
+    <!-- Logo + Nama Aplikasi -->
+    <a href="/" class="flex items-center gap-2.5 h-full">
+      <% if (settings.logoUrl) { %>
+        <span class="comic-logo-frame-thin">
+          <img
+            src="<%= settings.logoUrl %>"
+            alt="Logo"
+          />
+        </span>
+      <% } %>
+      <span class="comic-logo-text text-[19px] md:text-lg">
+        <%= settings.name %>
+      </span>
+    </a>
+
+    <!-- Bagian kanan navbar (header atas): menu ringkas, sisanya ada di bar bawah -->
+    <div class="flex items-center">
+      <!-- Switch mode tampilan: 1 tombol, klik = ganti mode (HP <-> Laptop). Icon pakai SVG inline biar gak pernah hilang. -->
+      <button type="button" class="ui-mode-switch" id="uiModeSwitch" title="Ganti tampilan HP/Laptop">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="12" rx="1.6"></rect>
+          <path d="M2 19h20"></path>
+        </svg>
+      </button>
+    <% if (!isLoggedIn) { %>
+      <a href="/login" class="comic-login-btn px-4 py-2 text-[13.5px] rounded-full transition-all duration-150">
+        Login/Daftar
+      </a>
+    <% } else if (isAdmin) { %>
+      <div class="comic-top-icons">
+        <button type="button" onclick="toggleComicMenu()" class="comic-top-icon-btn menu-toggle-btn">
+          <i class="fa-solid fa-bars"></i>Menu
+        </button>
+        <button type="button" id="announceStripBtn" class="comic-top-icon-btn">
+          <i class="fa-solid fa-bell"></i>Info
+          <% if (typeof announcements !== 'undefined' && announcements && announcements.length > 0) { %>
+            <span class="cs-badge"><%= announcements.length > 9 ? '9+' : announcements.length %></span>
+          <% } %>
+        </button>
+        <a href="/admin/account" class="comic-top-icon-btn"><i class="fa-solid fa-user"></i>Profil</a>
+        <a href="/logout" class="comic-top-icon-btn logout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+      </div>
+    <% } else { %>
+      <div class="comic-top-icons">
+        <button type="button" onclick="toggleComicMenu()" class="comic-top-icon-btn menu-toggle-btn">
+          <i class="fa-solid fa-bars"></i>Menu
+        </button>
+        <button type="button" id="announceStripBtn" class="comic-top-icon-btn">
+          <i class="fa-solid fa-bell"></i>Info
+          <% if (typeof announcements !== 'undefined' && announcements && announcements.length > 0) { %>
+            <span class="cs-badge"><%= announcements.length > 9 ? '9+' : announcements.length %></span>
+          <% } %>
+        </button>
+        <a href="/logout" class="comic-top-icon-btn logout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+      </div>
+    <% } %>
+    </div>
+  </div>
+</nav>
+
+<div id="uiModeLoading" class="ui-mode-loading">
+  <div class="ui-mode-loading-box">
+    <span class="ui-mode-spinner"></span>
+    <span id="uiModeLoadingText">Ganti ke mode Laptop...</span>
+  </div>
+</div>
+
+<style>
+  .ui-mode-loading {
+    position: fixed; inset: 0; z-index: 100000; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(20, 18, 15, 0.55); backdrop-filter: blur(1px);
+  }
+  .ui-mode-loading.show { display: flex; }
+  .ui-mode-loading-box {
+    display: flex; align-items: center; gap: 12px;
+    background: #fffdf7; border: 3px solid var(--comic-black, #14120f);
+    border-radius: 16px; padding: 14px 22px;
+    box-shadow: 4px 4px 0 var(--comic-black, #14120f);
+    font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 14px; color: var(--comic-black, #14120f);
+  }
+  .ui-mode-spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 3px solid rgba(20,18,15,0.15); border-top-color: var(--comic-blue, #12a4ff);
+    animation: uiModeSpin 0.65s linear infinite; flex-shrink: 0;
+  }
+  @keyframes uiModeSpin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  // ===== Switch mode tampilan: 1 tombol, klik = ganti mode HP <-> Laptop (manual override, tersimpan di browser) =====
+  (function () {
+    var btn = document.getElementById('uiModeSwitch');
+    var overlay = document.getElementById('uiModeLoading');
+    var overlayText = document.getElementById('uiModeLoadingText');
+    if (!btn) return;
+
+    function currentMode() {
+      return document.documentElement.classList.contains('ui-desktop') ? 'desktop' : 'mobile';
+    }
+    function paintTitle() {
+      var mode = currentMode();
+      btn.title = mode === 'desktop' ? 'Lagi mode Laptop — klik buat ganti ke HP' : 'Lagi mode HP — klik buat ganti ke Laptop';
+    }
+    btn.addEventListener('click', function () {
+      var next = currentMode() === 'desktop' ? 'mobile' : 'desktop';
+      try { localStorage.setItem('averpayUiMode', next); } catch (e) {}
+      if (overlay) {
+        if (overlayText) overlayText.textContent = 'Ganti ke mode ' + (next === 'desktop' ? 'Laptop' : 'HP') + '...';
+        overlay.classList.add('show');
+      }
+      setTimeout(function () { location.reload(); }, 450);
+    });
+    paintTitle();
+  })();
+</script>
+<% } %>
+
+<% if (!isHidden) { %>
+<style>
+  /* ===== Modal Pengumuman (dibuka dari tombol lonceng di header) ===== */
+  .pkm-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,18,15,0.6);
+    z-index: 999;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+  }
+  .pkm-modal-overlay.pkm-open { display: flex; }
+  @media (min-width: 640px) {
+    .pkm-modal-overlay { padding: 16px; }
+  }
+  .pkm-modal-box {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    background: #fffdf7;
+    border: 3px solid var(--comic-black, #14120f);
+    border-radius: 0;
+    box-shadow: none;
+    animation: pkmModalUp .18s ease both;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  @media (min-width: 640px) {
+    .pkm-modal-box {
+      height: min(80vh, 700px);
+      max-height: min(80vh, 700px);
+      border-radius: 22px;
+      box-shadow: 6px 6px 0 var(--comic-black, #14120f);
+    }
+  }
+  @keyframes pkmModalUp {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  .pkm-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex; align-items: center;
+    gap: 12px;
+    padding: 16px 16px;
+    border-bottom: 3px solid var(--comic-black, #14120f);
+    background: #fffdf7;
+  }
+  .pkm-modal-back {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 2.5px solid var(--comic-black, #14120f);
+    background: #fff;
+    color: var(--comic-black, #14120f);
+    font-size: 15px;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black, #14120f);
+  }
+  .pkm-modal-back:active { transform: translate(1.5px,1.5px); box-shadow: 1px 1px 0 var(--comic-black, #14120f); }
+  .pkm-modal-heading { flex: 1; min-width: 0; }
+  .pkm-modal-title {
+    display: block;
+    font-family: 'Bangers','Baloo 2',sans-serif;
+    letter-spacing: 1.3px;
+    font-size: 22px;
+    color: var(--comic-black, #14120f);
+    margin: 0;
+  }
+  .pkm-modal-subtitle {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #78716c;
+    margin-top: 2px;
+  }
+  .pkm-modal-count {
+    flex-shrink: 0;
+    min-width: 34px; height: 34px;
+    padding: 0 8px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--comic-yellow, #ffd400);
+    color: var(--comic-black, #14120f);
+    border: 2.5px solid var(--comic-black, #14120f);
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black, #14120f);
+  }
+  .pkm-modal-body {
+    padding: 14px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pkm-item {
+    display: flex;
+    gap: 12px;
+    background: #fff;
+    border: 2.5px solid var(--comic-black, #14120f);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 3px 3px 0 var(--comic-black, #14120f);
+  }
+  .pkm-item-icon {
+    flex-shrink: 0;
+    width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--comic-red, #ef2b2d);
+    color: #fff;
+    font-size: 16px;
+    border: 2.5px solid var(--comic-black, #14120f);
+    box-shadow: 2px 2px 0 var(--comic-black, #14120f);
+  }
+  .pkm-item-content { flex: 1; min-width: 0; }
+  .pkm-item-date {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--comic-black, #14120f);
+    background: var(--comic-yellow, #ffd400);
+    border: 1.5px solid var(--comic-black, #14120f);
+    border-radius: 999px;
+    padding: 2px 9px;
+    margin-bottom: 6px;
+  }
+  .pkm-item-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--comic-black, #14120f);
+    margin: 0 0 5px;
+    line-height: 1.3;
+  }
+  .pkm-item-text {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #292524;
+    white-space: pre-line;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .pkm-item audio { width: 100%; height: 38px; margin-top: 2px; }
+  .pkm-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    padding: 40px 16px;
+    color: #78716c;
+  }
+  .pkm-empty i { font-size: 34px; color: #d6d3d1; }
+  .pkm-empty p { font-size: 13px; font-weight: 700; margin: 0; }
+</style>
+
+<!-- Modal daftar pengumuman -->
+<div class="pkm-modal-overlay" id="announceModal">
+  <div class="pkm-modal-box">
+    <div class="pkm-modal-header">
+      <button type="button" class="pkm-modal-back" id="announceModalClose"><i class="fa-solid fa-arrow-left"></i></button>
+      <div class="pkm-modal-heading">
+        <span class="pkm-modal-title">PENGUMUMAN</span>
+        <span class="pkm-modal-subtitle">Info & update terbaru dari admin</span>
+      </div>
+      <% if (typeof announcements !== 'undefined' && announcements && announcements.length > 0) { %>
+        <span class="pkm-modal-count"><%= announcements.length > 9 ? '9+' : announcements.length %></span>
+      <% } %>
+    </div>
+    <div class="pkm-modal-body">
+      <% if (typeof announcements !== 'undefined' && announcements && announcements.length > 0) { %>
+        <% announcements.forEach(function(a) { %>
+          <div class="pkm-item <%= a.isEvent ? 'ev-special' : '' %>">
+            <span class="pkm-item-icon"><i class="fa-solid fa-bullhorn"></i></span>
+            <div class="pkm-item-content">
+              <span class="pkm-item-date"><%= new Date(a.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) %></span>
+              <% if (a.isEvent) { %><span class="vc-badge" data-comic-owned>EVENT PENTING</span><% } %>
+              <p class="pkm-item-title"><%= a.title %></p>
+              <% if (a.descriptionType === 'voice' && a.voiceUrl) { %>
+                <audio controls preload="none" src="<%= a.voiceUrl %>"></audio>
+              <% } else { %>
+                <p class="pkm-item-text"><%= a.descriptionText %></p>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="pkm-empty">
+          <i class="fa-solid fa-bell-slash"></i>
+          <p>Belum ada pengumuman saat ini</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const btn = document.getElementById('announceStripBtn');
+    const modal = document.getElementById('announceModal');
+    const box = modal ? modal.querySelector('.pkm-modal-box') : null;
+    const closeBtn = document.getElementById('announceModalClose');
+    if (!btn || !modal) return;
+    function fixHeight() {
+      if (box && window.innerWidth < 640) {
+        box.style.height = window.innerHeight + 'px';
+      } else if (box) {
+        box.style.height = '';
+      }
+    }
+    function openModal() {
+      modal.classList.add('pkm-open');
+      document.body.style.overflow = 'hidden';
+      if (box) box.scrollTop = 0;
+      fixHeight();
+    }
+    function closeModal() { modal.classList.remove('pkm-open'); document.body.style.overflow = ''; }
+    btn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    window.addEventListener('resize', fixHeight);
+  })();
+</script>
+<% } %>
+
+<main class="max-w-[480px] min-h-[75vh] md:max-w-6xl mx-auto py-0">
+  <!-- Konten halaman dinamis -->
