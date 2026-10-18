@@ -1,0 +1,133 @@
+<%- include('partials/header', { title: 'Script Gratis', hideChrome: true }) %>
+<style data-comic-owned>
+.sg{--sg-ink:#171717;--sg-yellow:#facc15;--sg-green:#22c55e;max-width:980px;margin:0 auto;padding:16px 16px 40px;color:var(--sg-ink)}
+.sg *{--cm-fg:#171717;--cm-edge:#171717;box-sizing:border-box}
+.sg .k,.sg .k *{--cm-fg:#facc15}
+.sg-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.sg-back,.sg-auth a{display:inline-flex;align-items:center;gap:7px;padding:9px 14px 7px;border:3px solid #171717;border-radius:12px;background:#fff;font-family:Bangers,Impact,sans-serif;font-size:17px;letter-spacing:.6px;text-decoration:none;box-shadow:3px 3px 0 #171717;color:#171717!important}
+.sg-auth{display:flex;gap:8px}.sg-auth a.g{background:#22c55e}.sg-auth a.y{background:#facc15}
+.sg-hero{position:relative;background:#facc15;border:4px solid #171717;border-radius:22px;box-shadow:7px 7px 0 #171717;padding:26px 20px 22px;margin-bottom:18px;overflow:hidden;background-image:radial-gradient(rgba(23,23,23,.2) 1.6px,transparent 1.8px);background-size:15px 15px}
+.sg-hero h1{font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:clamp(40px,11vw,68px);line-height:.95;letter-spacing:1.5px;margin:0;color:#171717!important;text-shadow:3px 3px 0 #22c55e}
+.sg-hero p{margin:10px 0 0;font-weight:800;font-size:14.5px;max-width:min(560px,calc(100% - 100px));line-height:1.45;color:#171717!important}
+.sg-burst{position:absolute;right:14px;top:12px;width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:#22c55e;border:4px solid #171717;border-radius:50%;transform:rotate(12deg);font-family:Bangers,Impact,sans-serif;font-size:26px;line-height:1;text-align:center;box-shadow:4px 4px 0 #171717;color:#171717!important}
+.sg-lock{display:flex;align-items:center;gap:12px;background:#171717;border:3px solid #171717;border-radius:16px;padding:12px 14px;margin-bottom:20px;box-shadow:5px 5px 0 #22c55e}
+.sg-lock,.sg-lock *{color:#fff!important}
+.sg-lock b{font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:19px;letter-spacing:.6px;color:#facc15!important;display:block}
+.sg-lock span.t{font-weight:700;font-size:12.5px;line-height:1.4}
+.sg-lock i{color:#facc15!important;font-size:22px}
+.sg-tools{background:#fff;border:4px solid #171717;border-radius:18px;box-shadow:5px 5px 0 #171717;padding:14px;margin-bottom:20px}
+.sg-search{display:flex;gap:8px}
+.sg-search input{flex:1;min-width:0;background:#fff!important;border:3px solid #171717!important;border-radius:12px!important;padding:11px 14px;font-weight:800;font-size:15px;outline:none;color:#171717!important;-webkit-text-fill-color:#171717!important;box-shadow:none}
+.sg-search input::placeholder{color:#52525b!important;-webkit-text-fill-color:#52525b!important;opacity:1}
+.sg-search input:focus{box-shadow:0 0 0 3px #22c55e!important}
+.sg-search button{display:inline-flex;align-items:center;gap:6px;border:3px solid #171717!important;border-radius:12px!important;background:#22c55e!important;padding:8px 14px 6px;font-family:Bangers,Impact,sans-serif;font-size:19px;letter-spacing:.6px;cursor:pointer;box-shadow:3px 3px 0 #171717!important;color:#171717!important;-webkit-text-fill-color:#171717!important;min-height:0}
+.sg-search button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #171717!important}
+.sg-chips{display:flex;flex-wrap:wrap;gap:9px;padding:12px 2px 6px}
+.sg-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:8px 13px 6px;border:3px solid #171717;border-radius:11px;background:#fff;font-family:Bangers,Impact,sans-serif;font-size:17px;letter-spacing:.5px;text-decoration:none;box-shadow:3px 3px 0 #171717;color:#171717!important;-webkit-text-fill-color:#171717!important;white-space:nowrap}
+.sg-chip i{color:#171717!important;-webkit-text-fill-color:#171717!important}
+.sg-chip.on{background:#22c55e;transform:translate(2px,2px);box-shadow:1px 1px 0 #171717}
+.sg-info{margin-top:8px;font-weight:800;font-size:12.5px;color:#171717!important;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sg-info a{padding:2px 10px;border:2.5px solid #171717;border-radius:9px;background:#facc15;text-decoration:none;font-weight:900;color:#171717!important}
+.sg-grid{display:grid;grid-template-columns:1fr;gap:22px}
+@media(min-width:720px){.sg-grid{grid-template-columns:1fr 1fr}}
+.sg-card{display:flex;flex-direction:column;background:#fff;border:4px solid #171717;border-radius:20px;box-shadow:7px 7px 0 #22c55e,10px 10px 0 #171717;overflow:hidden;transition:transform .12s}
+.sg-card:hover{transform:translate(-2px,-2px)}
+.sg-ban{position:relative;aspect-ratio:16/9;background:#171717;border-bottom:4px solid #171717}
+.sg-ban img{width:100%;height:100%;object-fit:cover;display:block}
+.sg-free{position:absolute;left:10px;top:10px;padding:3px 12px 1px;background:#facc15;border:3px solid #171717;border-radius:10px;font-family:Bangers,Impact,sans-serif;font-size:19px;letter-spacing:1px;transform:rotate(-5deg);box-shadow:3px 3px 0 #171717;color:#171717!important}
+.sg-body{display:flex;flex-direction:column;gap:10px;padding:16px;flex:1}
+.sg-body h2{font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:27px;line-height:1.05;letter-spacing:.6px;margin:0;color:#171717!important}
+.sg-desc{font-weight:700;font-size:13.5px;line-height:1.5;color:#27272a!important;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sg-desc.open{display:block;-webkit-line-clamp:unset}
+.sg-more{align-self:flex-start;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;min-height:0;font-weight:900;font-size:12px;text-decoration:underline;cursor:pointer;color:#171717!important}
+.sg-meta{display:flex;flex-wrap:wrap;gap:8px;font-weight:900;font-size:11.5px}
+.sg-meta span{padding:3px 10px;border:2.5px solid #171717;border-radius:9px;background:#fefce8;color:#171717!important}
+.sg-dl{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:auto;padding:12px 10px 9px;border:3px solid #171717;border-radius:13px;font-family:Bangers,Impact,sans-serif;font-size:21px;letter-spacing:.8px;text-decoration:none;box-shadow:4px 4px 0 #171717;transition:transform .08s,box-shadow .08s;color:#171717!important}
+.sg-dl:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #171717}
+.sg-dl.on{background:#22c55e}.sg-dl.lock{background:#facc15}
+.sg-empty{text-align:center;padding:40px 18px;background:#fff;border:4px dashed #171717;border-radius:20px;font-weight:800}
+.sg-empty b{display:block;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:30px;margin-bottom:6px;color:#171717!important}
+.sg-empty,.sg-empty *{color:#171717!important}
+</style>
+
+<main class="sg">
+  <div class="sg-top">
+    <a href="/" class="sg-back"><i class="fa-solid fa-arrow-left"></i> Beranda</a>
+    <div class="sg-auth">
+      <% if (loggedIn) { %>
+        <a href="<%= userRole === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="g"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+      <% } else { %>
+        <a href="/login" class="y">Login</a><a href="/register" class="g">Daftar</a>
+      <% } %>
+    </div>
+  </div>
+
+  <section class="sg-hero">
+    <span class="sg-burst">100%<br>FREE!</span>
+    <h1>SCRIPT<br>GRATIS</h1>
+    <p>Kumpulan script siap pakai, gratis buat kamu. Pilih yang kamu butuhkan, lalu download.</p>
+  </section>
+
+  <% if (!loggedIn) { %>
+  <div class="sg-lock k">
+    <i class="fa-solid fa-lock"></i>
+    <div><b>DOWNLOAD BUTUH AKUN GRATIS</b><span class="t">Klik tombol download, login atau daftar dulu, lalu download langsung jalan otomatis.</span></div>
+  </div>
+  <% } %>
+
+  <form class="sg-tools" method="GET" action="/script-gratis" role="search">
+    <div class="sg-search">
+      <input type="search" name="q" value="<%= q %>" maxlength="60" placeholder="Cari script, mis. bot telegram..." autocomplete="off" aria-label="Cari script">
+      <input type="hidden" name="sort" value="<%= sort %>">
+      <button type="submit"><i class="fa-solid fa-magnifying-glass"></i> CARI</button>
+    </div>
+    <div class="sg-chips" role="tablist" aria-label="Urutkan script">
+      <% [['rekomendasi','fa-star','REKOMENDASI'],['populer','fa-fire','BANYAK DOWNLOAD'],['terbaru','fa-clock','TERBARU'],['terlama','fa-hourglass-half','TERLAMA']].forEach(function(c){ %>
+        <a class="sg-chip <%= sort === c[0] ? 'on' : '' %>" href="/script-gratis?sort=<%= c[0] %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" aria-current="<%= sort === c[0] ? 'true' : 'false' %>"><i class="fa-solid <%= c[1] %>"></i> <%= c[2] %></a>
+      <% }) %>
+    </div>
+    <div class="sg-info">
+      <span><%= scripts.length %> dari <%= total %> script<%= q ? ' untuk "' + q + '"' : '' %></span>
+      <% if (q) { %><a href="/script-gratis?sort=<%= sort %>">HAPUS PENCARIAN</a><% } %>
+    </div>
+  </form>
+
+  <% if (!scripts.length) { %>
+    <div class="sg-empty"><% if (q) { %><b>TIDAK DITEMUKAN</b>Tidak ada script yang cocok dengan "<%= q %>". Coba kata kunci lain.<% } else { %><b>BELUM ADA SCRIPT</b>Script gratis akan muncul di sini. Cek lagi nanti ya!<% } %></div>
+  <% } else { %>
+  <div class="sg-grid">
+    <% scripts.forEach(function(sc){ %>
+    <article class="sg-card">
+      <div class="sg-ban">
+        <img src="<%= sc.bannerUrl %>" alt="Banner <%= sc.title %>" loading="lazy" onerror="this.style.visibility='hidden'">
+        <span class="sg-free">FREE</span>
+      </div>
+      <div class="sg-body">
+        <h2><%= sc.title %></h2>
+        <% if (sc.description) { %>
+          <div class="sg-desc" data-desc><%= sc.description %></div>
+          <% if (sc.description.length > 120) { %><button type="button" class="sg-more" data-more>Selengkapnya</button><% } %>
+        <% } %>
+        <div class="sg-meta">
+          <span><i class="fa-solid fa-download"></i> <%= Number(sc.downloads || 0).toLocaleString('id-ID') %>x</span>
+          <span><i class="fa-regular fa-calendar"></i> <%= new Date(sc.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) %></span>
+        </div>
+        <a class="sg-dl <%= loggedIn ? 'on' : 'lock' %>" href="/script-gratis/<%= sc._id %>/download" rel="nofollow">
+          <% if (loggedIn) { %><i class="fa-solid fa-download"></i> DOWNLOAD<% } else { %><i class="fa-solid fa-lock"></i> LOGIN UNTUK DOWNLOAD<% } %>
+        </a>
+      </div>
+    </article>
+    <% }) %>
+  </div>
+  <% } %>
+</main>
+
+<script>
+document.querySelectorAll('[data-more]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var d = b.previousElementSibling; var open = d.classList.toggle('open');
+    b.textContent = open ? 'Tutup' : 'Selengkapnya';
+  });
+});
+</script>
+<%- include('partials/footer2', { hideChrome: true }) %>
