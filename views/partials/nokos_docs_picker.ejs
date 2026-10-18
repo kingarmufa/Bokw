@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="/nokos-dibanana.css?v=3">
+<div class="bn-page bn-docs" data-comic-owned>
+  <section class="bn-panel">
+    <h3>Pilih produk → contoh request otomatis</h3>
+    <p class="bn-note">ID produk tidak perlu diketik. Pilih server, layanan, negara, lalu harga. Contoh di bawah hanya menyiapkan request; pembelian dilakukan melalui halaman Nokos atau kode aplikasi kamu.</p>
+    <label for="nd-server">Server</label><select id="nd-server"><option value="">Pilih server</option><% ['ekonomi','premium','khusus','wa_luar'].forEach(s=>{ %><option value="<%= s %>"><%= s %></option><% }) %></select>
+    <label for="nd-service">Layanan</label><select data-nokos-search="layanan" id="nd-service" disabled><option value="">Pilih server dulu</option></select>
+    <label for="nd-country">Negara</label><select data-nokos-search="negara" id="nd-country"><%- include('nokos_country_options') %></select>
+    <p class="bn-note">Daftar lengkap negara dan wilayah, termasuk Kosovo. Ketersediaan nomor mengikuti server dan layanan; negara yang dipilih belum tentu memiliki stok.</p>
+    <div id="nd-operator-wrap" hidden><label for="nd-operator">Operator premium</label><select data-nokos-search="operator" id="nd-operator"><% ['any','telkomsel','indosat','axis','three','smartfren','byu'].forEach(o=>{ %><option value="<%= o %>"><%= o %></option><% }) %></select></div>
+    <button type="button" id="nd-load" class="bn-btn" disabled>Muat pilihan harga</button>
+    <label for="nd-product">Produk / harga / stok</label><select id="nd-product" disabled><option value="">Muat harga dulu</option></select>
+    <p id="nd-message" role="status" aria-live="polite"></p>
+    <pre id="nd-code" tabindex="0">Pilih produk untuk membuat contoh POST /api/nokos/order.</pre>
+    <p class="bn-note">Ganti API_KEY_WEBSITE_ANDA dengan key akun yang sama. quote_id berlaku 5 menit; muat ulang harga jika kedaluwarsa. Jangan taruh key provider admin di aplikasi klien.</p>
+    <a class="bn-btn" href="/nokos">Buka pembelian Nokos →</a>
+  </section>
+</div>
+<script src="/nokos-search.js?v=1" defer></script>
+<script src="/docs-nokos.js?v=1" defer></script>
