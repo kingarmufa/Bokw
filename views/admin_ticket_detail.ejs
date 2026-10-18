@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html <%- include('partials/htmlattrs') %>>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title><%= ticket.title %> - Admin Tiket</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/comic-theme.css">
+  <script src="/comic-fx.js" defer></script>
+
+  <style>
+    html, body {
+      margin: 0; padding: 0 !important; height: 100%; width: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    .font-comic { font-family: 'Bangers', 'Baloo 2', sans-serif; }
+
+    .cb-shell {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      max-width: 720px; margin: 0 auto;
+      background: var(--comic-cream);
+      background-image: radial-gradient(var(--comic-black) 1.4px, transparent 1.4px);
+      background-size: 18px 18px;
+      background-position: -9px -9px;
+      border-left: 3px solid var(--comic-black);
+      border-right: 3px solid var(--comic-black);
+      overflow: hidden;
+    }
+
+    .cb-header {
+      background: var(--comic-yellow);
+      border-bottom: 3px solid var(--comic-black);
+      box-shadow: 0 4px 0 rgba(20,18,15,0.12);
+      padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px;
+      z-index: 10; flex-shrink: 0;
+    }
+    .cb-back-btn {
+      width: 34px; height: 34px; border-radius: 12px;
+      border: 2.5px solid var(--comic-black); background: #fffdf7;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 2.5px 2.5px 0 var(--comic-black);
+      flex-shrink: 0; color: var(--comic-black);
+    }
+    .cb-back-btn:active { transform: translate(1.5px,1.5px); box-shadow: 1px 1px 0 var(--comic-black); }
+    .cb-title-wrap { flex: 1; min-width: 0; }
+    .cb-title { font-family: 'Bangers', sans-serif; font-size: 16px; letter-spacing: 0.5px; color: var(--comic-black); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cb-status { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .cb-close-btn {
+      flex-shrink: 0; border: 2.5px solid var(--comic-black); border-radius: 12px;
+      padding: 6px 10px; font-size: 10.5px; font-weight: 800; box-shadow: 2px 2px 0 var(--comic-black);
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .cb-messages {
+      flex: 1; overflow-y: auto; padding: 14px 10px 10px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .cb-messages::-webkit-scrollbar { width: 4px; }
+    .cb-messages::-webkit-scrollbar-thumb { background-color: var(--comic-black); border-radius: 10px; }
+
+    @keyframes bubbleIn {
+      0% { opacity: 0; transform: translateY(10px) scale(0.92); }
+      60% { opacity: 1; transform: translateY(-2px) scale(1.02); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .cb-row { display: flex; flex-direction: column; max-width: 78%; animation: bubbleIn 0.35s cubic-bezier(.34,1.56,.64,1) both; }
+    .cb-row.mine { align-self: flex-end; align-items: flex-end; }
+    .cb-row.theirs { align-self: flex-start; align-items: flex-start; }
+
+    .cb-sender-label {
+      font-family: 'Bangers', sans-serif; font-size: 11px; letter-spacing: 0.5px;
+      color: var(--comic-blue); margin-bottom: 3px; display: flex; align-items: center; gap: 4px;
+    }
+    .cb-sender-label i { font-size: 10px; }
+
+    .cb-bubble {
+      position: relative;
+      border: 2.5px solid var(--comic-black);
+      padding: 9px 12px;
+      font-size: 13.5px; font-weight: 600; line-height: 1.4;
+      word-break: break-word; white-space: pre-wrap;
+      box-shadow: 3px 3px 0 var(--comic-black);
+    }
+    .cb-row.mine .cb-bubble {
+      background: var(--comic-blue); color: #fff;
+      border-radius: 16px 16px 3px 16px;
+    }
+    .cb-row.theirs .cb-bubble {
+      background: #fffdf7; color: var(--comic-black);
+      border-radius: 16px 16px 16px 3px;
+    }
+    .cb-row.mine .cb-bubble::after {
+      content: ""; position: absolute; right: -3px; bottom: -2px;
+      width: 0; height: 0;
+      border-left: 9px solid var(--comic-blue);
+      border-bottom: 9px solid transparent;
+      filter: drop-shadow(1.5px 1.5px 0 var(--comic-black));
+    }
+    .cb-row.theirs .cb-bubble::after {
+      content: ""; position: absolute; left: -3px; bottom: -2px;
+      width: 0; height: 0;
+      border-right: 9px solid #fffdf7;
+      border-bottom: 9px solid transparent;
+      filter: drop-shadow(-1.5px 1.5px 0 var(--comic-black));
+    }
+
+    .cb-img {
+      max-width: 190px; max-height: 220px;
+      border-radius: 10px; border: 2px solid var(--comic-black);
+      display: block; cursor: pointer; margin-bottom: 6px;
+    }
+    .cb-time { font-size: 10px; font-weight: 700; opacity: 0.7; margin-top: 3px; }
+
+    .cb-inputbar {
+      flex-shrink: 0; z-index: 10;
+      background: #fffdf7;
+      border-top: 3px solid var(--comic-black);
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+    .cb-closedbar {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: #e5e7eb; border: 2.5px solid var(--comic-black);
+      border-radius: 14px; padding: 10px; font-size: 12.5px; font-weight: 800; color: #374151;
+    }
+
+    .cb-send-btn {
+      background: var(--comic-blue); color: #fff;
+      border: 2.5px solid var(--comic-black); box-shadow: 2.5px 2.5px 0 var(--comic-black);
+      border-radius: 14px; width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: transform 0.1s ease;
+    }
+    .cb-send-btn:active { transform: translate(1.5px,1.5px); box-shadow: 1px 1px 0 var(--comic-black); }
+    .cb-attach-btn {
+      width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;
+      border: 2.5px solid var(--comic-black); background: #fff;
+      display: flex; align-items: center; justify-content: center; color: var(--comic-black);
+    }
+    .cb-text-input {
+      flex: 1; border: 2.5px solid var(--comic-black); border-radius: 14px;
+      padding: 10px 12px; font-size: 13.5px; font-weight: 600; outline: none;
+      background: #fff; color: var(--comic-black);
+    }
+    .cb-preview-wrap { position: relative; display: inline-block; margin-bottom: 8px; }
+    .cb-preview-wrap img { height: 60px; border-radius: 10px; border: 2px solid var(--comic-black); }
+    .cb-preview-remove {
+      position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+      background: var(--comic-red); color: #fff; border-radius: 999px; border: 1.5px solid var(--comic-black);
+      display: flex; align-items: center; justify-content: center; font-size: 9px;
+    }
+
+    .cb-imgmodal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .cb-imgmodal.hidden { display: none; }
+    .cb-imgmodal img { max-width: 92%; max-height: 92%; border-radius: 10px; }
+    .cb-imgmodal-close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 10px; background: #fff; border: 2px solid #000; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+
+  <div class="cb-shell">
+    <div class="cb-header">
+      <a href="/admin/tickets" class="cb-back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+      <div class="cb-title-wrap">
+        <div class="cb-title"><%= ticket.title %></div>
+        <div class="cb-status" style="color: <%= ticket.status === 'closed' ? '#6b7280' : 'var(--comic-blue-dark)' %>;">
+          <%= ticket.user ? ((ticket.user.role === 'merchant' ? 'Merchant' : 'User') + ' - ' + ticket.user.username) : 'Pengguna tidak ditemukan' %>
+        </div>
+      </div>
+      <% if (ticket.status === 'closed') { %>
+        <form action="/admin/tickets/<%= ticket._id %>/reopen" method="POST">
+          <button type="submit" class="cb-close-btn" style="background:#fffdf7;"><i class="fa-solid fa-lock-open"></i> Buka</button>
+        </form>
+      <% } else { %>
+        <form action="/admin/tickets/<%= ticket._id %>/close" method="POST" onsubmit="return confirm('Tutup tiket ini?');">
+          <button type="submit" class="cb-close-btn" style="background:var(--comic-red); color:#fff;"><i class="fa-solid fa-lock"></i> Tutup</button>
+        </form>
+      <% } %>
+    </div>
+
+    <div class="cb-messages" id="cbMessages">
+      <% ticket.messages.forEach(function(m) { %>
+        <% const mine = m.sender === 'admin'; %>
+        <div class="cb-row <%= mine ? 'mine' : 'theirs' %>">
+          <% if (!mine) { %>
+            <div class="cb-sender-label"><i class="fa-solid fa-user"></i> <%= ticket.user ? ticket.user.username : 'User' %></div>
+          <% } %>
+          <div class="cb-bubble">
+            <% if (m.image) { %>
+              <img src="<%= m.image %>" class="cb-img" onclick="openImg('<%= m.image %>')" alt="Lampiran gambar" />
+            <% } %>
+            <% if (m.message) { %><span><%= m.message %></span><% } %>
+          </div>
+          <div class="cb-time"><%= new Date(m.createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %></div>
+        </div>
+      <% }); %>
+    </div>
+
+    <div class="cb-inputbar">
+      <% if (ticket.status === 'closed') { %>
+        <div class="cb-closedbar"><i class="fa-solid fa-lock"></i> Tiket ini ditutup. Buka kembali untuk membalas.</div>
+      <% } else { %>
+        <form id="cbForm" action="/admin/tickets/<%= ticket._id %>/balas" method="POST" enctype="multipart/form-data">
+          <div id="cbPreviewWrap" class="hidden">
+            <div class="cb-preview-wrap">
+              <img id="cbPreviewImg" src="" alt="Preview" />
+              <button type="button" class="cb-preview-remove" onclick="removeCbImage()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="cbImageInput" class="cb-attach-btn"><i class="fa-solid fa-image"></i></label>
+            <input type="file" id="cbImageInput" name="image" accept="image/*" class="hidden" onchange="previewCbImage(this)" />
+            <input type="text" name="message" id="cbTextInput" class="cb-text-input" placeholder="Balas sebagai admin..." autocomplete="off" />
+            <button type="submit" class="cb-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <div id="cbImgModal" class="cb-imgmodal hidden" onclick="closeImg()">
+    <button class="cb-imgmodal-close"><i class="fa-solid fa-xmark"></i></button>
+    <img id="cbImgModalSrc" src="" alt="Gambar penuh" />
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('cbMessages');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    function openImg(src) {
+      document.getElementById('cbImgModalSrc').src = src;
+      document.getElementById('cbImgModal').classList.remove('hidden');
+    }
+    function closeImg() {
+      document.getElementById('cbImgModal').classList.add('hidden');
+    }
+
+    function previewCbImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('cbPreviewImg').src = e.target.result;
+        document.getElementById('cbPreviewWrap').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+    function removeCbImage() {
+      const input = document.getElementById('cbImageInput');
+      if (input) input.value = '';
+      document.getElementById('cbPreviewWrap').classList.add('hidden');
+    }
+
+    const cbForm = document.getElementById('cbForm');
+    if (cbForm) {
+      cbForm.addEventListener('submit', function (e) {
+        const text = document.getElementById('cbTextInput').value.trim();
+        const hasImage = document.getElementById('cbImageInput').files.length > 0;
+        if (!text && !hasImage) {
+          e.preventDefault();
+          alert('Tulis pesan atau lampirkan gambar terlebih dahulu.');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
