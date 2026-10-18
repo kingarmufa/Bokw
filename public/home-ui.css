@@ -1,0 +1,123 @@
+/* HOME v2 — landing page baru (kaca + gradasi kuning, ikon berwarna). File 'owned' (data-comic-owned). */
+.hm{--hm-ink:#2e2508;--hm-line:rgba(160,120,0,.32);max-width:560px;margin:0 auto;padding:6px 18px 30px;--cm-fg:var(--hm-ink)}
+.hm *{box-sizing:border-box}
+.hm-blob{position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none;z-index:0}
+.hm-blob-a{width:220px;height:220px;right:-70px;top:-80px;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 68%)}
+.hm-blob-b{width:200px;height:200px;left:-80px;bottom:-60px;background:radial-gradient(circle,rgba(255,150,0,.35),rgba(255,150,0,0) 70%)}
+.hm-blob-c{width:200px;height:200px;right:-60px;top:-70px;background:radial-gradient(circle,rgba(255,255,255,.7),rgba(255,255,255,0) 68%)}
+
+/* ---- Hero ---- */
+.hm-hero{position:relative;overflow:hidden;text-align:center;padding:30px 20px 24px;border-radius:30px;
+  background:linear-gradient(160deg,rgba(255,255,255,.92) 0%,rgba(255,246,196,.86) 60%,rgba(255,226,122,.85) 100%);
+  border:1.5px solid rgba(255,255,255,.95);box-shadow:0 30px 60px -24px rgba(120,86,0,.6),inset 0 1px 0 #fff;--cm-fg:var(--hm-ink)}
+.hm-hero>*{position:relative;z-index:1}
+.hm-hero>.hm-blob{position:absolute;z-index:0}
+.hm-logo{width:104px;height:104px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;overflow:hidden;
+  background:#fff;border:3px solid #fff;box-shadow:0 0 0 4px rgba(237,197,49,.7),0 16px 30px -10px rgba(150,100,0,.6);animation:hmFloat 4.5s ease-in-out infinite}
+.hm-logo img{width:100%;height:100%;object-fit:contain;padding:8px}
+.hm-logo i{font-size:40px}
+.hm-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 13px 4px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid var(--hm-line);font-size:12px;font-weight:800;letter-spacing:.04em}
+.hm-title{margin:12px 0 8px;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:2.15rem;line-height:1.05;letter-spacing:.04em;text-shadow:0 3px 0 rgba(255,255,255,.85)}
+.hm-sub{margin:0 auto;max-width:420px;font-size:15px;font-weight:700;line-height:1.55;opacity:.9}
+.hm-cta{display:flex;flex-direction:column;gap:11px;max-width:340px;margin:22px auto 0}
+.hm-btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 16px 12px;border-radius:18px;text-decoration:none;font-weight:800;font-size:15px;
+  transition:transform .15s ease,box-shadow .2s ease;-webkit-tap-highlight-color:transparent}
+.hm-btn:active{transform:scale(.97)}
+.hm-btn-main{background:linear-gradient(135deg,#ffd23f,#f5a70b)!important;--cm-fg:var(--hm-ink)!important;border:1.5px solid #fff;box-shadow:0 14px 26px -10px rgba(217,119,6,.75)!important}
+.hm-btn-main i{transition:transform .2s}.hm-btn-main:hover i{transform:translateX(4px)}
+.hm-btn-ghost{background:rgba(255,255,255,.78)!important;--cm-fg:var(--hm-ink)!important;border:1.5px solid var(--hm-line);box-shadow:0 8px 18px -10px rgba(120,86,0,.5)!important}
+.hm-btn-dl{background:var(--cm-ink,#171717)!important;--cm-fg:#fff!important;--cm-edge:#171717!important;border:3px solid #171717!important;border-radius:9px!important;box-shadow:5px 5px 0 #171717!important;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.25rem;letter-spacing:.06em;transition:transform 120ms,box-shadow 120ms}
+.hm-btn-dl i{--cm-fg:var(--cm-yellow,#edc531)!important}
+.hm-btn-dl:hover{box-shadow:7px 7px 0 #171717!important;transform:translate(-1px,-1px)}
+.hm-btn-dl:active{transform:translate(3px,3px)!important;box-shadow:2px 2px 0 #171717!important}
+.hm-trust{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:12px;font-weight:800}
+.hm-trust li{display:flex;align-items:center;gap:5px}.hm-trust i{--cm-fg:#15803d}
+
+/* ilustrasi kartu pembayaran */
+.hm-mock{position:relative;margin:26px auto 2px;width:100%;max-width:300px;padding:6px 6px 14px}
+.hm-mock-card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:22px;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.95);
+  box-shadow:0 22px 40px -18px rgba(120,86,0,.6);text-align:left;animation:hmFloat 5s ease-in-out infinite .6s}
+.hm-mock-qr{width:64px;height:64px;flex-shrink:0;display:grid;place-items:center;border-radius:16px;background:linear-gradient(135deg,var(--cm-yellow,#ffe27a),var(--cm-yellow,#edc531));font-size:34px}
+.hm-mock-info small{display:block;font-size:11px;font-weight:800;opacity:.7}
+.hm-mock-info b{display:block;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.04em;line-height:1.1}
+.hm-mock-ok{display:inline-flex;align-items:center;gap:5px;margin-top:2px;padding:2px 9px 1px;border-radius:999px;background:#dcfce7;font-size:11px;font-weight:800;--cm-fg:#166534}
+.hm-chip{position:absolute;display:inline-flex;align-items:center;gap:6px;padding:5px 12px 4px;border-radius:999px;background:#fff;border:1px solid var(--hm-line);font-size:12px;font-weight:800;box-shadow:0 10px 20px -10px rgba(120,86,0,.6)}
+.hm-chip-a{right:-6px;top:-14px;animation:hmFloat 3.6s ease-in-out infinite}
+.hm-chip-b{left:-6px;bottom:-4px;animation:hmFloat 4.2s ease-in-out infinite .4s}
+.hm-chip-a i{color:#f59e0b}.hm-chip-b i{color:#16a34a}
+
+/* ---- Strip metode ---- */
+.hm-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:18px 0 6px}
+.hm-strip span{display:inline-flex;align-items:center;gap:7px;padding:8px 14px 6px;border-radius:999px;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.95);
+  box-shadow:0 8px 16px -10px rgba(120,86,0,.55);font-weight:800;font-size:13px;--cm-fg:var(--hm-ink)}
+.hm-strip i{--cm-fg:#b45309}
+
+/* ---- Section ---- */
+.hm-sec{margin-top:30px}
+.hm-h2{margin:0 0 16px;text-align:center;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.55rem;letter-spacing:.05em}
+.hm-h2 span{display:inline-block;padding:6px 18px 4px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 20px -12px rgba(120,86,0,.6);--cm-fg:var(--hm-ink)}
+.hm-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:460px){.hm-grid{grid-template-columns:1fr 1fr}}
+.hm-card{padding:18px 16px 16px;border-radius:24px;background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,248,214,.8));
+  border:1.5px solid rgba(255,255,255,.95);box-shadow:0 18px 34px -20px rgba(120,86,0,.6);--cm-fg:var(--hm-ink);transition:transform .2s ease,box-shadow .2s ease}
+.hm-card:hover{transform:translateY(-3px);box-shadow:0 24px 40px -20px rgba(120,86,0,.7)}
+.hm-card h3{margin:12px 0 5px;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.3rem;letter-spacing:.05em}
+.hm-card p{margin:0;font-size:14px;font-weight:700;line-height:1.5;opacity:.88}
+.hm-ico{width:48px;height:48px;display:grid;place-items:center;border-radius:16px;font-size:21px;border:1.5px solid #fff;box-shadow:0 10px 18px -8px rgba(0,0,0,.25);--cm-fg:#fff}
+.hm-ico-1{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.hm-ico-2{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+.hm-ico-3{background:linear-gradient(135deg,#22c55e,#15803d)}
+.hm-ico-4{background:linear-gradient(135deg,#a855f7,#7e22ce)}
+
+/* ---- Langkah ---- */
+.hm-steps{list-style:none;margin:0;padding:0;display:grid;gap:11px}
+.hm-step{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:22px;background:rgba(255,255,255,.86);border:1.5px solid rgba(255,255,255,.95);
+  box-shadow:0 14px 28px -18px rgba(120,86,0,.6);--cm-fg:var(--hm-ink)}
+.hm-num{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;font-family:Bangers,Impact,sans-serif;font-size:1.6rem;line-height:1;
+  background:linear-gradient(135deg,var(--cm-yellow,#ffe27a),var(--cm-yellow,#edc531));border:2px solid #fff;box-shadow:0 8px 16px -8px rgba(200,140,0,.8);padding-top:3px}
+.hm-step h3{margin:0;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.2rem;letter-spacing:.05em}
+.hm-step p{margin:2px 0 0;font-size:13.5px;font-weight:700;line-height:1.45;opacity:.88}
+
+/* ---- FAQ ---- */
+.hm-faq{display:grid;gap:10px}
+.hm-q{border-radius:20px;background:rgba(255,255,255,.88);border:1.5px solid rgba(255,255,255,.95);box-shadow:0 12px 24px -18px rgba(120,86,0,.6);--cm-fg:var(--hm-ink);overflow:hidden}
+.hm-q summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px;font-weight:800;font-size:14.5px;line-height:1.35}
+.hm-q summary::-webkit-details-marker{display:none}
+.hm-q summary i{flex-shrink:0;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:rgba(237,197,49,.5);font-size:11px;transition:transform .25s}
+.hm-q[open] summary i{transform:rotate(180deg)}
+.hm-q p{margin:0;padding:0 16px 15px;font-size:14px;font-weight:700;line-height:1.55;opacity:.9;animation:hmDrop .25s ease}
+
+/* ---- CTA akhir ---- */
+.hm-final{position:relative;overflow:hidden;margin-top:30px;padding:28px 20px 26px;text-align:center;border-radius:28px;
+  background:linear-gradient(135deg,#ffd23f 0%,#ffb020 100%);border:1.5px solid #fff;box-shadow:0 26px 50px -22px rgba(217,119,6,.8),inset 0 1px 0 rgba(255,255,255,.9);--cm-fg:var(--hm-ink)}
+.hm-final>*{position:relative;z-index:1}
+.hm-final h2{margin:0 0 6px;font-family:Bangers,Impact,sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.05em}
+.hm-final p{margin:0 auto 18px;max-width:380px;font-size:14px;font-weight:700;line-height:1.5}
+.hm-final .hm-btn{display:inline-flex;padding:13px 24px 11px;background:#fff!important;border:1.5px solid rgba(160,120,0,.3);box-shadow:0 12px 22px -10px rgba(120,60,0,.6)!important}
+
+/* ---- Animasi ---- */
+@keyframes hmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes hmDrop{from{opacity:0;transform:translateY(-4px)}to{opacity:.9;transform:none}}
+.hm.hm-js .hm-rv{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1)}
+.hm.hm-js .hm-rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.hm-logo,.hm-mock-card,.hm-chip{animation:none}.hm.hm-js .hm-rv{opacity:1;transform:none;transition:none}}
+@media (min-width:700px){.hm{max-width:640px}.hm-title{font-size:2.6rem}}
+
+/* ============ JAM & TANGGAL (halaman awal) — kartu komik senada dengan HUD status ============ */
+.hm-clock{position:relative;margin:22px auto 0;max-width:420px;padding:14px 16px 12px;border-radius:24px;text-align:left;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background-color:#fffdf2;background-image:radial-gradient(circle,rgba(160,120,0,.16) 1.1px,transparent 1.5px);background-size:11px 11px;
+  border:2.5px solid #4a3a06;box-shadow:5px 5px 0 #4a3a06,0 22px 36px -18px rgba(120,86,0,.55);--cm-fg:#2e2508;color:#2e2508}
+.hm-clock-burst{position:absolute;left:-6px;top:-14px;z-index:2;padding:3px 10px 1px;transform:rotate(-6deg);font-family:Bangers,Impact,sans-serif;font-size:.95rem;letter-spacing:.06em;
+  background:#ffd23f;border:2.5px solid #4a3a06;border-radius:8px;box-shadow:2px 2px 0 #4a3a06;--cm-fg:#2e2508;color:#2e2508}
+.hm-clock-l{min-width:0;display:flex;flex-direction:column;gap:3px}
+.hm-clock-day{font-family:Bangers,Impact,sans-serif;font-size:1.35rem;letter-spacing:.07em;line-height:1.05}
+.hm-clock-day i{font-size:.95rem;--cm-fg:#b45309;color:#b45309;margin-right:4px}
+.hm-clock-date{font-weight:800;font-size:13px;opacity:.85}
+.hm-clock-r{text-align:right;flex-shrink:0}
+.hm-clock-time{font-family:Bangers,Impact,sans-serif;font-size:2.3rem;line-height:1;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.hm-clock-time .c{display:inline-block;animation:hmClkBlink 1s steps(1,end) infinite}
+.hm-clock-tz{display:inline-block;margin-top:5px;padding:2px 10px 1px;border-radius:999px;background:#fff;border:2px solid #4a3a06;font-size:11px;font-weight:800;letter-spacing:.08em}
+@keyframes hmClkBlink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+@media (max-width:380px){.hm-clock{padding:12px 12px 10px}.hm-clock-time{font-size:1.9rem}.hm-clock-day{font-size:1.15rem}}
+@media (prefers-reduced-motion:reduce){.hm-clock-time .c{animation:none}}
