@@ -1,0 +1,249 @@
+<%- include('partials/header', { title: 'Pengaturan Akun Admin' }) %>
+
+<style>
+
+  /* Edit Informasi Admin — kuning soft supaya tidak menyatu dengan latar */
+  #editAdminModalContent { background: #fffbe8 !important; border: 3px solid #171717; box-shadow: 6px 6px 0 #f6dc74, 9px 9px 0 #171717 !important; border-radius: 16px !important; }
+  #editAdminModalContent > div:first-child { background: #fdeb9c !important; border-bottom: 3px solid #171717 !important; }
+  #editAdminModalContent form input:not([type=hidden]) { background: transparent; }
+  #editAdminModalContent form .rounded-2xl { background: #fff !important; border: 2.5px solid #171717 !important; box-shadow: 3px 3px 0 #f6dc74 !important; }
+  button[onclick="openEditAdminModal()"] { background: #fdeb9c !important; border: 3px solid #171717 !important; box-shadow: 5px 5px 0 #171717 !important; }
+  :root {
+    --blue-500: #3b82f6;
+    --blue-50: #eff6ff;
+  }
+  .text-blue-500 { color: var(--blue-500); }
+  .bg-blue-50 { background-color: var(--blue-50); }
+  
+  .custom-scroll::-webkit-scrollbar { width: 2px; height: 2px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+  .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+  .custom-scroll:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
+</style>
+
+<div class="max-w-3xl mx-auto px-6 pb-2">
+
+  <!-- Alert Success -->
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-[13.5px] font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+        <i class="fas fa-check-circle text-[13.5px]"></i>
+      </div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+
+  <!-- Alert Error -->
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-[13.5px] font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+        <i class="fas fa-exclamation-circle text-[13.5px]"></i>
+      </div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <!-- Judul -->
+  <div class="flex items-center gap-2 mb-3">
+    <h2 class="text-base font-medium text-gray-800">Profile Akun Admin</h2>
+  </div>
+
+  <!-- Foto Profil (avatar) -->
+  <div class="bg-white border rounded-xl p-4 mb-4 flex items-center gap-4">
+    <img src="<%= admin.avatarUrl && admin.avatarUrl.trim() ? admin.avatarUrl : 'https://api.dicebear.com/7.x/identicon/svg?seed=' + admin.username %>"
+         alt="avatar" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 shrink-0">
+    <form id="avatarUploadForm" action="/profile/avatar" method="POST" enctype="multipart/form-data" class="flex-1 flex items-center gap-2 flex-wrap">
+      <input id="avatarFileInput" type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+      <button type="button" onclick="document.getElementById('avatarFileInput').click()"
+              class="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[12.5px] font-medium">
+        <i class="fa-solid fa-camera mr-1"></i> Ganti Foto
+      </button>
+      <span class="text-[11px] text-gray-400">Foto bisa dipotong (crop) dulu sebelum diunggah</span>
+    </form>
+  </div>
+
+  <!-- Banner Profil -->
+  <div class="bg-white border rounded-xl p-4 mb-4">
+    <div class="w-full rounded-lg overflow-hidden bg-gray-100 border mb-3 flex items-center justify-center" style="aspect-ratio:3/1">
+      <% if (admin.bannerUrl && admin.bannerUrl.trim()) { %>
+        <img src="<%= admin.bannerUrl %>" alt="banner profil" class="w-full h-full object-cover">
+      <% } else { %>
+        <span class="text-[12px] text-gray-400">Belum ada banner</span>
+      <% } %>
+    </div>
+    <form id="bannerUploadForm" action="/profile/banner" method="POST" enctype="multipart/form-data" class="flex items-center gap-2 flex-wrap">
+      <input id="bannerFileInput" type="file" name="banner" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+      <button type="button" onclick="document.getElementById('bannerFileInput').click()"
+              class="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[12.5px] font-medium">
+        <i class="fa-solid fa-image mr-1"></i> <%= (admin.bannerUrl && admin.bannerUrl.trim()) ? 'Ganti Banner' : 'Upload Banner' %>
+      </button>
+      <% if (admin.bannerUrl && admin.bannerUrl.trim()) { %>
+        <button type="submit" formaction="/profile/banner/remove" formnovalidate onclick="return confirm('Hapus banner profil?')"
+                class="px-3 py-1.5 rounded-lg bg-red-500 text-white text-[12.5px] font-medium">
+          <i class="fa-solid fa-trash mr-1"></i> Hapus
+        </button>
+      <% } %>
+      <span class="text-[11px] text-gray-400">Bisa digeser &amp; di-zoom (rasio 3:1) sebelum diunggah</span>
+    </form>
+  </div>
+<%- include('partials/banner_crop_modal') %>
+<script>initBannerCropUpload('bannerFileInput', 'bannerUploadForm');</script>
+
+  <!-- Tentang Saya (nama depan + bio) & Story Saya -->
+  <%- include('partials/profile_about', { person: admin }) %>
+
+  <%- include('partials/avatar_crop_modal') %>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      initAvatarCropUpload('avatarFileInput', 'avatarUploadForm');
+    });
+  </script>
+
+  <!-- Tabel tanpa card -->
+  <table class="w-full text-[13.5px] border-collapse border border-gray-300 mb-4">
+    <tbody>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">ID User</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white"><%= (admin._id.toString()).slice(10) %></td>
+      </tr>    
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 w-1/3 bg-white">Username</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white"><%= admin.username %></td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Nama Depan</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white"><%= (admin.firstName && admin.firstName.trim()) ? admin.firstName : admin.username %></td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Bio</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white"><%= admin.bio || '-' %></td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Email</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white"><%= admin.email %></td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Password</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white">••••••••</td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Role</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium capitalize bg-white"><%= admin.role %></td>
+      </tr>
+      <tr>
+        <td class="px-3 py-3 border border-gray-300 font-medium text-gray-800 bg-white">Tanggal Bergabung</td>
+        <td class="px-3 py-3 border border-gray-300 text-gray-800 font-medium bg-white">
+          <%= new Date(admin.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) %>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Tombol edit -->
+  <button onclick="openEditAdminModal()" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-4 py-3 rounded-xl text-[13.5px] font-medium shadow-sm transition-all flex items-center justify-center gap-2 mb-6">
+    <i class="fas fa-pen-to-square text-[13.5px]"></i> Edit Informasi
+  </button>
+
+  <!-- ===================== MODAL EDIT ADMIN ===================== -->
+  <div id="editAdminModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeEditAdminModal()"></div>
+    <div class="relative bg-white shadow-xl overflow-hidden w-full max-w-md transform transition-all scale-95 opacity-0 duration-200 rounded-xl flex flex-col max-h-[90vh]" id="editAdminModalContent">
+      <div class="bg-white px-5 py-4 relative flex items-center justify-between border-b border-gray-200 shrink-0">
+        <h2 class="text-sm font-medium text-gray-800">Edit Informasi Admin</h2>
+        <button onclick="closeEditAdminModal()" class="w-7 h-7 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 transition-colors">
+          <i class="fas fa-times text-[13.5px]"></i>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto custom-scroll flex-1 min-h-0">
+        <form id="editAdminForm" method="POST" action="/admin/account" class="flex flex-col gap-4" autocomplete="off">
+          <!-- Username -->
+          <div>
+            <label class="block text-[13.5px] font-medium text-gray-700 mb-2">Username</label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+              <input name="username" type="text" value="<%= admin.username %>" placeholder="Masukkan username..." 
+                     class="flex-1 bg-transparent px-3 py-2 text-[13.5px] font-medium text-gray-800 outline-none w-full placeholder:text-[13.5px] placeholder:font-medium placeholder:text-gray-400" 
+                     maxlength="15" pattern="[^\s]+" title="Username tidak boleh mengandung spasi" required>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1.5">Maksimal 15 karakter, tanpa spasi, huruf kecil otomatis.</p>
+          </div>
+
+          <!-- Password Baru -->
+          <div>
+            <label class="flex items-center justify-between text-[13.5px] font-medium text-gray-700 mb-2">
+              <span>Kata Sandi Baru</span>
+              <span class="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-xl border border-gray-200">opsional</span>
+            </label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+              <input id="newPasswordModal" name="newPassword" type="password" placeholder="••••••••" 
+                     class="flex-1 bg-transparent px-2 text-[13.5px] font-medium text-gray-800 outline-none w-full placeholder:text-[13.5px] placeholder:font-medium placeholder:text-gray-400">
+              <button type="button" onclick="togglePassword('newPasswordModal', 'newPasswordToggleIcon')" class="w-10 h-10 text-gray-500 hover:text-gray-800 rounded-xl transition-all flex items-center justify-center shrink-0 ml-1">
+                <i id="newPasswordToggleIcon" class="far fa-eye text-[13.5px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Password Saat Ini -->
+          <div>
+            <label class="flex items-center gap-1 text-[13.5px] font-medium text-gray-700 mb-2">
+              <span>Kata Sandi Saat Ini</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+              <input id="currentPasswordModal" name="password" type="password" placeholder="Masukkan kata sandi saat ini..." 
+                     class="flex-1 bg-transparent px-2 text-[13.5px] font-medium text-gray-800 outline-none w-full placeholder:text-[13.5px] placeholder:font-medium placeholder:text-gray-400" required>
+              <button type="button" onclick="togglePassword('currentPasswordModal', 'currentPasswordToggleIcon')" class="w-10 h-10 text-gray-500 hover:text-gray-800 rounded-xl transition-all flex items-center justify-center shrink-0 ml-1">
+                <i id="currentPasswordToggleIcon" class="far fa-eye text-[13.5px]"></i>
+              </button>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1.5">Wajib diisi untuk otorisasi perubahan akun.</p>
+          </div>
+
+          <!-- Tombol Simpan -->
+          <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-4 py-3 rounded-xl text-[13.5px] font-medium shadow-sm transition-all flex items-center justify-center gap-2 mt-2">
+            <i class="fas fa-save text-[13.5px]"></i> Simpan Perubahan
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+  // ================== MODAL EDIT ADMIN ==================
+  function openEditAdminModal() {
+    const modal = document.getElementById('editAdminModal');
+    const modalContent = document.getElementById('editAdminModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modalContent.classList.remove('scale-95', 'opacity-0');
+      modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEditAdminModal() {
+    const modal = document.getElementById('editAdminModal');
+    const modalContent = document.getElementById('editAdminModalContent');
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 200);
+  }
+
+  // ================== TOGGLE PASSWORD ==================
+  function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+  }
+</script>
