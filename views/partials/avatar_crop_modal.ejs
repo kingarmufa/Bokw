@@ -1,0 +1,216 @@
+<!-- ================== MODAL CROP FOTO PROFIL ==================
+     Partial ini dipakai bareng di halaman /profile dan /admin/account.
+     Tujuannya: user WAJIB memotong (crop) foto secara manual jadi bentuk
+     persegi sebelum diunggah, supaya tidak ada lagi foto yang "otomatis"
+     terpotong aneh oleh CSS object-cover di avatar bulat (Room Chat dll).
+-->
+<div id="avatarCropModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/60 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-xs p-4 shadow-xl">
+    <h3 class="text-sm font-semibold text-gray-800 mb-1 text-center">Sesuaikan Foto Profil</h3>
+    <p class="text-[11px] text-gray-400 text-center mb-3">Geser foto &amp; atur zoom, lalu potong sesuai keinginan</p>
+
+    <div id="avatarCropStage"
+         class="relative mx-auto rounded-full overflow-hidden bg-gray-900 touch-none select-none"
+         style="width:260px;height:260px;cursor:grab;">
+      <canvas id="avatarCropCanvas" width="260" height="260" class="absolute inset-0 w-full h-full"></canvas>
+      <div class="absolute inset-0 rounded-full ring-2 ring-white/90 pointer-events-none"></div>
+    </div>
+
+    <div class="flex items-center gap-2 mt-4">
+      <i class="fas fa-image text-gray-300 text-[10px]"></i>
+      <input id="avatarZoomRange" type="range" min="100" max="300" value="100" class="flex-1 accent-blue-500">
+      <i class="fas fa-image text-gray-500 text-sm"></i>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <button type="button" onclick="closeAvatarCropModal()"
+              class="flex-1 px-3 py-2 rounded-lg border text-[12.5px] font-medium text-gray-600">
+        Batal
+      </button>
+      <button type="button" onclick="confirmAvatarCrop()"
+              class="flex-1 px-3 py-2 rounded-lg bg-blue-500 text-white text-[12.5px] font-medium">
+        <i class="fa-solid fa-crop-simple mr-1"></i> Potong &amp; Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STAGE_SIZE = 260;
+  const OUTPUT_SIZE = 512;
+
+  const canvas = document.getElementById('avatarCropCanvas');
+  const ctx = canvas.getContext('2d');
+  const modal = document.getElementById('avatarCropModal');
+  // Pindahkan modal ke <body>: kalau tetap di dalam container halaman (yang punya transform/filter),
+  // position:fixed jadi relatif ke container & kotak crop muncul jauh di bawah (harus scroll).
+  if (modal.parentNode !== document.body) document.body.appendChild(modal);
+  const stage = document.getElementById('avatarCropStage');
+  const zoomRange = document.getElementById('avatarZoomRange');
+
+  let img = new Image();
+  let scale = 1, minScale = 1, offsetX = 0, offsetY = 0;
+  let dragging = false, lastX = 0, lastY = 0;
+  let activeForm = null, activeInput = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, STAGE_SIZE, STAGE_SIZE);
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, STAGE_SIZE, STAGE_SIZE);
+    if (!img.naturalWidth) return;
+    ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
+  }
+
+  function clampOffset() {
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    offsetX = Math.min(0, Math.max(STAGE_SIZE - w, offsetX));
+    offsetY = Math.min(0, Math.max(STAGE_SIZE - h, offsetY));
+  }
+
+  function openWithFile(file, form, input) {
+    activeForm = form;
+    activeInput = input;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const newImg = new Image();
+      newImg.onload = function () {
+        img = newImg;
+        minScale = Math.max(STAGE_SIZE / img.naturalWidth, STAGE_SIZE / img.naturalHeight);
+        scale = minScale;
+        offsetX = (STAGE_SIZE - img.naturalWidth * scale) / 2;
+        offsetY = (STAGE_SIZE - img.naturalHeight * scale) / 2;
+        zoomRange.value = 100;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        draw();
+      };
+      newImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  window.closeAvatarCropModal = function () {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (activeInput) activeInput.value = '';
+    activeForm = null;
+    activeInput = null;
+  };
+
+  window.confirmAvatarCrop = function () {
+    if (!activeForm || !activeInput || !img.naturalWidth) return;
+    const out = document.createElement('canvas');
+    out.width = OUTPUT_SIZE;
+    out.height = OUTPUT_SIZE;
+    const octx = out.getContext('2d');
+    const ratio = OUTPUT_SIZE / STAGE_SIZE;
+    octx.drawImage(
+      img,
+      offsetX * ratio, offsetY * ratio,
+      img.naturalWidth * scale * ratio, img.naturalHeight * scale * ratio
+    );
+    out.toBlob(function (blob) {
+      if (!blob) return;
+      const croppedFile = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(croppedFile);
+        activeInput.files = dt.files;
+      } catch (e) {
+        // Browser lama tanpa dukungan DataTransfer: batalkan crop, biarkan file asli
+      }
+      const previewImg = activeForm.parentElement ? activeForm.parentElement.querySelector('img') : null;
+      if (previewImg) previewImg.src = URL.createObjectURL(croppedFile);
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      activeForm.submit();
+    }, 'image/jpeg', 0.92);
+  };
+
+  // ---- Drag untuk geser posisi foto (mouse & sentuh, pakai Pointer Events) ----
+  stage.addEventListener('pointerdown', function (e) {
+    if (!img.naturalWidth) return;
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    stage.setPointerCapture(e.pointerId);
+    stage.style.cursor = 'grabbing';
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    offsetX += (e.clientX - lastX);
+    offsetY += (e.clientY - lastY);
+    lastX = e.clientX;
+    lastY = e.clientY;
+    clampOffset();
+    draw();
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (evt) {
+    stage.addEventListener(evt, function () {
+      dragging = false;
+      stage.style.cursor = 'grab';
+    });
+  });
+
+  // ---- Zoom via slider ----
+  zoomRange.addEventListener('input', function () {
+    if (!img.naturalWidth) return;
+    const cx = STAGE_SIZE / 2, cy = STAGE_SIZE / 2;
+    const imgX = (cx - offsetX) / scale, imgY = (cy - offsetY) / scale;
+    const newScale = minScale * (zoomRange.value / 100);
+    offsetX = cx - imgX * newScale;
+    offsetY = cy - imgY * newScale;
+    scale = newScale;
+    clampOffset();
+    draw();
+  });
+
+  // ---- Zoom via scroll wheel (desktop) ----
+  stage.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    let val = parseInt(zoomRange.value, 10) + (e.deltaY < 0 ? 5 : -5);
+    val = Math.min(300, Math.max(100, val));
+    zoomRange.value = val;
+    zoomRange.dispatchEvent(new Event('input'));
+  }, { passive: false });
+
+  // ---- Pinch-to-zoom sederhana (mobile, dua jari) ----
+  let pinchStartDist = null, pinchStartZoom = 100;
+  stage.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pinchStartDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchStartZoom = parseInt(zoomRange.value, 10);
+    }
+  }, { passive: true });
+  stage.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pinchStartDist) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      let val = Math.round(pinchStartZoom * (dist / pinchStartDist));
+      val = Math.min(300, Math.max(100, val));
+      zoomRange.value = val;
+      zoomRange.dispatchEvent(new Event('input'));
+    }
+  }, { passive: true });
+
+  // Dipanggil dari halaman: menghubungkan tombol "Ganti Foto" -> buka modal crop
+  window.initAvatarCropUpload = function (inputId, formId) {
+    const input = document.getElementById(inputId);
+    const form = document.getElementById(formId);
+    if (!input || !form) return;
+    input.addEventListener('change', function () {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      if (!/^image\//i.test(file.type)) return;
+      openWithFile(file, form, input);
+    });
+  };
+})();
+</script>
