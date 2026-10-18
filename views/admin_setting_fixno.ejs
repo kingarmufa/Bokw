@@ -1,0 +1,130 @@
+<%- include('partials/header', { title: 'Setting Fix No' }) %>
+
+<div class="px-6 pb-6 mt-1 max-w-[480px] md:max-w-lg mx-auto">
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <h1 class="text-base font-bold text-gray-800 mb-1">Setting Fix No</h1>
+  <p class="text-[11.5px] text-gray-500 mb-4">Kelola permohonan "Fix Nomor Merah" &amp; "Unban Akun WhatsApp" via email.</p>
+
+  <!-- ===== PENGATURAN UTAMA ===== -->
+  <form method="POST" action="/admin/setting-fixno/save" class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-solid fa-gear mr-1 text-blue-500"></i> Pengaturan Utama</h2>
+
+    <label class="flex items-center justify-between mb-3 cursor-pointer">
+      <span class="text-[12px] font-semibold text-gray-700">Aktifkan Fitur Fix No / Unban WA</span>
+      <input type="checkbox" name="fixNoEnabled" <%= settings.fixNoEnabled ? 'checked' : '' %> class="w-4 h-4 accent-blue-600">
+    </label>
+
+    <div class="mb-3">
+      <label class="block text-[11px] font-bold text-gray-500 mb-1">Harga Pembukaan Akses (Rp, 0 = gratis)</label>
+      <input type="number" name="fixNoAccessPrice" min="0" value="<%= settings.fixNoAccessPrice || 0 %>" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs">
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[11px] font-bold text-gray-500 mb-1">Jeda Antar Pengiriman (detik) — biar Gmail gak dianggap spam</label>
+      <input type="number" name="fixNoDelaySeconds" min="1" value="<%= settings.fixNoDelaySeconds || 5 %>" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs">
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[11px] font-bold text-gray-500 mb-1">Jumlah Pengulangan Kirim per Target (mis. isi 3 = tiap target dikirimi email 3x)</label>
+      <input type="number" name="fixNoRepeatCount" min="1" max="20" value="<%= settings.fixNoRepeatCount || 1 %>" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <p class="text-[10px] text-gray-400 mt-1">1 = kirim sekali seperti biasa. Maks 20x. Makin besar, makin lama prosesnya (dikali jeda di atas).</p>
+    </div>
+
+    <h3 class="text-[12.5px] font-bold text-gray-700 mb-2 mt-4 pt-3 border-t border-gray-100"><i class="fa-solid fa-envelope mr-1 text-purple-500"></i> Template Pesan</h3>
+
+    <div class="mb-3">
+      <label class="block text-[11px] font-bold text-gray-500 mb-1">Template Pesan — Fix Nomor Merah (pakai {no})</label>
+      <textarea name="fixNoTemplateFixMerah" rows="5" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs"><%= settings.fixNoTemplateFixMerah %></textarea>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[11px] font-bold text-gray-500 mb-1">Template Pesan — Unban Akun WA (pakai {no})</label>
+      <textarea name="fixNoTemplateUnban" rows="5" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs"><%= settings.fixNoTemplateUnban %></textarea>
+    </div>
+
+    <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[12.5px] font-bold">Simpan Pengaturan</button>
+  </form>
+
+  <!-- ===== SENDER GLOBAL (bisa lebih dari satu, sama seperti Sender Private) ===== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-solid fa-envelope mr-1 text-purple-500"></i> Sender Global (<%= (settings.fixNoGlobalSenders || []).length %>)</h2>
+    <p class="text-[11px] text-gray-400 mb-3">Bisa tambah lebih dari 1 akun Gmail — sistem otomatis pilih salah satu secara acak tiap ada pengiriman, biar beban terbagi &amp; gak gampang kena spam.</p>
+    <form action="/admin/setting-fixno/sender/tambah" method="POST" class="flex flex-col gap-2 mb-3">
+      <input type="email" name="email" required placeholder="Gmail Sender Global" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <div class="flex gap-2">
+        <input type="text" name="password" required placeholder="App Password (16 digit)" class="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-xs">
+        <button type="submit" class="px-3 py-2 rounded-xl bg-purple-600 text-white text-[11px] font-bold shrink-0">Tambah</button>
+      </div>
+    </form>
+    <% if ((settings.fixNoGlobalSenders || []).length === 0) { %>
+      <p class="text-[11.5px] text-gray-400">Belum ada Sender Global.</p>
+    <% } %>
+    <% (settings.fixNoGlobalSenders || []).forEach(s => { %>
+      <div class="flex items-center justify-between gap-2 border border-gray-200 rounded-xl px-3 py-2 mb-2">
+        <span class="text-[11.5px] font-medium text-gray-700 truncate"><%= s.email %></span>
+        <form action="/admin/setting-fixno/sender/hapus/<%= s._id %>" method="POST">
+          <button type="submit" class="comic-btn-danger px-2.5 py-1 rounded-lg text-[10.5px] shrink-0" style="background:#ef2b2d;color:#fff;border:2.5px solid #14120f;box-shadow:2px 2px 0 #14120f;font-weight:800;">Hapus</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- ===== TARGET GMAIL TUJUAN ===== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-solid fa-bullseye mr-1 text-green-500"></i> Target Gmail Tujuan (<%= (settings.fixNoTargets || []).length %>)</h2>
+    <form action="/admin/setting-fixno/target/tambah" method="POST" class="flex gap-2 mb-3">
+      <input type="email" name="email" required placeholder="target@gmail.com" class="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <button type="submit" class="px-3 py-2 rounded-xl bg-green-600 text-white text-[11px] font-bold shrink-0">Tambah</button>
+    </form>
+    <% if ((settings.fixNoTargets || []).length === 0) { %>
+      <p class="text-[11.5px] text-gray-400">Belum ada target Gmail tujuan.</p>
+    <% } %>
+    <% (settings.fixNoTargets || []).forEach(email => { %>
+      <div class="flex items-center justify-between gap-2 border border-gray-200 rounded-xl px-3 py-2 mb-2">
+        <span class="text-[11.5px] font-medium text-gray-700 truncate"><%= email %></span>
+        <form action="/admin/setting-fixno/target/hapus" method="POST">
+          <input type="hidden" name="email" value="<%= email %>">
+          <button type="submit" class="comic-btn-danger px-2.5 py-1 rounded-lg text-[10.5px] shrink-0" style="background:#ef2b2d;color:#fff;border:2.5px solid #14120f;box-shadow:2px 2px 0 #14120f;font-weight:800;">Hapus</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- ===== PAKET SENDER GLOBAL ===== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-4">
+    <h2 class="text-[13px] font-bold text-gray-800 mb-3"><i class="fa-solid fa-box mr-1 text-yellow-500"></i> Paket Harian Sender Global (<%= (settings.fixNoGlobalPackages || []).length %>)</h2>
+    <form action="/admin/setting-fixno/paket/tambah" method="POST" class="grid grid-cols-3 gap-2 mb-3">
+      <input type="text" name="name" required placeholder="Nama Paket" class="col-span-3 px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <input type="number" name="days" min="1" required placeholder="Hari" class="px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <input type="number" name="price" min="0" required placeholder="Harga" class="px-3 py-2 rounded-xl border border-gray-300 text-xs">
+      <button type="submit" class="px-3 py-2 rounded-xl bg-yellow-500 text-white text-[11px] font-bold">Tambah</button>
+    </form>
+    <% if ((settings.fixNoGlobalPackages || []).length === 0) { %>
+      <p class="text-[11.5px] text-gray-400">Belum ada paket.</p>
+    <% } %>
+    <% (settings.fixNoGlobalPackages || []).forEach(p => { %>
+      <div class="flex items-center justify-between gap-2 border border-gray-200 rounded-xl px-3 py-2 mb-2">
+        <span class="text-[11.5px] font-medium text-gray-700 truncate"><%= p.name %> &middot; <%= p.days %> hari &middot; Rp <%= Number(p.price).toLocaleString('id-ID') %></span>
+        <form action="/admin/setting-fixno/paket/hapus/<%= p._id %>" method="POST">
+          <button type="submit" class="comic-btn-danger px-2.5 py-1 rounded-lg text-[10.5px] shrink-0" style="background:#ef2b2d;color:#fff;border:2.5px solid #14120f;box-shadow:2px 2px 0 #14120f;font-weight:800;">Hapus</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+
+</div>
+
+<%- include('partials/footer') %>
