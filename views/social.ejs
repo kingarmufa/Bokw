@@ -1,0 +1,19 @@
+<%- include('partials/header', { title: socialCfg.title }) %>
+<link rel="stylesheet" href="/social-ui.css?v=6" data-comic-owned>
+<%
+  const _sgCfg = {
+    title: socialCfg.title, subtitle: socialCfg.subtitle || '',
+    allowComments: !!socialCfg.allowComments, allowShare: !!socialCfg.allowShare,
+    maxMedia: socialCfg.maxMediaPerPost || 5,
+    isAdmin: !!(user && user.role === 'admin'),
+    home: home, editProfileUrl: editProfileUrl, focusPost: focusPost || '',
+    me: { id: String(user._id), username: user.username, displayName: ((user.firstName || '').trim() || user.username), role: user.role, avatarUrl: user.avatarUrl || '' }
+  };
+%>
+<div class="sg-app" id="sgRoot" aria-live="polite">
+  <noscript><p class="sg-empty">Aktifkan JavaScript untuk memakai <%= socialCfg.title %>.</p></noscript>
+</div>
+<%- include('partials/story_boot') %>
+<script>window.SG_CFG = <%- JSON.stringify(_sgCfg).replace(/</g, '\\u003c') %>;</script>
+<script src="/social-ui.js?v=8"></script>
+<%- include('partials/footer') %>
