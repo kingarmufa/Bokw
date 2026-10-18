@@ -1,0 +1,211 @@
+<%- include('partials/header', { title: 'Kelola Panel Reseller' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/reseller" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Kelola Panel</h1>
+    <a href="/reseller/panel-riwayat" class="ml-auto text-[11.5px] font-bold text-blue-600">
+      <i class="fa-solid fa-clock-rotate-left mr-1"></i> History Panel
+    </a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <% if (result) { %>
+    <!-- ===== HASIL ===== -->
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span><%= result.type === 'create' ? 'Panel Berhasil Dibuat' : 'Server Berhasil Ditambahkan' %></span>
+      </div>
+      <div class="p-4 text-[12.5px] flex flex-col gap-1.5">
+        <div class="flex justify-between gap-3"><span class="text-gray-500">Server</span><b><%= result.serverName %></b></div>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">Domain</span><b class="break-all text-right"><%= result.domain %></b></div>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">Username</span><b><%= result.username %></b></div>
+        <% if (result.type === 'create') { %>
+          <div class="flex justify-between gap-3"><span class="text-gray-500">Password</span><b class="break-all text-right"><%= result.password %></b></div>
+        <% } %>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">Email</span><b class="break-all text-right"><%= result.email %></b></div>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">ID Akun Panel</span><b><%= result.pteroUserId %></b></div>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">ID Server</span><b><%= result.pteroServerId %></b></div>
+        <div class="flex justify-between gap-3"><span class="text-gray-500">RAM</span><b><%= result.ramLabel %></b></div>
+        <button type="button" id="copyResultBtn" class="mt-2 w-full comic-btn-primary px-4 py-2.5 rounded-xl text-[13px] font-bold">
+          <i class="fa-solid fa-copy"></i> Salin Data Akun
+        </button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var text = <%- JSON.stringify(
+          'Domain: ' + result.domain + '\n' +
+          'Username: ' + result.username + '\n' +
+          (result.type === 'create' ? 'Password: ' + result.password + '\n' : '') +
+          'Email: ' + result.email + '\n' +
+          'ID Akun: ' + result.pteroUserId + '\n' +
+          'ID Server: ' + result.pteroServerId + '\n' +
+          'RAM: ' + result.ramLabel
+        ).replace(/</g, '\\u003c') %>;
+        document.getElementById('copyResultBtn').addEventListener('click', function () {
+          var b = this;
+          (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).catch(function () {
+            var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+            try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t);
+          }).then(function () { b.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin'; });
+        });
+      })();
+    </script>
+  <% } %>
+
+  <% if (servers.length === 0) { %>
+    <div class="comic-panel">
+      <div class="p-6 text-center">
+        <i class="fa-solid fa-server text-3xl text-gray-300 mb-2"></i>
+        <p class="text-xs font-medium text-gray-500">Belum ada server aktif. Hubungi admin untuk mengaktifkan server Reseller Panel.</p>
+      </div>
+    </div>
+  <% } else { %>
+
+  <!-- ===== TAB ===== -->
+  <div class="flex gap-2 mb-4">
+    <button type="button" id="tabCreate" onclick="switchTab('create')" class="flex-1 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-bold shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-plus mr-1"></i> Create Panel
+    </button>
+    <button type="button" id="tabAdd" onclick="switchTab('add')" class="flex-1 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-bold shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-server mr-1"></i> Add Server
+    </button>
+  </div>
+
+  <!-- ===== CREATE PANEL ===== -->
+  <div id="paneCreate" class="comic-panel">
+    <div class="comic-panel-head"><i class="fa-solid fa-plus text-base"></i><span>Create Panel</span></div>
+    <form method="POST" action="/reseller/create" class="p-4" onsubmit="return lockSubmit(this)">
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Server</label>
+      <select name="slot" id="createSlot" required class="w-full mb-3 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <% servers.forEach(function(s) { %><option value="<%= s.slot %>"><%= s.name %></option><% }); %>
+      </select>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Username Panel</label>
+      <input type="text" name="username" id="createUsername" required maxlength="20" pattern="[a-zA-Z0-9_]{3,20}" placeholder="cth: Arga" autocomplete="off"
+        class="w-full mb-1 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-medium focus:outline-none">
+      <p class="text-[10.5px] text-gray-500 mb-3">Email otomatis: <b id="emailPreview">username@gmail.com</b> • Password dibuat random.</p>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">RAM</label>
+      <select name="ram" required class="w-full mb-3 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <% ramOptions.forEach(function(o) { %><option value="<%= o.value %>"><%= o.label %></option><% }); %>
+      </select>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Egg</label>
+      <select name="egg_id" id="createEgg" class="w-full mb-4 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <option value="">Memuat egg...</option>
+      </select>
+
+      <button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-bolt"></i> Buat Panel
+      </button>
+    </form>
+  </div>
+
+  <!-- ===== ADD SERVER ===== -->
+  <div id="paneAdd" class="comic-panel" style="display:none">
+    <div class="comic-panel-head"><i class="fa-solid fa-server text-base"></i><span>Add Server</span></div>
+    <form method="POST" action="/reseller/add-server" class="p-4" onsubmit="return lockSubmit(this)">
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Server</label>
+      <select name="slot" id="addSlot" required class="w-full mb-3 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <% servers.forEach(function(s) { %><option value="<%= s.slot %>" <%= prefillSlot === s.slot ? 'selected' : '' %>><%= s.name %></option><% }); %>
+      </select>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">ID Akun Panel</label>
+      <input type="number" name="account_id" required min="1" inputmode="numeric" placeholder="cth: 12" value="<%= prefillAccountId %>"
+        class="w-full mb-1 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-medium focus:outline-none">
+      <p class="text-[10.5px] text-gray-500 mb-3">ID akun ada di History Panel. Server baru otomatis ditambahkan ke akun tersebut.</p>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">RAM</label>
+      <select name="ram" required class="w-full mb-3 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <% ramOptions.forEach(function(o) { %><option value="<%= o.value %>"><%= o.label %></option><% }); %>
+      </select>
+
+      <label class="block text-[11.5px] font-bold text-gray-700 mb-1">Egg</label>
+      <select name="egg_id" id="addEgg" class="w-full mb-4 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[13px] font-medium focus:outline-none">
+        <option value="">Memuat egg...</option>
+      </select>
+
+      <button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold">
+        <i class="fa-solid fa-plus"></i> Tambah Server
+      </button>
+    </form>
+  </div>
+
+  <% } %>
+</div>
+
+<style>
+  .comic-panel { border: 2.5px solid #14120f; border-radius: 18px; background:#fffdf7; box-shadow: 3px 3px 0 #14120f; overflow: hidden; }
+  .comic-panel-head { display:flex; align-items:center; gap:8px; padding:10px 14px; background: var(--comic-yellow, #ffd23f); border-bottom: 2.5px solid #14120f; font-weight:800; font-size:13px; }
+  .tab-on { background:#16a34a; color:#fff; }
+  .tab-off { background:#fff; color:#14120f; }
+</style>
+
+<script>
+  var currentTab = '<%= tab %>';
+  function switchTab(t) {
+    currentTab = t;
+    var c = document.getElementById('paneCreate'), a = document.getElementById('paneAdd');
+    if (!c || !a) return;
+    c.style.display = t === 'create' ? '' : 'none';
+    a.style.display = t === 'add' ? '' : 'none';
+    document.getElementById('tabCreate').className = document.getElementById('tabCreate').className.replace(/tab-(on|off)/g, '').trim() + ' ' + (t === 'create' ? 'tab-on' : 'tab-off');
+    document.getElementById('tabAdd').className = document.getElementById('tabAdd').className.replace(/tab-(on|off)/g, '').trim() + ' ' + (t === 'add' ? 'tab-on' : 'tab-off');
+  }
+
+  function lockSubmit(form) {
+    var btn = form.querySelector('button[type=submit]');
+    if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; }
+    return true;
+  }
+
+  async function loadEggs(slotEl, eggEl) {
+    if (!slotEl || !eggEl) return;
+    eggEl.innerHTML = '<option value="">Memuat egg...</option>';
+    try {
+      var res = await fetch('/reseller/eggs?slot=' + encodeURIComponent(slotEl.value));
+      var json = await res.json();
+      if (!json.success || !json.data.length) throw new Error(json.error || 'Egg kosong');
+      eggEl.innerHTML = '';
+      json.data.forEach(function (e) {
+        var o = document.createElement('option');
+        o.value = e.id; o.textContent = e.name;
+        if (e.id === json.defaultEggId) o.selected = true;
+        eggEl.appendChild(o);
+      });
+    } catch (err) {
+      eggEl.innerHTML = '<option value="">Egg default server</option>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!document.getElementById('paneCreate')) return;
+    switchTab(currentTab);
+    var cs = document.getElementById('createSlot'), ce = document.getElementById('createEgg');
+    var as = document.getElementById('addSlot'), ae = document.getElementById('addEgg');
+    cs.addEventListener('change', function () { loadEggs(cs, ce); });
+    as.addEventListener('change', function () { loadEggs(as, ae); });
+    loadEggs(cs, ce); loadEggs(as, ae);
+
+    var u = document.getElementById('createUsername'), p = document.getElementById('emailPreview');
+    u.addEventListener('input', function () { p.textContent = (u.value.toLowerCase() || 'username') + '@gmail.com'; });
+  });
+</script>
+
+<%- include('partials/footer') %>
