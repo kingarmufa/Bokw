@@ -1,0 +1,26 @@
+</main>
+
+<% if (typeof user === 'undefined' || !user || user.role !== 'admin') { %>
+<footer class="relative bottom-0 left-0 w-full py-8 px-4 text-center border-t-0 mt-6 bg-transparent">
+  <div class="cm-foot">
+  <p class="text-[13.5px] text-gray-700 font-semibold">
+    Butuh Bantuan? <a href="<%= settings.contactDeveloper %>" class="text-blue-600 font-bold hover:text-blue-700 underline underline-offset-2 transition-colors">Hubungi Tim Support</a>
+  </p>
+  <% if (settings.contactGmail) { %>
+  <p class="text-[13.5px] text-gray-500 font-medium mt-1">
+    Email: <a href="mailto:<%= settings.contactGmail %>" class="text-blue-600 font-semibold hover:text-blue-700 underline underline-offset-2 transition-colors"><%= settings.contactGmail %></a>
+  </p>
+  <% } %>
+  </div>
+</footer>
+<% } %>
+
+<%- include('credit') %>
+<%- include('bottomnav') %>
+
+<% if (typeof settings !== 'undefined' && settings && settings.aiBubbleEnabled) { %>
+<%- include('ai_bubble') %>
+<% } %>
+
+</body>
+</html>
