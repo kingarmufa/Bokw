@@ -1,0 +1,164 @@
+<%- include('partials/header', { title: 'Transaksi Suntik Sosmed' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Transaksi Suntik Sosmed</h1>
+    <a href="/sosmed" class="text-[11.5px] font-bold text-blue-600 flex items-center gap-1">
+      <i class="fa-solid fa-plus"></i> Pesan Lagi
+    </a>
+  </div>
+  <%- include('partials/voucher_receipt', { order }) %>
+
+
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <i class="fa-solid fa-bullhorn"></i>
+      <span class="truncate"><%= order.serviceName %></span>
+      <span id="statusBadge" class="ml-auto status-badge"></span>
+    </div>
+
+    <div class="p-4">
+      <div class="rounded-xl border-2 border-black p-3 bg-white mb-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Target</span><span class="text-gray-800 break-all text-right"><%= order.target %></span></div>
+        <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Jumlah</span><span class="text-gray-800"><%= order.quantity.toLocaleString('id-ID') %></span></div>
+        <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Start Count</span><span id="valStartCount" class="text-gray-800"><%= order.startCount || 0 %></span></div>
+        <div class="flex justify-between text-xs font-semibold"><span class="text-gray-500">Sisa (Remains)</span><span id="valRemains" class="text-gray-800"><%= order.remains || 0 %></span></div>
+      </div>
+
+      <div id="waitingBox" class="text-center mb-4">
+        <p class="text-xs text-gray-600"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Status pesanan akan diperbarui otomatis di sini.</p>
+      </div>
+
+      <div class="rounded-xl border-2 border-black p-3 bg-white mb-4">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-gray-500">Total Harga</span>
+          <span class="text-gray-800">Rp <%= order.sellPrice.toLocaleString('id-ID') %></span>
+        </div>
+        <div class="flex justify-between text-xs font-semibold mt-1.5">
+          <span class="text-gray-500">ID Transaksi</span>
+          <span class="text-gray-800"><%= order._id %></span>
+        </div>
+        <div class="flex justify-between text-xs font-semibold mt-1.5">
+          <span class="text-gray-500">ID Order Provider</span>
+          <span class="text-gray-800 break-all text-right"><%= order.smmOrderId || order.fayupediaOrderId %></span>
+        </div>
+      </div>
+
+      <div id="refillBox" class="mb-3"></div>
+
+      <a href="/sosmed/riwayat" class="block w-full py-3 rounded-xl border-2 border-black bg-blue-500 text-xs font-bold text-white text-center shadow-[2.5px_2.5px_0_#14120f]">
+        <i class="fa-solid fa-clock-rotate-left mr-1"></i>Lihat Riwayat
+      </a>
+    </div>
+  </div>
+
+  <p class="text-[11px] text-gray-500 text-center leading-relaxed">
+    Halaman ini otomatis mengecek status setiap 5 detik sampai pesanan selesai, gagal, atau dibatalkan.
+  </p>
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); overflow: hidden; }
+  .comic-panel-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--comic-yellow); border-bottom: 3px solid var(--comic-black); font-size: 13px; font-weight: 800; }
+  .status-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--comic-black); background: #fff; flex-shrink: 0; }
+  .status-badge.pending { background: var(--comic-yellow); }
+  .status-badge.in-progress, .status-badge.processing { background: #38bdf8; color: #fff; }
+  .status-badge.completed { background: #22c55e; color: #fff; }
+  .status-badge.partial { background: #f97316; color: #fff; }
+  .status-badge.canceled, .status-badge.failed { background: var(--comic-red); color: #fff; }
+</style>
+
+<script>
+  const orderId = <%- JSON.stringify(order._id) %>;
+  let pollTimer = null;
+
+  const STATUS_LABEL = { pending: 'Diproses', 'in progress': 'Berjalan', processing: 'Diproses', completed: 'Selesai', partial: 'Sebagian', canceled: 'Dibatalkan', failed: 'Gagal' };
+
+  function badgeClass(status) { return (status || '').replace(/\s+/g, '-'); }
+
+  const REFILL_STATUS_LABEL = { pending: 'Diproses', completed: 'Berhasil', rejected: 'Ditolak', canceled: 'Dibatalkan' };
+
+  function renderStatus(order) {
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = STATUS_LABEL[order.status] || order.status;
+    badge.className = 'status-badge ' + badgeClass(order.status);
+
+    document.getElementById('valStartCount').textContent = order.startCount || 0;
+    document.getElementById('valRemains').textContent = order.remains || 0;
+
+    const isFinal = ['completed', 'canceled', 'failed'].includes(order.status);
+    if (isFinal) {
+      stopPolling();
+      const box = document.getElementById('waitingBox');
+      if (order.status === 'completed') {
+        box.innerHTML = `<p class="text-xs font-medium text-green-600"><i class="fa-solid fa-circle-check mr-1"></i>Pesanan selesai.</p>`;
+      } else {
+        box.innerHTML = `<p class="text-xs font-medium text-red-600">Pesanan ${(STATUS_LABEL[order.status] || order.status).toLowerCase()}. ${order.refunded ? 'Saldo sudah dikembalikan.' : ''}</p>`;
+      }
+    }
+    renderRefillBox(order);
+  }
+
+  // Tombol/status "Ajukan Refill" — cuma muncul kalau layanan mendukung refill & pesanan sudah selesai.
+  function renderRefillBox(order) {
+    const box = document.getElementById('refillBox');
+    if (!order.canRefill || order.status !== 'completed') { box.innerHTML = ''; return; }
+
+    if (!order.refillRequestedAt) {
+      box.innerHTML = `<button id="btnRefill" class="w-full py-3 rounded-xl border-2 border-black bg-white text-xs font-bold text-gray-800 shadow-[2.5px_2.5px_0_#14120f]"><i class="fa-solid fa-arrows-rotate mr-1"></i>Ajukan Refill</button>`;
+      document.getElementById('btnRefill').onclick = requestRefill;
+    } else {
+      const label = REFILL_STATUS_LABEL[order.refillStatus] || order.refillStatus || 'Diproses';
+      box.innerHTML = `<p class="text-[11px] text-center text-gray-500">Status Refill: <span class="font-bold text-gray-800">${label}</span></p>`;
+      if (!['completed', 'rejected', 'canceled'].includes(order.refillStatus) && !refillPollTimer) {
+        refillPollTimer = setInterval(pollRefillStatus, 8000);
+      }
+    }
+  }
+
+  let refillPollTimer = null;
+  async function requestRefill() {
+    const btn = document.getElementById('btnRefill');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Mengajukan...'; }
+    try {
+      const res = await fetch(`/sosmed/refill/${orderId}`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) renderRefillBox(json.data);
+      else alert(json.error || 'Gagal mengajukan refill.');
+    } catch (e) {
+      alert('Gagal mengajukan refill, coba lagi.');
+    }
+    if (btn) btn.disabled = false;
+  }
+
+  async function pollRefillStatus() {
+    try {
+      const res = await fetch(`/sosmed/refill/status/${orderId}`);
+      const json = await res.json();
+      if (json.success) {
+        renderRefillBox(json.data);
+        if (['completed', 'rejected', 'canceled'].includes(json.data.refillStatus) && refillPollTimer) {
+          clearInterval(refillPollTimer); refillPollTimer = null;
+        }
+      }
+    } catch (e) { /* diamkan, coba lagi di poll berikutnya */ }
+  }
+
+  function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+  async function pollStatus() {
+    try {
+      const res = await fetch(`/sosmed/status/${orderId}`);
+      const json = await res.json();
+      if (json.success) renderStatus(json.data);
+    } catch (e) { /* diamkan, coba lagi di poll berikutnya */ }
+  }
+
+  renderStatus(<%- JSON.stringify(order) %>);
+  if (!['completed', 'canceled', 'failed'].includes(<%- JSON.stringify(order.status) %>)) {
+    pollTimer = setInterval(pollStatus, 5000);
+    pollStatus();
+  }
+</script>
+
+<%- include('partials/footer') %>
