@@ -1,0 +1,169 @@
+/* ============================================================================
+ * GLASS UI v1 — popup transparan (kaca) + widget Jam/Tanggal + Spesifikasi VPS
+ * File ini DIMILIKI tema (data-comic-owned) sehingga tidak diratakan oleh
+ * comic-palette.js (rgba / backdrop-filter / opacity tetap hidup).
+ * Dimuat SETELAH comic-theme.css lewat lib/comic-render.js.
+ * Popup PROMOSI (#promoPopup) sengaja TIDAK disentuh.
+ * ========================================================================== */
+:root{
+  --gl-ink:#2e2508;
+  --gl-tint:rgba(255,244,190,.30);
+  --gl-edge:rgba(255,255,255,.78);
+  --gl-line:rgba(160,120,0,.42);
+  --gl-card-a:rgba(255,255,255,.80);
+  --gl-card-b:rgba(255,248,214,.58);
+  --gl-shadow:0 26px 60px -14px rgba(120,86,0,.42);
+}
+
+/* ---------- 1. LATAR POPUP: tembus pandang + blur ---------- */
+html body .cp-overlay:not(#promoPopup),
+html body .cm-modal,
+html body .cu-modal,
+html body #avatarCropModal,
+html body .confirm-overlay,
+html body #confirmOverlay,
+html body #imageModal,
+html body .cu-lb{
+  background:var(--gl-tint)!important;background-image:none!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.3)!important;backdrop-filter:blur(10px) saturate(1.3)!important;
+}
+/* modal bergaya Tailwind: latar ada di anak .absolute.inset-0 */
+html body div.fixed.inset-0[id$="Modal"] > .absolute.inset-0,
+html body div.fixed.inset-0[id$="ModalFull"] > .absolute.inset-0{
+  background:var(--gl-tint)!important;background-image:none!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.3)!important;backdrop-filter:blur(10px) saturate(1.3)!important;
+}
+html body .cm-modal-backdrop{background:transparent!important;background-image:none!important}
+
+/* ---------- 2. KARTU POPUP: kaca transparan ---------- */
+html body .cp-overlay:not(#promoPopup) .cp-card,
+html body .cm-modal-card,
+html body .cu-modal-card,
+html body div.fixed.inset-0[id$="Modal"] > .relative,
+html body div.fixed.inset-0[id$="ModalFull"] > .relative,
+html body #avatarCropModal > div,
+html body .confirm-modal,
+html body #confirmModal,
+html body .aib-popup{
+  background:linear-gradient(160deg,var(--gl-card-a),var(--gl-card-b))!important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.55)!important;backdrop-filter:blur(22px) saturate(1.55)!important;
+  border:1.5px solid var(--gl-edge)!important;border-radius:22px!important;
+  box-shadow:var(--gl-shadow),inset 0 1px 0 rgba(255,255,255,.9)!important;
+  --cm-fg:var(--gl-ink)!important;--cm-edge:var(--gl-line)!important;
+}
+/* header kartu popup (Withdraw dll): kuning bening */
+html body .cm-modal-head{
+  background:linear-gradient(90deg,rgba(237,197,49,.88),rgba(255,226,110,.66))!important;
+  border-bottom:1px solid rgba(255,255,255,.7)!important;--cm-fg:var(--gl-ink)!important;
+}
+html body .cm-modal-body{background-image:none!important;background-color:transparent!important}
+html body .cm-close{background:rgba(255,255,255,.7)!important;border:1.5px solid var(--gl-line)!important;border-radius:12px!important}
+html body .cm-sum,html body .cm-note{background:rgba(255,255,255,.55)!important;border-color:var(--gl-line)!important;box-shadow:none!important;border-radius:14px!important}
+
+/* isian di dalam popup: putih bening, garis lembut */
+html body :is(.cp-overlay:not(#promoPopup),.cm-modal,.cu-modal,div.fixed.inset-0[id$="Modal"],div.fixed.inset-0[id$="ModalFull"],#avatarCropModal,#confirmModal)
+  :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=file]),select,textarea){
+  background:rgba(255,255,255,.72)!important;border:1.5px solid var(--gl-line)!important;border-radius:12px!important;box-shadow:none!important;
+}
+html body :is(.cp-overlay:not(#promoPopup),.cm-modal,.cu-modal,div.fixed.inset-0[id$="Modal"],div.fixed.inset-0[id$="ModalFull"],#avatarCropModal,#confirmModal)
+  :is(input,select,textarea):focus{border-color:#d9a900!important;box-shadow:0 0 0 3px rgba(237,197,49,.35)!important}
+html body :is(.cp-overlay:not(#promoPopup),.cm-modal,.cu-modal,div.fixed.inset-0[id$="Modal"],div.fixed.inset-0[id$="ModalFull"],#avatarCropModal,#confirmModal) .cm-field{
+  box-shadow:none!important;border:1.5px solid var(--gl-line)!important;border-radius:12px!important;background:rgba(255,255,255,.72)!important;
+}
+/* kotak informasi ber-border-2 di dalam popup ikut lembut */
+html body :is(div.fixed.inset-0[id$="Modal"],div.fixed.inset-0[id$="ModalFull"],#confirmModal) .border-2{border-color:var(--gl-line)!important;box-shadow:none!important}
+
+/* ---------- 3. Chat AI (bubble popup) ---------- */
+html body .aib-popup-header,
+html body .aib-popup-header.aib-frame-comic{
+  background:linear-gradient(90deg,rgba(237,197,49,.92),rgba(255,226,110,.74))!important;
+  --cm-fg:var(--gl-ink)!important;--cm-edge:var(--gl-line)!important;border-bottom:1px solid rgba(255,255,255,.7)!important;
+}
+html body .aib-messages{background:rgba(255,255,255,.30)!important}
+html body .aib-composer{background:rgba(255,255,255,.55)!important;border-top:1px solid rgba(255,255,255,.7)!important}
+html body .aib-msg.ai,html body .aib-msg.err,html body .aib-msg.typing{background:rgba(255,255,255,.88)!important;border-color:var(--gl-line)!important;box-shadow:none!important}
+html body .aib-msg.me{background:rgba(237,197,49,.95)!important;--cm-fg:var(--gl-ink)!important;--cm-edge:var(--gl-line)!important;box-shadow:none!important}
+
+/* ---------- 4. Toast kecil ikut kaca ---------- */
+html body .cu-toast{
+  background:rgba(255,248,214,.86)!important;-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important;
+  border:1.5px solid var(--gl-edge)!important;--cm-fg:var(--gl-ink)!important;box-shadow:0 10px 30px -8px rgba(120,86,0,.4)!important;
+}
+
+/* cadangan bila browser tak mendukung blur: naikkan kepekatan supaya tetap terbaca */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :root{--gl-card-a:rgba(255,255,255,.96);--gl-card-b:rgba(255,248,214,.94);--gl-tint:rgba(255,244,190,.62)}
+}
+
+/* ============================================================================
+ * WIDGET JAM & TANGGAL (Dashboard user + admin)
+ * ========================================================================== */
+.gl-clock{
+  position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:16px 18px 14px;margin:0 0 16px;border-radius:24px;
+  background:linear-gradient(135deg,#fff6bf 0%,#ffe27a 48%,#ffd23f 100%);
+  border:1.5px solid rgba(255,255,255,.9);
+  box-shadow:0 16px 34px -16px rgba(150,100,0,.6),inset 0 1px 0 rgba(255,255,255,.95);
+  --cm-fg:var(--gl-ink);--cm-edge:var(--gl-line);
+}
+.gl-clock::before,.gl-clock::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.gl-clock::before{width:170px;height:170px;right:-46px;top:-72px;background:radial-gradient(circle,rgba(255,255,255,.75),rgba(255,255,255,0) 68%)}
+.gl-clock::after{width:120px;height:120px;left:-40px;bottom:-64px;background:radial-gradient(circle,rgba(255,170,0,.38),rgba(255,170,0,0) 70%)}
+.gl-clock-l,.gl-clock-r{position:relative;z-index:1;min-width:0}
+.gl-clock-hi{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;line-height:1.2}
+.gl-clock-hi i{font-size:17px;animation:glFloat 3.2s ease-in-out infinite}
+.gl-clock-hi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:36vw}
+.gl-clock-date{display:block;margin-top:5px;font-size:12.5px;font-weight:800;opacity:.92}
+.gl-clock-date i{margin-right:5px}
+.gl-clock-r{text-align:right;flex-shrink:0}
+.gl-clock-time{font-family:Bangers,Impact,sans-serif;font-size:2.35rem;line-height:1;letter-spacing:.06em;font-variant-numeric:tabular-nums;text-shadow:0 2px 0 rgba(255,255,255,.7)}
+.gl-clock-time .c{display:inline-block;animation:glBlink 1s steps(1,end) infinite}
+.gl-clock-tz{display:inline-block;margin-top:5px;padding:2px 10px 1px;border-radius:999px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);
+  font-size:11px;font-weight:800;letter-spacing:.08em}
+@keyframes glBlink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+@keyframes glFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2px) rotate(8deg)}}
+@media (max-width:380px){.gl-clock{padding:14px 14px 12px}.gl-clock-time{font-size:1.9rem}}
+
+/* ============================================================================
+ * WIDGET SPESIFIKASI VPS (Admin Dashboard)
+ * ========================================================================== */
+.gl-vps{
+  position:relative;margin:0 0 20px;padding:16px 16px 14px;border-radius:24px;overflow:hidden;
+  background:linear-gradient(160deg,rgba(255,255,255,.88),rgba(255,247,210,.72));
+  border:1.5px solid rgba(255,255,255,.9);
+  box-shadow:0 16px 36px -18px rgba(120,86,0,.55),inset 0 1px 0 rgba(255,255,255,.95);
+  --cm-fg:var(--gl-ink);--cm-edge:var(--gl-line);
+}
+.gl-vps-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.gl-vps-h h2{margin:0;display:flex;align-items:center;gap:8px;font-family:Bangers,Impact,sans-serif;font-size:1.45rem;letter-spacing:.06em;line-height:1}
+.gl-vps-h h2 i{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,var(--cm-yellow,#ffe27a),var(--cm-yellow,#edc531));border:1px solid rgba(255,255,255,.9);font-size:15px;box-shadow:0 6px 14px -6px rgba(150,100,0,.6)}
+.gl-live{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 3px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid rgba(160,120,0,.25);font-size:11px;font-weight:800}
+.gl-live em{font-style:normal}
+.gl-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:glPulse 1.8s infinite}
+.gl-live.off .gl-dot{background:#ef4444;animation:none}
+@keyframes glPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.gl-refresh{width:32px;height:32px;display:grid;place-items:center;border-radius:12px;cursor:pointer;background:rgba(255,255,255,.7);border:1px solid rgba(160,120,0,.3);font-size:13px;transition:transform .2s}
+.gl-refresh:active{transform:rotate(180deg) scale(.9)}
+.gl-meters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+@media (max-width:520px){.gl-meters{grid-template-columns:1fr}}
+.gl-meter{padding:11px 12px 10px;border-radius:16px;background:rgba(255,255,255,.66);border:1px solid rgba(160,120,0,.22)}
+.gl-meter-top{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:800}
+.gl-meter-top b{font-family:Bangers,Impact,sans-serif;font-size:1.3rem;letter-spacing:.04em;line-height:1}
+.gl-bar{height:9px;margin:8px 0 6px;border-radius:999px;background:rgba(160,120,0,.16);overflow:hidden}
+.gl-bar i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#4ade80,#22c55e);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.gl-bar i[data-lv="mid"]{background:linear-gradient(90deg,#fde047,#f59e0b)}
+.gl-bar i[data-lv="hi"]{background:linear-gradient(90deg,#fb923c,#ef4444)}
+.gl-meter small{display:block;font-size:11px;font-weight:700;opacity:.85;line-height:1.3}
+.gl-specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+@media (max-width:420px){.gl-specs{grid-template-columns:1fr}}
+.gl-specs>div{padding:8px 11px 7px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid rgba(160,120,0,.18);min-width:0}
+.gl-specs>div.wide{grid-column:1/-1}
+.gl-specs dt{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;opacity:.7;margin:0}
+.gl-specs dd{margin:2px 0 0;font-size:13px;font-weight:800;line-height:1.3;word-break:break-word}
+.gl-vps-err{display:none;margin-top:10px;padding:8px 12px;border-radius:12px;background:rgba(254,226,226,.85);border:1px solid rgba(239,68,68,.4);font-size:12px;font-weight:800}
+.gl-vps.err .gl-vps-err{display:block}
+
+@media (prefers-reduced-motion:reduce){
+  .gl-clock-hi i,.gl-clock-time .c,.gl-dot{animation:none}
+  .gl-bar i{transition:none}
+}
