@@ -1,0 +1,439 @@
+<%- include('partials/header', { title: 'Dashboard' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-2 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Dashboard</h1>
+    <span class="text-[13.5px] font-medium text-gray-800"><a href="/profile" class="inline-flex items-center text-[13.5px] font-bold text-blue-500 transition-colors">
+      <%= user.email.replace(/^(.{3})[^@]*(?=@)/, '$1****') %>
+    </a></span>
+  </div>
+
+  <!-- ===== JAM & TANGGAL ===== -->
+  <%- include('partials/clock_widget', { user: user }) %>
+
+  <!-- ===== SALDO AKTIF (besar) ===== -->
+  <div class="comic-balance-card comic-anim rounded-2xl mb-5 px-6 py-7 relative">
+    <div class="relative flex items-center justify-between">
+      <span class="text-[13px] font-bold uppercase tracking-wide text-white/90">
+        <%= user.role === 'merchant' ? 'Total Transaksi Bulan Ini' : 'Total Saldo Aktif' %>
+      </span>
+      <i class="fa-solid fa-wallet text-2xl text-white/80"></i>
+    </div>
+    <div class="relative flex items-center gap-3 mt-2">
+      <h2 id="balanceReal" class="font-comic text-4xl md:text-5xl text-white mb-0 leading-none" style="text-shadow:2px 2px 0 var(--comic-black);">
+        Rp <%= displayBalance.toLocaleString('id-ID') %>
+      </h2>
+      <h2 id="balanceHidden" class="font-comic text-4xl md:text-5xl text-white hidden mb-0 leading-none" style="text-shadow:2px 2px 0 var(--comic-black);">
+        Rp •••••••
+      </h2>
+      <button type="button" onclick="toggleBalance()" class="w-9 h-9 shrink-0 rounded-full border-2 border-black bg-white/90 text-gray-800 flex items-center justify-center">
+        <i id="balanceToggleIcon" class="far fa-eye text-[13.5px]"></i>
+      </button>
+    </div>
+    <% if (user.role === 'merchant') { %>
+      <p class="relative text-[11.5px] font-medium text-white/80 mt-2 mb-0">Dihitung dari transaksi QRIS pribadi bulan berjalan, reset tiap awal bulan.</p>
+    <% } %>
+    <div class="relative flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
+      <i class="fa-solid fa-lock text-white/70 text-[11px]"></i>
+      <p class="text-[11.5px] font-semibold text-white/90 mb-0">
+        Saldo Tertahan: Rp <%= (user.heldBalance || 0).toLocaleString('id-ID') %>
+      </p>
+    </div>
+    <p class="relative text-[10.5px] text-white/70 mt-1 mb-0">Saldo tertahan bisa dipakai beli semua layanan, tapi tidak bisa ditarik. Penarikan (instan &amp; manual) hanya dari saldo aktif.</p>
+  </div>
+
+  <%- include('partials/event_announcements') %>
+
+  <!-- ===== SALDO TERTAHAN (ShopeePay hold), cuma tampil kalau ada ===== -->
+  <% if (user.heldBalance > 0) { %>
+    <div class="comic-anim rounded-2xl mb-5 px-5 py-4 flex items-center gap-3 border-2 border-black bg-orange-50 shadow-[3px_3px_0_#14120f]">
+      <span class="w-10 h-10 shrink-0 rounded-full bg-orange-500 border-2 border-black flex items-center justify-center">
+        <i class="fa-solid fa-lock text-white text-[15px]"></i>
+      </span>
+      <div>
+        <p class="text-[11.5px] font-bold text-orange-700 uppercase tracking-wide mb-0.5">Saldo Tertahan</p>
+        <p class="font-comic text-lg text-gray-800 mb-0 leading-none">Rp <%= user.heldBalance.toLocaleString('id-ID') %></p>
+        <p class="text-[10.5px] text-gray-500 mt-1 mb-0">
+          Dari deposit ShopeePay, otomatis cair ke saldo aktif sesuai jadwal hold. Sebelum cair tetap bisa dipakai beli layanan.
+        </p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ===== SALDO TOP UP (khusus merchant, buat beli Nokos & Panel) ===== -->
+  <% if (user.role === 'merchant') { %>
+    <a href="/merchant/topup" class="comic-anim rounded-2xl mb-5 px-5 py-4 flex items-center justify-between border-2 border-black bg-white shadow-[3px_3px_0_#14120f]">
+      <span class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-plus text-white text-sm"></i>
+        </span>
+        <span>
+          <span class="block text-[11px] font-bold uppercase tracking-wide text-gray-500">Saldo Top Up (Beli Nokos & Panel)</span>
+          <span class="block text-lg font-comic text-gray-800 leading-none mt-0.5">Rp <%= (user.topupBalance || 0).toLocaleString('id-ID') %></span>
+        </span>
+      </span>
+      <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+    </a>
+  <% } %>
+
+  <% if (user.role !== 'merchant' && user.role !== 'admin' && typeof transferSettings !== 'undefined' && transferSettings.transferEnabled !== false) { %>
+  <style>
+    .tfd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .tfd-btn{display:flex;flex-direction:column;gap:6px;border:3px solid #111;border-radius:16px;padding:14px;box-shadow:4px 4px 0 #111;color:#111!important;text-decoration:none;transition:transform .12s,box-shadow .12s}
+    .tfd-btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #111}
+    .tfd-btn .ic{width:40px;height:40px;border:3px solid #111;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .tfd-btn b{font-family:'Bangers',cursive;font-size:21px;letter-spacing:.5px;line-height:1.05}
+    .tfd-btn small{font-size:10.5px;font-weight:800;opacity:.75;line-height:1.25}
+    .tfd-green{background:#22c55e}.tfd-yellow{background:#facc15}
+    .tfd-mine{display:flex;align-items:center;justify-content:space-between;gap:10px;border:3px solid #111;border-radius:16px;padding:12px 16px;margin-bottom:20px;background:#111;color:#facc15!important;box-shadow:4px 4px 0 #22c55e;text-decoration:none}
+    .tfd-mine b{font-family:'Bangers',cursive;font-size:19px;letter-spacing:.5px;color:#facc15}.tfd-mine small{display:block;font-size:10.5px;font-weight:700;color:#fff;opacity:.85}
+  </style>
+  <div class="tfd-grid">
+    <a href="/transfer?mode=qr" class="tfd-btn tfd-green"><span class="ic"><i class="fa-solid fa-qrcode"></i></span><b>TRANSFER QRIS</b><small>Upload foto QRIS penerima</small></a>
+    <a href="/transfer?mode=username" class="tfd-btn tfd-yellow"><span class="ic"><i class="fa-solid fa-user-check"></i></span><b>TRANSFER USERNAME</b><small>Cek profil lalu kirim saldo</small></a>
+  </div>
+  <a href="/transfer?mode=my" class="tfd-mine"><span><b>QRIS SAYA</b><small>Lihat &amp; download QRIS untuk terima transfer</small></span><i class="fa-solid fa-download"></i></a>
+  <% } %>
+
+  <!-- ===== BANNER / IKLAN (TV Komik, full-width, auto-slide) ===== -->
+  <% if (typeof banners !== 'undefined' && banners && banners.length > 0) { %>
+    <div class="comic-tv-banner mb-5">
+      <div class="comic-tv-frame">
+        <span class="comic-tv-antenna comic-tv-antenna-l"></span>
+        <span class="comic-tv-antenna comic-tv-antenna-r"></span>
+        <span class="comic-tv-knobs"><span></span><span></span></span>
+        <div class="comic-tv-screen">
+          <div class="comic-tv-track" id="bannerTrack">
+            <% banners.forEach(function(b) { %>
+              <div class="comic-tv-slide">
+                <% if (b.linkUrl) { %>
+                  <a href="<%= b.linkUrl %>" target="_blank" rel="noopener noreferrer">
+                    <img src="<%= b.imageUrl %>" alt="<%= b.title || 'Iklan' %>">
+                  </a>
+                <% } else { %>
+                  <img src="<%= b.imageUrl %>" alt="<%= b.title || 'Iklan' %>">
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+      <% if (banners.length > 1) { %>
+        <div class="comic-tv-dots" id="bannerDots">
+          <% banners.forEach(function(b, i) { %>
+            <span class="comic-tv-dot<%= i === 0 ? ' active' : '' %>"></span>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+    <script>
+      (function () {
+        const track = document.getElementById('bannerTrack');
+        if (!track) return;
+        const slides = track.children;
+        const total = slides.length;
+        const dotsWrap = document.getElementById('bannerDots');
+        const dots = dotsWrap ? dotsWrap.children : [];
+        let idx = 0, timer = null;
+
+        const screenBox = track.parentElement;
+        // Tinggi bingkai mengikuti rasio asli gambar slide aktif (tidak terpotong).
+        function fitHeight() {
+          const img = slides[idx] && slides[idx].querySelector('img');
+          if (img && img.clientHeight) screenBox.style.height = (img.clientHeight + 6) + 'px';
+        }
+        for (let k = 0; k < total; k++) {
+          const im = slides[k].querySelector('img');
+          if (im) im.addEventListener('load', fitHeight);
+        }
+        window.addEventListener('resize', fitHeight);
+
+        function goTo(i) {
+          idx = (i + total) % total;
+          track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+          fitHeight();
+          for (let d = 0; d < dots.length; d++) dots[d].classList.toggle('active', d === idx);
+        }
+        function next() { goTo(idx + 1); }
+        function startAuto() { stopAuto(); if (total > 1) timer = setInterval(next, 3500); }
+        function stopAuto() { if (timer) clearInterval(timer); }
+
+        // swipe manual
+        let startX = 0, deltaX = 0, dragging = false;
+        const screenEl = track.parentElement;
+        screenEl.addEventListener('touchstart', function (e) {
+          dragging = true; startX = e.touches[0].clientX; deltaX = 0; stopAuto();
+        }, { passive: true });
+        screenEl.addEventListener('touchmove', function (e) {
+          if (dragging) deltaX = e.touches[0].clientX - startX;
+        }, { passive: true });
+        screenEl.addEventListener('touchend', function () {
+          if (!dragging) return;
+          dragging = false;
+          if (deltaX > 40) goTo(idx - 1);
+          else if (deltaX < -40) goTo(idx + 1);
+          startAuto();
+        });
+
+        for (let d = 0; d < dots.length; d++) {
+          dots[d].addEventListener('click', function () { goTo(d); startAuto(); });
+        }
+
+        goTo(0);
+        startAuto();
+      })();
+    </script>
+  <% } %>
+
+  <!-- ===== STORY (ala IG, tampilan komik) ===== -->
+  <%- include('partials/social_card') %>
+  <%- include('partials/story_bar') %>
+
+  <!-- ===== 2 KOTAK BESAR: TOTAL MASUK & TOTAL KELUAR ===== -->
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="comic-flow-box comic-anim masuk rounded-2xl px-4 py-6 flex flex-col items-center text-center">
+      <i class="fa-solid fa-arrow-down text-2xl text-black mb-2"></i>
+      <p class="text-[12px] font-bold uppercase tracking-wide text-black/70 mb-1">Total Masuk</p>
+      <p class="font-comic text-2xl md:text-3xl text-black leading-none">Rp <%= totalDeposit.toLocaleString('id-ID') %></p>
+    </div>
+
+    <div class="comic-flow-box comic-anim keluar rounded-2xl px-4 py-6 flex flex-col items-center text-center">
+      <i class="fa-solid fa-arrow-up text-2xl text-black mb-2"></i>
+      <p class="text-[12px] font-bold uppercase tracking-wide text-black/70 mb-1">Total Keluar</p>
+      <p class="font-comic text-2xl md:text-3xl text-black leading-none">Rp <%= totalWithdraw.toLocaleString('id-ID') %></p>
+    </div>
+  </div>
+
+  <!-- ===== HUD STATUS (di bawah Total Masuk / Total Keluar) ===== -->
+  <div class="mb-6 hud-wide">
+    <%- include('partials/hud_status') %>
+  </div>
+
+  <!-- ===== GRAFIK TRANSAKSI ===== -->
+  <div class="bg-white comic-anim border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-4 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+      <h3 class="text-[15px] font-bold text-gray-800 mb-0">Grafik Transaksi</h3>
+      <div class="flex items-center gap-3 text-[11.5px] font-semibold">
+        <span class="flex items-center gap-1.5 text-gray-600"><span class="w-2.5 h-2.5 rounded-full" style="background:#22c55e"></span> Masuk</span>
+        <span class="flex items-center gap-1.5 text-gray-600"><span class="w-2.5 h-2.5 rounded-full" style="background:#ef4444"></span> Keluar</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mb-4">
+      <button type="button" class="dashChartTab px-3.5 py-1.5 rounded-full text-[12px] font-bold bg-blue-600 text-white" data-range="7">7 Hari</button>
+      <button type="button" class="dashChartTab px-3.5 py-1.5 rounded-full text-[12px] font-bold bg-gray-100 text-gray-600" data-range="30">30 Hari</button>
+      <button type="button" class="dashChartTab px-3.5 py-1.5 rounded-full text-[12px] font-bold bg-gray-100 text-gray-600" data-range="today">Hari Ini</button>
+    </div>
+    <div style="height:220px">
+      <canvas id="dashTrxChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ===== TRANSAKSI TERAKHIR (semua layanan) ===== -->
+  <div class="bg-white comic-anim border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 mb-6">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <h3 class="text-[14.5px] font-bold text-gray-800 mb-0">Transaksi Terakhir</h3>
+      <a href="/deposit" class="text-[12.5px] font-bold text-blue-500">Lihat Semua</a>
+    </div>
+    <% if (!activityFeed || !activityFeed.length) { %>
+      <p class="text-[12.5px] text-gray-400 text-center py-6 mb-0">Belum ada transaksi.</p>
+    <% } else { %>
+      <div class="divide-y divide-gray-100">
+        <% activityFeed.forEach(function (item) { %>
+          <div class="flex items-center justify-between px-4 py-3">
+            <div class="min-w-0 pr-3">
+              <p class="text-[13px] font-semibold text-gray-800 mb-0.5 truncate"><%= item.label %></p>
+              <p class="text-[11px] text-gray-400 mb-0"><%= new Date(item.date).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') %></p>
+            </div>
+            <p class="text-[13.5px] font-bold mb-0 whitespace-nowrap" style="color:<%= item.direction === 'masuk' ? '#16a34a' : '#dc2626' %>">
+              <%= item.direction === 'masuk' ? '+' : '-' %>Rp <%= item.amount.toLocaleString('id-ID') %>
+            </p>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ===== TOTAL TRANSAKSI ===== -->
+  <div class="bg-white comic-anim border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300">
+    <div class="bg-gray-50 border-b border-gray-200 px-4 py-2">
+      <p class="text-sm font-medium text-gray-800 mb-0">Total Transaksi</p>
+    </div>
+    <div class="px-4 py-5">
+      <p class="text-base font-medium text-gray-800"><%= recentTrx.length %> Transaksi</p>
+      <a href="/deposit" class="inline-flex items-center gap-1 text-[13.5px] font-bold text-blue-500 transition-colors">
+        Lihat Semua Transaksi <i class="fas fa-arrow-right text-[9.5px]"></i>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<% if (typeof promoPopups !== 'undefined' && promoPopups && promoPopups.length) { %>
+<!-- ===== POP UP PROMOSI (dikelola admin, punya masa expired) ===== -->
+<style>
+  /* Popup promo memakai ComicPopup (overlay .cp-overlay + kartu .cp-card): selalu di depan layar. */
+  #promoPopup .cp-card { max-width: 360px; }
+  #promoPopup .pp-close { position: absolute; top: 10px; right: 10px; z-index: 2; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; background: var(--cm-white) !important; border-radius: 7px !important; }
+  #promoPopup .pp-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+  #promoPopup .pp-img { display: block; width: 100%; max-height: 50vh; max-height: 50dvh; object-fit: contain; background: #f3f4f6; }
+  #promoPopup .pp-body { padding: 14px 16px 16px; }
+  #promoPopup .pp-title { font-size: 18px; line-height: 1.25; margin: 0 0 4px; word-break: break-word; }
+  #promoPopup .pp-exp { font-size: 12px; font-weight: 700; margin: 0 0 10px; }
+  #promoPopup .pp-btn { display: block; width: 100%; text-align: center; padding: 11px 14px; font-family: Bangers, Impact, sans-serif; font-size: 1.25rem; letter-spacing: .06em; border-radius: 8px; text-decoration: none; background: var(--cm-yellow) !important; border: 3px solid var(--cm-ink); box-shadow: 3px 3px 0 var(--cm-ink); }
+  #promoPopup .pp-hide { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+</style>
+<div id="promoPopup" class="cp-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="cp-card">
+    <button type="button" class="pp-close comic-btn-secondary" id="ppClose" data-cp-close aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    <div class="pp-scroll">
+      <a id="ppImgLink" target="_blank" rel="noopener noreferrer" style="display:block"><img id="ppImg" class="pp-img" alt=""></a>
+      <div class="pp-body">
+        <p class="pp-title font-comic" id="ppTitle"></p>
+        <p class="pp-exp" id="ppExp"></p>
+        <a id="ppGo" class="pp-btn" target="_blank" rel="noopener noreferrer" style="display:none">Lihat Promo <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:4px"></i></a>
+        <label class="pp-hide"><input type="checkbox" id="ppNever"> Jangan tampilkan lagi</label>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="promoData"><%- JSON.stringify(promoPopups.map(function(p) { return { id: String(p._id), v: new Date(p.updatedAt || p.createdAt).getTime(), title: p.title || '', imageUrl: p.imageUrl, linkUrl: p.linkUrl || '', expiresAt: p.expiresAt ? new Date(p.expiresAt).toISOString() : null }; })).replace(/</g, '\\u003c') %></script>
+<script>
+  (function () {
+    var dataEl = document.getElementById('promoData');
+    if (!dataEl) return;
+    var items = [];
+    try { items = JSON.parse(dataEl.textContent) || []; } catch (e) { return; }
+    function keyOf(p) { return 'promo:' + p.id + ':' + p.v; }
+    var queue = items.filter(function (p) {
+      if (p.expiresAt && Date.now() >= new Date(p.expiresAt).getTime()) return false;   // sudah expired
+      try {
+        if (localStorage.getItem(keyOf(p) + ':hide') === '1') return false;             // "jangan tampilkan lagi"
+        if (sessionStorage.getItem(keyOf(p) + ':seen') === '1') return false;           // sudah ditutup di sesi ini
+      } catch (e) {}
+      return true;
+    });
+    if (!queue.length) return;
+
+    var root = document.getElementById('promoPopup');
+    var img = document.getElementById('ppImg'), imgLink = document.getElementById('ppImgLink');
+    var titleEl = document.getElementById('ppTitle'), expEl = document.getElementById('ppExp');
+    var go = document.getElementById('ppGo'), never = document.getElementById('ppNever');
+    var current = null;
+
+    function fmtExp(iso) {
+      try {
+        return new Date(iso).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') + ' WIB';
+      } catch (e) { return ''; }
+    }
+    function show() {
+      current = queue.shift();
+      if (!current) return;
+      if (current.expiresAt && Date.now() >= new Date(current.expiresAt).getTime()) { current = null; return show(); }
+      img.src = current.imageUrl;
+      img.alt = current.title || 'Promo';
+      img.style.display = '';
+      img.onerror = function () { img.style.display = 'none'; };
+      titleEl.textContent = current.title;
+      titleEl.style.display = current.title ? '' : 'none';
+      expEl.textContent = current.expiresAt ? 'Berlaku sampai ' + fmtExp(current.expiresAt) : '';
+      expEl.style.display = current.expiresAt ? '' : 'none';
+      if (current.linkUrl) { go.href = current.linkUrl; go.style.display = 'block'; imgLink.href = current.linkUrl; imgLink.style.pointerEvents = ''; }
+      else { go.style.display = 'none'; imgLink.removeAttribute('href'); imgLink.style.pointerEvents = 'none'; }
+      never.checked = false;
+      ComicPopup.open(root);
+    }
+    // Tombol X / klik latar / Esc ditangani ComicPopup; di sini hanya mencatat "sudah dilihat" saat popup tertutup.
+    root.addEventListener('comicpopup:close', function () {
+      if (!current) return;
+      try {
+        sessionStorage.setItem(keyOf(current) + ':seen', '1');
+        if (never.checked) localStorage.setItem(keyOf(current) + ':hide', '1');
+      } catch (e) {}
+      current = null;
+      setTimeout(show, 250);
+    });
+    // Tunggu loading intro (komik) selesai & dashboard tampil dulu, baru popup muncul.
+    function startWhenReady() {
+      var loaderEl = document.getElementById('cmLoader');
+      if (loaderEl && window.__cmLoaderDone !== true) {
+        document.addEventListener('cmloader:done', function () { setTimeout(show, 500); }, { once: true });
+      } else {
+        setTimeout(show, 600);
+      }
+    }
+    if (document.readyState === 'complete') startWhenReady();
+    else window.addEventListener('load', startWhenReady);
+  })();
+</script>
+<% } %>
+
+<script>
+  function toggleBalance() {
+    const real = document.getElementById('balanceReal');
+    const hidden = document.getElementById('balanceHidden');
+    const icon = document.getElementById('balanceToggleIcon');
+    const isHidden = real.classList.contains('hidden');
+    real.classList.toggle('hidden', !isHidden);
+    hidden.classList.toggle('hidden', isHidden);
+    icon.classList.toggle('fa-eye', !isHidden);
+    icon.classList.toggle('fa-eye-slash', isHidden);
+  }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script type="application/json" id="dashChartData"><%- JSON.stringify(chartSeries) %></script>
+<script>
+  (function () {
+    const canvas = document.getElementById('dashTrxChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    let series = { daily: [], hourly: [] };
+    try { series = JSON.parse(document.getElementById('dashChartData').textContent) || series; } catch (e) {}
+
+    function slice(range) {
+      if (range === 'today') return series.hourly || [];
+      if (range === '30') return series.daily || [];
+      return (series.daily || []).slice(-7); // 7 Hari
+    }
+
+    const ctx = canvas.getContext('2d');
+    let chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Masuk', data: [], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.12)', tension: 0.35, fill: true, pointRadius: 3 },
+          { label: 'Keluar', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.10)', tension: 0.35, fill: true, pointRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label + ': Rp ' + c.parsed.y.toLocaleString('id-ID') } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + Number(v).toLocaleString('id-ID') } },
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } }
+        }
+      }
+    });
+
+    function render(range) {
+      const rows = slice(range);
+      chart.data.labels = rows.map(r => r.label);
+      chart.data.datasets[0].data = rows.map(r => r.masuk);
+      chart.data.datasets[1].data = rows.map(r => r.keluar);
+      chart.update();
+    }
+
+    document.querySelectorAll('.dashChartTab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.dashChartTab').forEach(b => { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('bg-gray-100', 'text-gray-600'); });
+        btn.classList.remove('bg-gray-100', 'text-gray-600'); btn.classList.add('bg-blue-600', 'text-white');
+        render(btn.dataset.range);
+      });
+    });
+
+    render('7');
+  })();
+</script>
+
+<%- include('partials/footer') %>
