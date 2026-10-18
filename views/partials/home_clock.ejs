@@ -1,0 +1,42 @@
+<%# Jam & tanggal live untuk halaman awal (mengikuti zona waktu perangkat: WIB/WITA/WIT). Gaya: public/home-ui.css (.hm-clock) %>
+<div class="hm-clock" id="hmClock" aria-label="Jam dan tanggal">
+  <span class="hm-clock-burst" aria-hidden="true">TIK TOK!</span>
+  <div class="hm-clock-l">
+    <span class="hm-clock-day"><i class="fa-regular fa-calendar"></i> <span id="hmClockDay">—</span></span>
+    <span class="hm-clock-date" id="hmClockDate">—</span>
+  </div>
+  <div class="hm-clock-r">
+    <div class="hm-clock-time" id="hmClockTime" aria-live="off">--<span class="c">:</span>--<span class="c">:</span>--</div>
+    <span class="hm-clock-tz" id="hmClockTz">WIB</span>
+  </div>
+</div>
+<script>
+(function () {
+  var elT = document.getElementById('hmClockTime');
+  if (!elT) return;
+  var elDay = document.getElementById('hmClockDay'), elDate = document.getElementById('hmClockDate'), elZ = document.getElementById('hmClockTz');
+  var HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+      BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  function p2(n) { return n < 10 ? '0' + n : '' + n; }
+  function tzLabel(d) {
+    var off = -d.getTimezoneOffset() / 60;
+    if (off === 7) return 'WIB';
+    if (off === 8) return 'WITA';
+    if (off === 9) return 'WIT';
+    return 'GMT' + (off >= 0 ? '+' : '') + off;
+  }
+  var lastDay = -1;
+  function tick() {
+    var d = new Date();
+    elT.innerHTML = p2(d.getHours()) + '<span class="c">:</span>' + p2(d.getMinutes()) + '<span class="c">:</span>' + p2(d.getSeconds());
+    if (d.getDate() !== lastDay) {
+      lastDay = d.getDate();
+      elDay.textContent = HARI[d.getDay()];
+      elDate.textContent = d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear();
+      elZ.textContent = tzLabel(d);
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
