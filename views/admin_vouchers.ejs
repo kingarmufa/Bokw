@@ -1,0 +1,16 @@
+<%- include('partials/header', { title: 'Setting Kode Voucher' }) %>
+<main class="vc-page" data-comic-owned>
+  <div class="vc-heading vc-hero"><div><p class="vc-eyebrow"><i class="fa-solid fa-bolt"></i> PROMO CONTROL ROOM</p><h1>Setting Kode Voucher</h1><p>Atur diskon, masa berlaku, dan layanan pilihan.</p></div><span class="vc-stamp" aria-hidden="true"><i class="fa-solid fa-ticket"></i><b>DEAL!</b></span></div>
+  <% if (typeof success !== 'undefined' && success) { %><p class="vc-alert" role="status"><%= success %></p><% } %>
+  <% if (typeof error !== 'undefined' && error) { %><p class="vc-alert vc-error" role="alert"><%= error %></p><% } %>
+  <section class="vc-card vc-create-card"><div class="vc-editor-header"><span class="vc-badge">VOUCHER BUILDER</span><h2>Buat voucher baru</h2><p>Diskonnya kamu yang tentukan!</p></div><form method="POST" action="/admin/vouchers" id="newVoucherForm">
+    <%- include('partials/voucher_fields', { v: { services: services.map(s => s.id) } }) %>
+  </form></section>
+  <div class="vc-heading"><h2>Voucher tersimpan</h2><a href="/voucher">Lihat menu publik →</a></div>
+  <% if (!vouchers.length) { %><div class="vc-card">Belum ada voucher. Buat kode pertama di atas.</div><% } %>
+  <div class="vc-admin-list"><% vouchers.forEach(function(v) { %>
+    <%- include('partials/voucher_card', { v, mode: 'admin' }) %>
+  <% }); %></div>
+  <nav class="vc-heading" aria-label="Halaman voucher"><% if (page > 1) { %><a href="?page=<%= page - 1 %>">← Sebelumnya</a><% } %><span>Halaman <%= page %></span><% if (hasNext) { %><a href="?page=<%= page + 1 %>">Berikutnya →</a><% } %></nav>
+</main>
+<%- include('partials/footer') %>
