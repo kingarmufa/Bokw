@@ -1,0 +1,155 @@
+<%- include('partials/header', { title: 'AI Assistant' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-3">
+    <a href="/dashboard" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold flex-1">AI Assistant</h1>
+    <button id="aiClear" type="button" class="text-[11px] font-bold px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2px_2px_0_#14120f]"><i class="fa-solid fa-rotate-right mr-1"></i>Baru</button>
+  </div>
+
+  <% if (!configured) { %>
+    <div class="rounded-2xl border-2 border-black bg-red-50 px-4 py-3 mb-3 text-[12px] font-bold text-red-700">AI belum dikonfigurasi admin (API Key kosong).</div>
+  <% } %>
+
+  <div class="rounded-2xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] px-3 py-2.5 mb-3 flex items-center gap-2">
+    <i class="fa-solid fa-microchip text-gray-600 text-sm"></i>
+    <label for="aiModel" class="text-[11px] font-bold text-gray-600 shrink-0">Model</label>
+    <select id="aiModel" class="flex-1 min-w-0 bg-transparent text-[12.5px] font-bold outline-none">
+      <% models.forEach(function(m) { %><option value="<%= m %>" <%= m === defaultModel ? 'selected' : '' %>><%= m %></option><% }) %>
+    </select>
+  </div>
+
+  <div id="aiSuggest" class="mb-3 hidden">
+    <p class="text-[11px] font-bold text-gray-500 mb-1.5"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Saran untuk kamu (tap = langsung kirim)</p>
+    <div id="aiSuggestList" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <div id="aiMsgs" class="flex flex-col gap-2.5 mb-3 min-h-[120px]">
+    <div class="text-[12px] text-gray-500 font-medium text-center py-6" id="aiEmpty">Tanya apa saja. Kamu juga bisa upload <b>ZIP dokumentasi</b> atau <b>gambar</b> lewat tombol di bawah.</div>
+  </div>
+
+  <div id="aiAttach" class="flex flex-wrap gap-2 mb-2"></div>
+
+  <div class="sticky bottom-20 rounded-2xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] p-2">
+    <textarea id="aiInput" rows="2" maxlength="4000" placeholder="Tulis pesan..." class="w-full resize-none bg-transparent text-[13px] font-medium outline-none px-2 py-1"></textarea>
+    <div class="flex items-center gap-2 mt-1">
+      <label class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center cursor-pointer" title="Upload ZIP dokumentasi">
+        <i class="fa-solid fa-file-zipper text-sm"></i>
+        <input id="aiZip" type="file" accept=".zip,application/zip" class="hidden">
+      </label>
+      <label class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center cursor-pointer" title="Upload gambar">
+        <i class="fa-solid fa-image text-sm"></i>
+        <input id="aiImg" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden">
+      </label>
+      <span class="flex-1 text-[10px] text-gray-400 font-medium">ZIP maks 8 MB • gambar maks 4 MB (4 gambar)</span>
+      <button id="aiSend" type="button" class="px-4 h-9 rounded-xl border-2 border-black bg-blue-600 text-white text-[12.5px] font-extrabold flex items-center gap-2"><i class="fa-solid fa-paper-plane text-xs"></i>Kirim</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var msgs = $('aiMsgs'), input = $('aiInput'), sendBtn = $('aiSend'), modelSel = $('aiModel');
+  var history = [], zipFile = null, zipId = '', zipName = '', images = [], busy = false;
+
+  try { var saved = localStorage.getItem('aiModel'); if (saved) for (var i = 0; i < modelSel.options.length; i++) if (modelSel.options[i].value === saved) modelSel.value = saved; } catch (e) {}
+  modelSel.addEventListener('change', function () { try { localStorage.setItem('aiModel', modelSel.value); } catch (e) {} });
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // Render markdown ringan yang aman: blok kode, kode inline, tebal, baris baru (semua di-escape dulu).
+  function render(t) {
+    var parts = String(t).split('```');
+    return parts.map(function (p, i) {
+      if (i % 2 === 1) { var nl = p.indexOf('\n'); var code = nl >= 0 ? p.slice(nl + 1) : p; return '<pre class="bg-gray-900 text-gray-100 rounded-xl p-2.5 my-1.5 text-[11.5px] overflow-x-auto"><code>' + esc(code.replace(/\n$/, '')) + '</code></pre>'; }
+      return esc(p).replace(/`([^`\n]+)`/g, '<code class="bg-gray-100 rounded px-1">$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+    }).join('');
+  }
+  function addMsg(role, html, raw) {
+    var e = $('aiEmpty'); if (e) e.remove();
+    var d = document.createElement('div');
+    d.className = role === 'user' ? 'self-end max-w-[88%] rounded-2xl border-2 border-black bg-blue-600 text-white px-3 py-2 text-[13px] font-medium'
+                                  : 'self-start max-w-[94%] rounded-2xl border-2 border-black bg-white px-3 py-2 text-[13px] font-medium shadow-[2px_2px_0_#14120f]';
+    d.innerHTML = html; msgs.appendChild(d); d.scrollIntoView({ block: 'end', behavior: 'smooth' }); return d;
+  }
+  function chips() {
+    var box = $('aiAttach'); box.innerHTML = '';
+    function chip(icon, label, onRemove) {
+      var c = document.createElement('span');
+      c.className = 'inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full border-2 border-black bg-amber-50 px-2.5 py-1';
+      c.innerHTML = '<i class="fa-solid ' + icon + '"></i>' + esc(label) + ' <button type="button" class="ml-1" aria-label="hapus">&times;</button>';
+      c.querySelector('button').onclick = onRemove; box.appendChild(c);
+    }
+    if (zipFile) chip('fa-file-zipper', zipFile.name, function () { zipFile = null; chips(); });
+    else if (zipId) chip('fa-file-zipper', zipName + ' (tersimpan)', function () { zipId = ''; zipName = ''; chips(); });
+    images.forEach(function (f, i) { chip('fa-image', f.name, function () { images.splice(i, 1); chips(); }); });
+  }
+  $('aiZip').addEventListener('change', function () {
+    var f = this.files[0]; this.value = '';
+    if (!f) return;
+    if (!/\.zip$/i.test(f.name)) return alert('File harus .zip');
+    if (f.size > 8 * 1024 * 1024) return alert('ZIP maksimal 8 MB.');
+    zipFile = f; zipId = ''; chips();
+  });
+  $('aiImg').addEventListener('change', function () {
+    Array.prototype.forEach.call(this.files, function (f) {
+      if (images.length >= 4) return;
+      if (f.size > 4 * 1024 * 1024) return alert(f.name + ' lebih dari 4 MB.');
+      images.push(f);
+    });
+    this.value = ''; chips();
+  });
+
+  async function send(text) {
+    text = (text || '').trim();
+    if (busy || (!text && !zipFile && !images.length)) return;
+    busy = true; sendBtn.disabled = true;
+    var shown = esc(text).replace(/\n/g, '<br>');
+    if (zipFile) shown += '<div class="text-[11px] opacity-80 mt-1"><i class="fa-solid fa-file-zipper"></i> ' + esc(zipFile.name) + '</div>';
+    if (images.length) shown += '<div class="text-[11px] opacity-80 mt-1"><i class="fa-solid fa-image"></i> ' + images.length + ' gambar</div>';
+    addMsg('user', shown || '(lampiran)');
+    var wait = addMsg('ai', '<span class="text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> AI sedang mengetik...</span>');
+    var fd = new FormData();
+    fd.append('message', text); fd.append('model', modelSel.value);
+    fd.append('history', JSON.stringify(history.slice(-12)));
+    if (zipFile) fd.append('zip', zipFile); else if (zipId) fd.append('zipId', zipId);
+    images.forEach(function (f) { fd.append('images', f); });
+    input.value = ''; $('aiSuggest').classList.add('hidden');
+    var sentImgs = images.length; images = []; var hadZip = !!zipFile; zipFile = null; chips();
+    try {
+      var r = await fetch('/api/ai/chat', { method: 'POST', body: fd });
+      var d = await r.json();
+      if (d.success) {
+        wait.innerHTML = render(d.reply);
+        history.push({ role: 'user', content: text || '(lampiran)' }, { role: 'assistant', content: d.reply });
+        if (d.zip) { zipId = d.zip.zipId; zipName = d.zip.name; chips();
+          if (hadZip && d.zip.read != null) { var n = document.createElement('div'); n.className = 'text-[10.5px] text-gray-400 mt-1.5'; n.textContent = 'ZIP dibaca: ' + d.zip.read + ' file' + (d.zip.skipped ? ', ' + d.zip.skipped + ' dilewati' : '') + (d.zip.truncated ? ' (terpotong)' : ''); wait.appendChild(n); } }
+      } else { wait.innerHTML = '<span class="text-red-600 font-bold">' + esc(d.message || 'Gagal.') + '</span>'; }
+    } catch (e) { wait.innerHTML = '<span class="text-red-600 font-bold">Gagal menghubungi server.</span>'; }
+    busy = false; sendBtn.disabled = false; wait.scrollIntoView({ block: 'end', behavior: 'smooth' });
+  }
+  sendBtn.addEventListener('click', function () { send(input.value); });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); } });
+  $('aiClear').addEventListener('click', function () { history = []; zipId = ''; zipName = ''; zipFile = null; images = []; chips(); msgs.innerHTML = '<div class="text-[12px] text-gray-500 font-medium text-center py-6" id="aiEmpty">Percakapan baru dimulai.</div>'; loadSuggest(); });
+
+  function loadSuggest() {
+    fetch('/api/ai/suggestions').then(function (r) { return r.json(); }).then(function (d) {
+      var list = $('aiSuggestList'); list.innerHTML = '';
+      (d.suggestions || []).forEach(function (s) {
+        var b = document.createElement('button'); b.type = 'button';
+        b.className = 'text-left text-[12px] font-bold rounded-full border-2 border-black px-3 py-1.5 ' + (s.hot ? 'bg-red-50 text-red-700' : 'bg-white');
+        b.innerHTML = (s.hot ? '<i class="fa-solid fa-bolt mr-1"></i>' : '') + esc(s.text);
+        b.onclick = function () { send(s.text); };   // auto chat: langsung terkirim
+        list.appendChild(b);
+      });
+      $('aiSuggest').classList.toggle('hidden', !(d.suggestions || []).length);
+    }).catch(function () {});
+  }
+  loadSuggest();
+})();
+</script>
+
+<%- include('partials/footer') %>
