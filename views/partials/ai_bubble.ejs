@@ -1,0 +1,469 @@
+<%
+  // Partial ini di-include secara global (lihat footer.ejs & footer2.ejs), sudah dibungkus
+  // pengecekan settings.aiBubbleEnabled di tempat include-nya.
+  const aibName = (settings.aiBubbleName || 'AI Assistant');
+  const aibGreeting = (settings.aiBubbleGreeting || 'Halo! Ada yang bisa saya bantu?');
+  const aibAnim = settings.aiBubbleAnimationUrl || '';
+  const aibPos = settings.aiBubblePosition === 'left' ? 'left' : 'right';
+  const aibFrame = settings.aiBubbleFrameStyle === 'comic' ? 'comic' : 'animation';
+  const aibShowVideo = aibFrame === 'animation' && !!aibAnim;
+  const aibSizeNum = (typeof settings.aiBubbleSize === 'number' && settings.aiBubbleSize >= 40 && settings.aiBubbleSize <= 110) ? settings.aiBubbleSize : 60;
+  const aibPopupSize = ['compact', 'large'].includes(settings.aiBubblePopupSize) ? settings.aiBubblePopupSize : 'normal';
+%>
+<div id="aibRoot" class="aib-root aib-pos-<%= aibPos %> aib-frame-<%= aibFrame %>" style="--aib-size:<%= aibSizeNum %>px"
+     data-anim="<%= aibAnim %>" data-frame="<%= aibFrame %>"
+     data-greeting="<%= aibGreeting.replace(/"/g, '&quot;') %>" data-name="<%= aibName.replace(/"/g, '&quot;') %>">
+
+  <!-- Bola AI melayang, bisa digeser -->
+  <button type="button" id="aibBall" class="aib-ball aib-frame-<%= aibFrame %>" aria-label="Buka chat AI">
+    <% if (aibShowVideo) { %>
+      <video class="aib-ball-video" src="<%= aibAnim %>" autoplay loop muted playsinline></video>
+    <% } else if (aibFrame === 'comic') { %>
+      <span class="aib-ball-comic-dots" aria-hidden="true"></span>
+      <span class="aib-ball-fallback"><i class="fa-solid fa-comment-dots"></i></span>
+    <% } else { %>
+      <span class="aib-ball-fallback"><i class="fa-solid fa-robot"></i></span>
+    <% } %>
+    <span id="aibBallDot" class="aib-ball-dot hidden"></span>
+  </button>
+
+  <!-- Popup chat, juga bisa digeser -->
+  <div id="aibPopup" class="aib-popup aib-frame-<%= aibFrame %> aib-size-<%= aibPopupSize %> hidden">
+    <div id="aibPopupHeader" class="aib-popup-header aib-frame-<%= aibFrame %>">
+      <div class="aib-popup-head-left">
+        <span class="aib-popup-avatar aib-frame-<%= aibFrame %>">
+          <% if (aibShowVideo) { %><video src="<%= aibAnim %>" autoplay loop muted playsinline></video>
+          <% } else if (aibFrame === 'comic') { %><i class="fa-solid fa-comment-dots"></i>
+          <% } else { %><i class="fa-solid fa-robot"></i><% } %>
+        </span>
+        <div class="aib-popup-title">
+          <span class="aib-popup-name"><%= aibName %></span>
+          <span class="aib-popup-status">Online</span>
+        </div>
+      </div>
+      <button type="button" id="aibCloseBtn" class="aib-close-btn aib-frame-<%= aibFrame %>" aria-label="Tutup, kembali ke bola">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div id="aibMessages" class="aib-messages"></div>
+
+    <div class="aib-composer aib-frame-<%= aibFrame %>">
+      <textarea id="aibInput" class="aib-input aib-frame-<%= aibFrame %>" rows="1" placeholder="Tulis pesan..." maxlength="2000"></textarea>
+      <button type="button" id="aibSendBtn" class="aib-send-btn aib-frame-<%= aibFrame %>" aria-label="Kirim">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .aib-root { position: fixed; bottom: 0; right: 0; z-index: 2147483000; }
+  .aib-root * { box-sizing: border-box; }
+
+  /* ===== Bola (default / template "Animasi") ===== */
+  .aib-ball {
+    position: fixed;
+    bottom: 22px; right: 20px;
+    width: var(--aib-size, 60px); height: var(--aib-size, 60px);
+    border-radius: 50%;
+    border: none; padding: 0; cursor: grab;
+    background: linear-gradient(135deg, var(--comic-red, #ef2b2d), var(--comic-red-dark, #b91c1c));
+    box-shadow: 0 6px 20px rgba(0,0,0,.25), 0 0 0 3px rgba(255,255,255,.6);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; touch-action: none; z-index: 2147483000;
+    animation: aib-pulse 2.4s ease-in-out infinite;
+  }
+  .aib-root.aib-pos-left .aib-ball { right: auto; left: 20px; }
+  .aib-ball:active { cursor: grabbing; }
+  .aib-ball.aib-dragging { animation: none; transition: none; }
+  .aib-ball-video { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; pointer-events: none; }
+  .aib-ball-fallback { color: #fff; font-size: calc(var(--aib-size, 60px) * 0.4); pointer-events: none; position: relative; z-index: 1; }
+  .aib-ball-dot { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; z-index: 2; }
+  .aib-ball-dot.hidden { display: none; }
+
+  @keyframes aib-pulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(0,0,0,.25), 0 0 0 3px rgba(255,255,255,.6); }
+    50% { box-shadow: 0 6px 24px rgba(0,0,0,.3), 0 0 0 8px rgba(255,255,255,.25); }
+  }
+
+  /* ===== Bola — template "Komik" ===== */
+  .aib-ball.aib-frame-comic {
+    background: var(--comic-yellow, #ffd400);
+    border: 3px solid var(--comic-black, #14120f);
+    box-shadow: 4px 4px 0 var(--comic-black, #14120f);
+    animation: aib-pulse-comic 2.6s ease-in-out infinite;
+  }
+  .aib-ball.aib-frame-comic .aib-ball-fallback { color: var(--comic-black, #14120f); }
+  .aib-ball-comic-dots {
+    position: absolute; inset: 0; border-radius: 50%;
+    background-image: radial-gradient(rgba(20,18,15,.16) 1.2px, transparent 1.2px);
+    background-size: 7px 7px;
+    opacity: .55; pointer-events: none;
+  }
+  @keyframes aib-pulse-comic {
+    0%, 100% { box-shadow: 4px 4px 0 var(--comic-black, #14120f); transform: rotate(0deg); }
+    50% { box-shadow: 5px 5px 0 var(--comic-black, #14120f); transform: rotate(-2deg); }
+  }
+  .aib-ball.aib-frame-comic.aib-dragging { animation: none; transform: none; }
+
+  .aib-popup {
+    position: fixed;
+    bottom: calc(var(--aib-size, 60px) + 58px); right: 20px;
+    width: min(360px, calc(100vw - 24px));
+    height: min(520px, calc(100vh - 140px));
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.22);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    z-index: 2147483001;
+    border: 1px solid rgba(0,0,0,.06);
+  }
+  .aib-root.aib-pos-left .aib-popup { right: auto; left: 20px; }
+  .aib-popup.hidden { display: none; }
+
+  /* Preset ukuran popup */
+  .aib-popup.aib-size-compact { width: min(300px, calc(100vw - 24px)); height: min(420px, calc(100vh - 160px)); }
+  .aib-popup.aib-size-normal { width: min(360px, calc(100vw - 24px)); height: min(520px, calc(100vh - 140px)); }
+  .aib-popup.aib-size-large { width: min(440px, calc(100vw - 24px)); height: min(620px, calc(100vh - 110px)); }
+
+  /* Template "Komik" untuk popup */
+  .aib-popup.aib-frame-comic {
+    border: 3px solid var(--comic-black, #14120f);
+    border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--comic-black, #14120f);
+  }
+
+  .aib-popup-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, var(--comic-red, #ef2b2d), var(--comic-red-dark, #b91c1c));
+    color: #fff; cursor: grab; touch-action: none; flex-shrink: 0;
+  }
+  .aib-popup-header.aib-dragging { cursor: grabbing; }
+  .aib-popup-header.aib-frame-comic {
+    background: var(--comic-yellow, #ffd400);
+    color: var(--comic-black, #14120f);
+    border-bottom: 3px solid var(--comic-black, #14120f);
+  }
+  .aib-popup-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .aib-popup-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .aib-popup-avatar.aib-frame-comic { background: #fffdf7; border: 2px solid var(--comic-black, #14120f); color: var(--comic-black, #14120f); }
+  .aib-popup-avatar video { width: 100%; height: 100%; object-fit: cover; }
+  .aib-popup-title { display: flex; flex-direction: column; min-width: 0; }
+  .aib-popup-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .aib-popup-header.aib-frame-comic .aib-popup-name { font-family: 'Bangers', 'Baloo 2', sans-serif; font-size: 16px; letter-spacing: .5px; }
+  .aib-popup-status { font-size: 10.5px; opacity: .85; }
+  .aib-close-btn {
+    width: 30px; height: 30px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.18); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background .15s;
+  }
+  .aib-close-btn:hover { background: rgba(255,255,255,.32); }
+  .aib-close-btn.aib-frame-comic {
+    background: #fffdf7; color: var(--comic-black, #14120f);
+    border: 2px solid var(--comic-black, #14120f);
+  }
+  .aib-close-btn.aib-frame-comic:hover { background: #fff2c9; }
+
+  .aib-messages {
+    flex: 1; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: #f8f9fb;
+  }
+  .aib-msg { max-width: 82%; font-size: 12.5px; line-height: 1.45; padding: 9px 12px; border-radius: 14px; white-space: pre-wrap; word-break: break-word; }
+  .aib-msg.ai { align-self: flex-start; background: #fff; color: #1f2937; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .aib-msg.me { align-self: flex-end; background: var(--comic-red, #ef2b2d); color: #fff; border-bottom-right-radius: 4px; }
+  .aib-msg.err { align-self: center; background: #fee2e2; color: #b91c1c; font-size: 11px; }
+  .aib-msg.typing { align-self: flex-start; background: #fff; padding: 11px 14px; }
+  .aib-frame-comic .aib-msg.ai { border: 1.5px solid var(--comic-black, #14120f); box-shadow: 2px 2px 0 var(--comic-black, #14120f); border-radius: 12px; }
+  .aib-frame-comic .aib-msg.me { background: var(--comic-yellow, #ffd400); color: var(--comic-black, #14120f); border: 1.5px solid var(--comic-black, #14120f); box-shadow: 2px 2px 0 var(--comic-black, #14120f); border-radius: 12px; }
+  .aib-typing-dots { display: inline-flex; gap: 3px; }
+  .aib-typing-dots span { width: 5px; height: 5px; border-radius: 50%; background: #9ca3af; animation: aib-blink 1.2s infinite; }
+  .aib-typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .aib-typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes aib-blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+
+  /* Kontras pesan: bubble AI putih solid + garis tebal di atas latar krem, supaya tidak menyatu dengan latar/teks.
+     Selector sengaja spesifik untuk mengalahkan override tema glass/comic. */
+  html body .aib-root .aib-popup .aib-messages { background: #efe8d3 !important; }
+  html body .aib-root .aib-popup .aib-msg.ai,
+  html body .aib-root .aib-popup .aib-msg.typing {
+    background: #ffffff !important; color: #14120f !important;
+    border: 2px solid #14120f !important; box-shadow: 2px 2px 0 #14120f !important; border-radius: 14px !important;
+  }
+  html body .aib-root .aib-popup .aib-msg.me {
+    background: #f4c430 !important; color: #14120f !important;
+    border: 2px solid #14120f !important; box-shadow: 2px 2px 0 #14120f !important;
+  }
+  html body .aib-root .aib-popup .aib-msg.err {
+    background: #fee2e2 !important; color: #991b1b !important; border: 2px solid #991b1b !important; box-shadow: none !important;
+  }
+  html body .aib-root .aib-popup .aib-typing-dots span { background: #14120f !important; }
+  .aib-msg.ai b { font-weight: 800; }
+  .aib-msg.ai code { background: #f1f1f1; border: 1px solid #d4d4d4; border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  .aib-msg.ai pre { background: #14120f; color: #f5f5f5; border-radius: 8px; padding: 8px; margin: 6px 0; overflow-x: auto; font-size: 11px; white-space: pre; }
+
+  .aib-composer { display: flex; align-items: flex-end; gap: 8px; padding: 10px; border-top: 1px solid #eee; background: #fff; flex-shrink: 0; }
+  .aib-composer.aib-frame-comic { border-top: 3px solid var(--comic-black, #14120f); }
+  .aib-input {
+    flex: 1; resize: none; max-height: 90px; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 9px 12px; font-size: 12.5px; font-family: inherit; outline: none; color: #1f2937;
+  }
+  .aib-input:focus { border-color: var(--comic-red, #ef2b2d); }
+  .aib-input.aib-frame-comic { border: 2px solid var(--comic-black, #14120f); border-radius: 10px; }
+  .aib-input.aib-frame-comic:focus { border-color: var(--comic-black, #14120f); box-shadow: 2px 2px 0 var(--comic-black, #14120f); }
+  .aib-send-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none; flex-shrink: 0;
+    background: var(--comic-red, #ef2b2d); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+    transition: opacity .15s;
+  }
+  .aib-send-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .aib-send-btn.aib-frame-comic {
+    background: var(--comic-yellow, #ffd400); color: var(--comic-black, #14120f);
+    border: 2px solid var(--comic-black, #14120f); border-radius: 10px;
+    box-shadow: 2px 2px 0 var(--comic-black, #14120f);
+  }
+
+  @media (max-width: 420px) {
+    .aib-popup { bottom: calc(var(--aib-size, 60px) + 54px); right: 12px; left: 12px; width: auto; }
+    .aib-root.aib-pos-left .aib-popup { left: 12px; right: 12px; }
+    .aib-ball { right: 14px; }
+    .aib-root.aib-pos-left .aib-ball { left: 14px; }
+  }
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById('aibRoot');
+  if (!root) return;
+  var ball = document.getElementById('aibBall');
+  var popup = document.getElementById('aibPopup');
+  var header = document.getElementById('aibPopupHeader');
+  var closeBtn = document.getElementById('aibCloseBtn');
+  var messagesEl = document.getElementById('aibMessages');
+  var input = document.getElementById('aibInput');
+  var sendBtn = document.getElementById('aibSendBtn');
+  var ballDot = document.getElementById('aibBallDot');
+  var greeting = root.getAttribute('data-greeting') || 'Halo!';
+
+  var SS_HISTORY = 'aib_history_v1';
+  var SS_OPEN = 'aib_open_v1';
+  var SS_BALL_POS = 'aib_ball_pos_v1';
+  var SS_POPUP_POS = 'aib_popup_pos_v1';
+
+  function escapeHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function getHistory() {
+    try { return JSON.parse(sessionStorage.getItem(SS_HISTORY) || '[]'); } catch (e) { return []; }
+  }
+  function saveHistory(h) {
+    try { sessionStorage.setItem(SS_HISTORY, JSON.stringify(h.slice(-30))); } catch (e) {}
+  }
+
+  // Format ringan & aman (di-escape dulu): **tebal**, `kode`, ```blok```, daftar "- ".
+  function formatAi(text) {
+    return String(text).split('```').map(function (part, i) {
+      if (i % 2 === 1) { var nl = part.indexOf('\n'); return '<pre>' + escapeHtml(nl >= 0 ? part.slice(nl + 1) : part).replace(/\n$/, '') + '</pre>'; }
+      return escapeHtml(part)
+        .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+        .replace(/^(\s*)[-*] /gm, '$1\u2022 ')
+        .replace(/\n/g, '<br>');
+    }).join('');
+  }
+
+  function renderMessage(role, text) {
+    var el = document.createElement('div');
+    el.className = 'aib-msg ' + (role === 'user' ? 'me' : role === 'error' ? 'err' : 'ai');
+    el.innerHTML = role === 'user' || role === 'error' ? escapeHtml(text).replace(/\n/g, '<br>') : formatAi(text);
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return el;
+  }
+
+  function renderTyping() {
+    var el = document.createElement('div');
+    el.className = 'aib-msg typing';
+    el.id = 'aibTypingIndicator';
+    el.innerHTML = '<span class="aib-typing-dots"><span></span><span></span><span></span></span>';
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function removeTyping() {
+    var el = document.getElementById('aibTypingIndicator');
+    if (el) el.remove();
+  }
+
+  function bootMessages() {
+    messagesEl.innerHTML = '';
+    var history = getHistory();
+    if (history.length === 0) {
+      renderMessage('assistant', greeting);
+    } else {
+      history.forEach(function (m) { renderMessage(m.role === 'user' ? 'user' : 'assistant', m.content); });
+    }
+  }
+
+  function openPopup() {
+    popup.classList.remove('hidden');
+    ball.style.display = 'none';
+    if (ballDot) ballDot.classList.add('hidden');
+    try { sessionStorage.setItem(SS_OPEN, '1'); } catch (e) {}
+    bootMessages();
+    setTimeout(function () { input.focus(); }, 50);
+  }
+  function closePopup() {
+    popup.classList.add('hidden');
+    ball.style.display = 'flex';
+    try { sessionStorage.setItem(SS_OPEN, '0'); } catch (e) {}
+  }
+
+  // ===== Drag logic (dipakai untuk bola & header popup) =====
+  function makeDraggable(handle, moveTarget, storageKey, opts) {
+    opts = opts || {};
+    var dragging = false, moved = false, startX = 0, startY = 0, origX = 0, origY = 0;
+    var pointerId = null;
+
+    function clamp(x, y) {
+      var w = moveTarget.offsetWidth, h = moveTarget.offsetHeight;
+      var maxX = window.innerWidth - w - 6;
+      var maxY = window.innerHeight - h - 6;
+      return { x: Math.max(6, Math.min(x, maxX)), y: Math.max(6, Math.min(y, maxY)) };
+    }
+
+    function applyPos(x, y) {
+      moveTarget.style.left = x + 'px';
+      moveTarget.style.top = y + 'px';
+      moveTarget.style.right = 'auto';
+      moveTarget.style.bottom = 'auto';
+    }
+
+    function loadPos() {
+      try {
+        var raw = sessionStorage.getItem(storageKey);
+        if (!raw) return;
+        var pos = JSON.parse(raw);
+        var c = clamp(pos.x, pos.y);
+        applyPos(c.x, c.y);
+      } catch (e) {}
+    }
+
+    function onDown(e) {
+      var pt = e.touches ? e.touches[0] : e;
+      dragging = true; moved = false;
+      var rect = moveTarget.getBoundingClientRect();
+      startX = pt.clientX; startY = pt.clientY;
+      origX = rect.left; origY = rect.top;
+      handle.classList.add('aib-dragging');
+      if (e.pointerId !== undefined && handle.setPointerCapture) {
+        pointerId = e.pointerId;
+        try { handle.setPointerCapture(pointerId); } catch (err) {}
+      }
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchend', onUp);
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var dx = pt.clientX - startX, dy = pt.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+      if (moved && e.cancelable) e.preventDefault();
+      var c = clamp(origX + dx, origY + dy);
+      applyPos(c.x, c.y);
+    }
+
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('aib-dragging');
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchend', onUp);
+      if (moved) {
+        var rect = moveTarget.getBoundingClientRect();
+        try { sessionStorage.setItem(storageKey, JSON.stringify({ x: rect.left, y: rect.top })); } catch (e) {}
+      } else if (opts.onClick) {
+        opts.onClick();
+      }
+    }
+
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, { passive: true });
+    loadPos();
+  }
+
+  makeDraggable(ball, ball, SS_BALL_POS, { onClick: openPopup });
+  makeDraggable(header, popup, SS_POPUP_POS, {});
+
+  closeBtn.addEventListener('click', closePopup);
+
+  function autoGrow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 90) + 'px';
+  }
+  input.addEventListener('input', autoGrow);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  function sendMessage() {
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    autoGrow();
+    renderMessage('user', text);
+
+    var history = getHistory();
+    history.push({ role: 'user', content: text });
+
+    sendBtn.disabled = true;
+    renderTyping();
+
+    fetch('/api/ai-bubble/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: history.slice(0, -1) })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        removeTyping();
+        if (data.success) {
+          renderMessage('assistant', data.reply);
+          history.push({ role: 'assistant', content: data.reply });
+          saveHistory(history);
+        } else {
+          renderMessage('error', data.message || 'Terjadi kesalahan.');
+        }
+      })
+      .catch(function () {
+        removeTyping();
+        renderMessage('error', 'Gagal terhubung ke server. Cek koneksi internet kamu.');
+      })
+      .finally(function () {
+        sendBtn.disabled = false;
+      });
+  }
+
+  // Pulihkan status terbuka/tertutup saat navigasi antar halaman (multi-page app).
+  try {
+    if (sessionStorage.getItem(SS_OPEN) === '1') openPopup();
+  } catch (e) {}
+})();
+</script>
