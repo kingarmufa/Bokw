@@ -1,0 +1,167 @@
+<%- include('partials/header', { title: 'Tools' }) %>
+
+<%
+  // ====== DAFTAR GROUP TOOLS ======
+  // Tambah group baru cukup tambah object di array ini.
+  // status: 'soon' = Coming Soon (kartu dikunci), 'active' = bisa diklik (isi `href`).
+  const toolGroups = [
+    {
+      no: 1,
+      name: 'Bypass',
+      desc: 'Kumpulan tools bypass. Masih tahap pengembangan.',
+      icon: 'fa-unlock-keyhole',
+      color: '#a855f7',
+      status: 'soon',
+      href: '#',
+      keywords: ['bypass', 'group 1', 'coming soon', 'pengembangan']
+    }
+  ];
+%>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Tools</h1>
+    <p class="text-[12px] font-medium text-gray-500">Kumpulan tools &amp; utilitas berdasarkan group</p>
+  </div>
+
+  <!-- ===== PENCARIAN ===== -->
+  <div class="relative mb-4">
+    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+    <input type="text" id="toolSearch" autocomplete="off" placeholder="Cari tools (contoh: Bypass)..." class="w-full pl-9 pr-9 py-2.5 rounded-xl border-2 border-black text-xs font-medium outline-none focus:ring-2 focus:ring-blue-300">
+    <button type="button" id="toolSearchClear" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg text-gray-400 text-xs" aria-label="Hapus pencarian">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- ===== DAFTAR GROUP ===== -->
+  <div id="toolGroupList" class="flex flex-col gap-2.5">
+    <% toolGroups.forEach(g => { %>
+      <% const isSoon = g.status === 'soon'; %>
+      <a
+        class="tool-group <%= isSoon ? 'is-soon' : '' %>"
+        <% if (!isSoon) { %>href="<%= g.href %>"<% } %>
+        data-search="<%= (g.name + ' group ' + g.no + ' ' + (g.keywords || []).join(' ')).toLowerCase() %>"
+        <% if (isSoon) { %>onclick="toolSoonToast()" role="button" tabindex="0"<% } %>>
+        <span class="tool-group-icon" style="background:<%= g.color %>">
+          <i class="fa-solid <%= g.icon %>"></i>
+        </span>
+        <span class="tool-group-text">
+          <span class="tool-group-label">Group <%= g.no %></span>
+          <strong><%= g.name %></strong>
+          <small><%= g.desc %></small>
+        </span>
+        <% if (isSoon) { %>
+          <span class="tool-badge-soon"><i class="fa-solid fa-hourglass-half"></i> Coming Soon</span>
+        <% } else { %>
+          <i class="fa-solid fa-chevron-right tool-chevron"></i>
+        <% } %>
+      </a>
+    <% }) %>
+  </div>
+
+  <!-- Tampil kalau pencarian tidak ada hasil -->
+  <div id="toolEmpty" class="hidden comic-panel p-6 text-center">
+    <i class="fa-solid fa-magnifying-glass text-gray-400 text-lg mb-2"></i>
+    <p class="text-xs font-medium text-gray-500">Tools tidak ditemukan. Coba kata kunci lain.</p>
+  </div>
+
+  <!-- Toast kecil -->
+  <div id="toolToast" class="tool-toast">Masih tahap pengembangan, segera hadir!</div>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); }
+
+  .tool-group {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    border: 2.5px solid var(--comic-black);
+    border-radius: 16px;
+    background: #fffdf7;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    cursor: pointer;
+  }
+  .tool-group:active { transform: translate(1.5px, 1.5px); box-shadow: 1px 1px 0 var(--comic-black); }
+  .tool-group.is-soon { cursor: default; }
+  .tool-group.is-soon .tool-group-icon { filter: saturate(0.75); }
+
+  .tool-group-icon {
+    width: 46px; height: 46px; border-radius: 14px;
+    border: 2px solid var(--comic-black);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: #fff; font-size: 18px;
+  }
+  .tool-group-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .tool-group-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--comic-blue-dark);
+  }
+  .tool-group-text strong { font-size: 14px; font-weight: 700; color: var(--comic-black); }
+  .tool-group-text small { font-size: 11px; font-weight: 600; color: #5b5346; }
+  .tool-chevron { font-size: 12px; color: var(--comic-black); opacity: 0.45; flex-shrink: 0; }
+
+  .tool-badge-soon {
+    flex-shrink: 0;
+    font-size: 10px; font-weight: 800; white-space: nowrap;
+    padding: 4px 9px; border-radius: 999px;
+    border: 2px solid var(--comic-black);
+    background: var(--comic-yellow);
+    color: var(--comic-black);
+  }
+  .tool-badge-soon i { font-size: 9px; margin-right: 3px; }
+
+  .tool-toast {
+    position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 20px);
+    background: var(--comic-black); color: #fff;
+    font-size: 11.5px; font-weight: 700;
+    padding: 9px 16px; border-radius: 999px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 60; white-space: nowrap;
+  }
+  .tool-toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+
+<script>
+  (function () {
+    const input = document.getElementById('toolSearch');
+    const clearBtn = document.getElementById('toolSearchClear');
+    const empty = document.getElementById('toolEmpty');
+    const cards = Array.from(document.querySelectorAll('#toolGroupList .tool-group'));
+
+    function applyFilter() {
+      const q = input.value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach(function (c) {
+        const match = !q || (c.dataset.search || '').indexOf(q) !== -1;
+        c.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      empty.classList.toggle('hidden', visible !== 0);
+      clearBtn.classList.toggle('hidden', !q);
+    }
+
+    input.addEventListener('input', applyFilter);
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      applyFilter();
+      input.focus();
+    });
+  })();
+
+  let _toolToastTimer;
+  function toolSoonToast() {
+    const t = document.getElementById('toolToast');
+    if (!t) return;
+    t.classList.add('show');
+    clearTimeout(_toolToastTimer);
+    _toolToastTimer = setTimeout(function () { t.classList.remove('show'); }, 2000);
+  }
+</script>
+
+<%- include('partials/footer') %>
