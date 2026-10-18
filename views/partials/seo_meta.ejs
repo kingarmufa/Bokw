@@ -1,0 +1,40 @@
+<%
+  // Meta SEO dinamis — diatur admin lewat menu "SEO Pencarian" & "Tagar".
+  // Param: pageTitle (judul tab / hasil Google). Data `seo` diisi global middleware (lib/seo.js).
+  var _sx = (typeof seo !== 'undefined' && seo) ? seo : null;
+  var _pt = (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle : ((typeof settings !== 'undefined' && settings) ? settings.name : '');
+  if (_sx && _sx.isHome && _sx.homeTitle) _pt = _sx.homeTitle;
+  var _img = '';
+  if (_sx && _sx.ogImage) _img = /^https?:\/\//i.test(_sx.ogImage) ? _sx.ogImage : (_sx.ogImage.charAt(0) === '/' ? _sx.base + _sx.ogImage : '');
+%>
+<title><%= _pt %></title>
+<% if (_sx) { %>
+<meta name="description" content="<%= _sx.description %>">
+<% if (_sx.keywords) { %><meta name="keywords" content="<%= _sx.keywords %>"><% } %>
+<meta name="author" content="<%= _sx.author %>">
+<meta name="robots" content="<%= _sx.robots %>">
+<meta name="googlebot" content="<%= _sx.robots %>">
+<% if (_sx.googleVerification) { %><meta name="google-site-verification" content="<%= _sx.googleVerification %>"><% } %>
+<% if (_sx.bingVerification) { %><meta name="msvalidate.01" content="<%= _sx.bingVerification %>"><% } %>
+<% if (_sx.indexable) { %>
+<link rel="canonical" href="<%= _sx.canonical %>">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="<%= _sx.locale %>">
+<meta property="og:title" content="<%= _pt %>">
+<meta property="og:description" content="<%= _sx.description %>">
+<meta property="og:url" content="<%= _sx.canonical %>">
+<meta property="og:site_name" content="<%= _sx.siteName %>">
+<% if (_img) { %><meta property="og:image" content="<%= _img %>"><meta name="twitter:image" content="<%= _img %>"><% } %>
+<meta name="twitter:card" content="<%= _img ? 'summary_large_image' : 'summary' %>">
+<meta name="twitter:title" content="<%= _pt %>">
+<meta name="twitter:description" content="<%= _sx.description %>">
+<% if (_sx.twitterHandle) { %><meta name="twitter:site" content="<%= _sx.twitterHandle %>"><% } %>
+<% (_sx.tags || []).slice(0, 10).forEach(function (t) { %><meta property="article:tag" content="<%= t %>">
+<% }); %>
+<% if (_sx.jsonLdEnabled && _sx.isHome) { %><script type="application/ld+json"><%- (typeof jsonLd !== 'undefined') ? jsonLd : '' %></script><% } %>
+<% } %>
+<% if (_sx.gaId) { %>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<%= _sx.gaId %>"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<%= _sx.gaId %>');</script>
+<% } %>
+<% } %>
