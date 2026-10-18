@@ -1,0 +1,51 @@
+<%- include('partials/header', { title: 'Riwayat Nokos' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-medium text-gray-800">Riwayat Nokos</h1>
+    <a href="/nokos" class="text-[11.5px] font-bold text-blue-600 flex items-center gap-1">
+      <i class="fa-solid fa-plus"></i> Beli Baru
+    </a>
+  </div>
+
+  <div class="flex flex-col gap-2.5">
+    <% if (orders.length === 0) { %>
+      <div class="comic-panel p-6 text-center">
+        <p class="text-xs font-medium text-gray-500">Belum ada transaksi Nokos.</p>
+      </div>
+    <% } %>
+    <% orders.forEach(o => { %>
+      <a href="/nokos/transaksi/<%= o._id %>" class="riwayat-item">
+        <div class="min-w-0">
+          <p class="text-[12.5px] font-bold text-gray-800 truncate"><%= o.countryEmoji %> <%= o.productName %></p>
+          <p class="text-[10.5px] text-gray-500"><%= o.phoneNumber %> &middot; Rp <%= o.sellPrice.toLocaleString('id-ID') %></p>
+        </div>
+        <span class="status-badge <%= o.status %>">
+          <%= ({ACTIVE:'Menunggu', OTP_RECEIVED:'OTP Masuk', COMPLETED:'Selesai', CANCELED:'Batal', EXPIRED:'Kedaluwarsa',REVIEW:'Cek Admin',ORDERING:'Diproses',FAILED:'Gagal',RESEND_CANCELED:'OTP Kedua Berakhir'})[o.status] || o.status %>
+        </span>
+      </a>
+    <% }) %>
+  </div>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); }
+  .riwayat-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 14px;
+    border: 2.5px solid var(--comic-black);
+    border-radius: 16px;
+    background: #fffdf7;
+    box-shadow: 2.5px 2.5px 0 var(--comic-black);
+    text-decoration: none;
+  }
+  .status-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--comic-black); background: #fff; white-space: nowrap; flex-shrink: 0; }
+  .status-badge.ACTIVE { background: var(--comic-blue-light); }
+  .status-badge.OTP_RECEIVED { background: var(--comic-yellow); }
+  .status-badge.COMPLETED { background: #22c55e; color: #fff; }
+  .status-badge.CANCELED, .status-badge.EXPIRED { background: var(--comic-red); color: #fff; }
+</style>
+
+<%- include('partials/footer') %>
