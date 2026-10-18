@@ -1,0 +1,30 @@
+<%
+  const mine = String(m.userId) === currentUserId;
+  const avatar = (m.avatarUrl && m.avatarUrl.trim()) ? m.avatarUrl : ('https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.username));
+  const badgeCls = { admin: 'admin', vip: 'vip', merchant: 'merchant' }[m.role] || 'user';
+  const time = new Date(m.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+%>
+<div class="ac-msg <%= mine ? 'me' : '' %>" data-id="<%= m._id %>">
+  <img class="ac-avatar" src="<%= avatar %>">
+  <div class="ac-bubble-wrap">
+    <div class="ac-meta">
+      <span class="ac-name"><%= m.username %></span>
+      <span class="ac-badge <%= badgeCls %>"><%= m.role %></span>
+      <span class="ac-time"><%= time %></span>
+    </div>
+    <div class="ac-bubble-row">
+      <div class="ac-bubble"><% if (m.text) { %><span class="ac-text"><%= m.text %></span><% } %>
+        <% if (m.fileUrl) { %>
+          <% if (m.fileType === 'image') { %>
+            <div class="ac-attach"><img src="<%= m.fileUrl %>" loading="lazy"></div>
+          <% } else if (m.fileType === 'video') { %>
+            <div class="ac-attach"><video src="<%= m.fileUrl %>" controls></video></div>
+          <% } else { %>
+            <a class="ac-file-link" href="<%= m.fileUrl %>" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> <%= m.fileName || 'File' %></a>
+          <% } %>
+        <% } %>
+      </div>
+      <button type="button" class="ac-del-btn" title="Hapus pesan" onclick="acOpenDeleteModal('<%= m._id %>')"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  </div>
+</div>
