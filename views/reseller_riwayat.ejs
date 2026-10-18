@@ -1,0 +1,43 @@
+<%- include('partials/header', { title: 'Riwayat Reseller Panel' }) %>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/reseller" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Riwayat Reseller Panel</h1>
+  </div>
+
+  <% if (orders.length === 0) { %>
+    <div class="text-center py-16">
+      <i class="fa-solid fa-store text-3xl text-gray-300 mb-3"></i>
+      <p class="text-xs font-medium text-gray-500">Belum ada riwayat pembelian role Reseller Panel.</p>
+    </div>
+  <% } %>
+
+  <div class="flex flex-col gap-2.5">
+    <% orders.forEach(function(o) { %>
+      <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+        <span class="flex items-center gap-3 min-w-0">
+          <span class="w-10 h-10 rounded-xl <%= !o.expiresAt ? 'bg-green-600' : 'bg-blue-600' %> flex items-center justify-center shrink-0">
+            <i class="fa-solid <%= !o.expiresAt ? 'fa-infinity' : 'fa-calendar-days' %> text-white text-sm"></i>
+          </span>
+          <span class="min-w-0">
+            <span class="block text-[13px] font-bold text-gray-800 truncate"><%= o.packageLabel || 'Reseller Panel' %></span>
+            <span class="block text-[10.5px] text-gray-500 truncate">
+              <%= o.expiresAt ? ('Berlaku sampai ' + new Date(o.expiresAt).toLocaleDateString('id-ID')) : 'Permanen' %>
+            </span>
+            <span class="block text-[10px] text-gray-400"><%= new Date(o.createdAt).toLocaleString('id-ID') %></span>
+          </span>
+        </span>
+        <span class="shrink-0 text-right">
+          <span class="block text-[12.5px] font-extrabold text-gray-800">Rp <%= (o.price || 0).toLocaleString('id-ID') %></span>
+        </span>
+      </div>
+    <% }); %>
+  </div>
+
+</div>
+
+<%- include('partials/footer') %>
