@@ -1,0 +1,168 @@
+<%- include('partials/header', { title: 'Fix No / Unban WA' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800">🛠️ Fix No / Unban WA</h1>
+      <p class="text-[12px] font-medium text-gray-500">Permohonan fix nomor kena merah atau unban akun WhatsApp</p>
+    </div>
+    <% if (hasAccess) { %>
+    <a href="/fix-no/riwayat" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-[11.5px] font-bold text-gray-800">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+    </a>
+    <% } %>
+  </div>
+
+  <div id="alertBox"></div>
+
+  <% if (!hasAccess) { %>
+
+    <div class="comic-panel p-6 text-center">
+      <i class="fa-solid fa-lock text-3xl text-gray-400 mb-3"></i>
+      <p class="text-[13px] font-bold text-gray-800 mb-1">Akses Belum Terbuka</p>
+      <p class="text-[11.5px] text-gray-500 mb-4">
+        <% if (accessPrice > 0) { %>Buka akses menu ini dengan biaya <b>Rp <%= accessPrice.toLocaleString('id-ID') %></b> (sekali bayar, berlaku selamanya).<% } else { %>Buka akses menu ini, GRATIS.<% } %>
+      </p>
+      <form id="<%= 'fix-access' %>" action="/fix-no/buka" method="POST">
+        <% if (accessPrice > 0) { %><%- include('partials/voucher_checkout', { formId: 'fix-access', service: 'fix_access', amount: accessPrice }) %><% } %>
+<button type="submit" class="w-full py-2.5 rounded-xl border-2 border-black bg-blue-500 text-white text-[13px] font-bold shadow-[3px_3px_0_#14120f]">
+          <% if (accessPrice > 0) { %>Bayar &amp; Buka Akses<% } else { %>Buka Akses Sekarang<% } %>
+        </button>
+      </form>
+    </div>
+
+  <% } else { %>
+
+    <!-- FORM PERMOHONAN -->
+    <div class="comic-panel p-5 mb-4">
+      <h2 class="text-sm font-bold text-gray-800 mb-3"><i class="fa-solid fa-paper-plane mr-1"></i> Kirim Permohonan</h2>
+
+      <label class="block text-[11px] font-bold text-gray-500 mb-1.5">Jenis Permohonan</label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="flex items-center gap-1.5 border-2 border-black rounded-xl px-2.5 py-2 text-[11.5px] font-bold cursor-pointer">
+          <input type="radio" name="jenis" value="fix_merah" checked class="accent-blue-600"> Fix Nomor Merah
+        </label>
+        <label class="flex items-center gap-1.5 border-2 border-black rounded-xl px-2.5 py-2 text-[11.5px] font-bold cursor-pointer">
+          <input type="radio" name="jenis" value="unban" class="accent-blue-600"> Unban Akun WA
+        </label>
+      </div>
+
+      <label class="block text-[11px] font-bold text-gray-500 mb-1.5">Nomor WhatsApp yang Kena Merah/Banned</label>
+      <input id="phoneNumber" type="text" placeholder="Contoh: 6281234567890" class="w-full mb-3 px-3 py-2.5 rounded-xl border-2 border-black text-[13px] font-medium">
+
+      <label class="block text-[11px] font-bold text-gray-500 mb-1.5">Sender (Pengirim Email Permohonan)</label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="flex items-center gap-1.5 border-2 border-black rounded-xl px-2.5 py-2 text-[11.5px] font-bold cursor-pointer">
+          <input type="radio" name="senderType" value="private" checked onchange="toggleSenderFields()" class="accent-blue-600"> Sender Private
+        </label>
+        <label class="flex items-center gap-1.5 border-2 border-black rounded-xl px-2.5 py-2 text-[11.5px] font-bold cursor-pointer">
+          <input type="radio" name="senderType" value="global" onchange="toggleSenderFields()" class="accent-blue-600"> Sender Global
+        </label>
+      </div>
+
+      <div id="privateFields" class="mb-3">
+        <p class="text-[11.5px] font-bold text-gray-700"><i class="fa-solid fa-envelope mr-1"></i> <span id="privateSenderCount"><%= (privateSenders || []).length %></span> Sender Private tersimpan</p>
+        <p class="text-[10.5px] text-gray-400">Sistem pilih salah satu secara acak tiap pengiriman. Tambah/hapus lewat tombol Manage Sender di bawah.</p>
+      </div>
+
+      <div id="globalFields" class="hidden mb-3">
+        <% if (globalActive) { %>
+          <div class="border-2 border-black rounded-xl px-3 py-2.5 text-[11.5px] font-bold text-white" style="background:#2563eb;">
+            <i class="fa-solid fa-circle-check mr-1"></i> Paket Sender Global aktif sampai <%= new Date(globalExpiresAt).toLocaleDateString('id-ID') %>.
+          </div>
+        <% } else { %>
+          <div class="bg-yellow-50 border-2 border-black rounded-xl px-3 py-2.5 text-[11.5px] font-bold text-yellow-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Kamu belum punya paket Sender Global aktif / sudah expired.
+          </div>
+          <% if (packages.length === 0) { %>
+            <p class="text-[11px] text-gray-400">Admin belum mengatur paket Sender Global.</p>
+          <% } %>
+          <div class="flex flex-col gap-2">
+            <% packages.forEach(p => { %>
+              <form id="<%= 'fix-package-' + p._id %>" action="/fix-no/paket/beli/<%= p._id %>" method="POST" class="border-2 border-black rounded-xl px-3 py-2">
+                <span class="text-[11.5px] font-bold text-gray-800"><%= p.name %> · <%= p.days %> hari</span>
+                <%- include('partials/voucher_checkout', { formId: 'fix-package-' + p._id, service: 'fix_package', amount: p.price }) %>
+<button type="submit" class="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[11px] font-bold border-2 border-black">Rp <%= Number(p.price).toLocaleString('id-ID') %></button>
+              </form>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <button onclick="kirimPermohonan()" id="btnKirim" class="w-full py-2.5 rounded-xl border-2 border-black bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[13px] font-bold shadow-[3px_3px_0_#14120f]">
+        <i class="fa-solid fa-paper-plane mr-1"></i> Kirim Permohonan
+      </button>
+    </div>
+
+    <!-- STATUS PROSES -->
+    <div id="statusBox" class="hidden comic-panel p-5">
+      <p class="text-[11px] font-bold text-gray-500 uppercase mb-1">Status Pengiriman</p>
+      <p id="statusText" class="text-base font-bold text-gray-800 mb-2">Memproses...</p>
+      <p id="statusDetail" class="text-[11.5px] text-gray-500"></p>
+    </div>
+
+    <!-- TOMBOL MANAGE SENDER (di bawah) -->
+    <a href="/fix-no/sender" class="block text-center w-full mt-4 py-2.5 rounded-xl border-2 border-black bg-yellow-300 text-gray-900 text-[13px] font-bold shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-envelope-circle-check mr-1"></i> Manage Sender
+    </a>
+
+    <script>
+      function toggleSenderFields() {
+        const type = document.querySelector('input[name="senderType"]:checked').value;
+        document.getElementById('privateFields').classList.toggle('hidden', type !== 'private');
+        document.getElementById('globalFields').classList.toggle('hidden', type !== 'global');
+      }
+
+      function showAlert(msg, ok) {
+        document.getElementById('alertBox').innerHTML =
+          `<div class="border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium shadow-[3px_3px_0_#14120f] ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}">${msg}</div>`;
+      }
+
+      async function kirimPermohonan() {
+        const jenis = document.querySelector('input[name="jenis"]:checked').value;
+        const senderType = document.querySelector('input[name="senderType"]:checked').value;
+        const phoneNumber = document.getElementById('phoneNumber').value.trim();
+        if (!phoneNumber) { showAlert('Nomor WhatsApp wajib diisi.', false); return; }
+
+        const body = new URLSearchParams({ jenis, phoneNumber, senderType });
+
+        const btn = document.getElementById('btnKirim');
+        btn.disabled = true; btn.innerText = 'Mengirim...';
+        try {
+          const res = await fetch('/fix-no/kirim', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+          const json = await res.json();
+          if (!json.success) { showAlert(json.error || 'Gagal mengirim permohonan', false); return; }
+          document.getElementById('statusBox').classList.remove('hidden');
+          pollStatus(json.data._id);
+        } catch (e) {
+          showAlert('Gagal menghubungi server.', false);
+        } finally {
+          btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Kirim Permohonan';
+        }
+      }
+
+      async function pollStatus(id) {
+        const res = await fetch('/fix-no/status/' + id);
+        const json = await res.json();
+        if (!json.success) return;
+        const d = json.data;
+        document.getElementById('statusText').innerText =
+          d.status === 'PROCESSING' ? 'Sedang mengirim ke target...' :
+          d.status === 'SENT' ? 'Terkirim!' : 'Gagal terkirim';
+        document.getElementById('statusDetail').innerText = `${d.targetsSent}/${d.targetsTotal} target terkirim, ${d.targetsFailed} gagal.`;
+        if (d.status === 'PROCESSING') setTimeout(() => pollStatus(id), 4000);
+      }
+
+      toggleSenderFields();
+    </script>
+
+  <% } %>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); }
+</style>
+
+<%- include('partials/footer') %>
