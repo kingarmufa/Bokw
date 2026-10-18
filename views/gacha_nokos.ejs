@@ -1,0 +1,163 @@
+<%- include('partials/header', { title: 'Gacha Nokos' }) %>
+
+<div class="max-w-md mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-lg font-medium text-gray-800">🎰 Gacha Nokos</h1>
+      <p class="text-[12px] font-medium text-gray-500">Tarik nomor virtual ACAK — khusus member yang di-ACC admin</p>
+    </div>
+    <% if (status === 'approved') { %>
+    <a href="/gacha-nokos/riwayat" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f] text-[11.5px] font-bold text-gray-800">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+    </a>
+    <% } %>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <% if (status === 'none' || status === 'rejected') { %>
+
+    <div class="comic-panel p-5 mb-4">
+      <% if (status === 'rejected') { %>
+        <div class="mb-3 text-xs font-bold text-red-600 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-xmark"></i> Pendaftaran sebelumnya DITOLAK admin.
+        </div>
+        <% if (note) { %>
+          <p class="text-[11px] text-gray-500 mb-3">Alasan: <%= note %></p>
+        <% } %>
+      <% } %>
+
+      <h2 class="text-sm font-bold text-gray-800 mb-2"><i class="fa-solid fa-file-lines mr-1"></i> Syarat & Ketentuan</h2>
+      <div class="text-[11.5px] text-gray-600 whitespace-pre-line bg-[#fffdf7] border-2 border-black rounded-xl p-3 mb-4 max-h-60 overflow-y-auto"><%= settings.gachaNokosTerms %></div>
+
+      <% if (registrationMode === 'closed') { %>
+        <div class="bg-yellow-50 border-2 border-black rounded-xl px-3 py-2.5 text-[11.5px] font-bold text-yellow-800 flex items-center gap-2">
+          <i class="fa-solid fa-lock"></i> Pendaftaran member baru sedang DITUTUP oleh admin. Coba lagi nanti.
+        </div>
+      <% } else { %>
+        <form id="<%= 'gacha-access' %>" action="/gacha-nokos/daftar" method="POST">
+          <label class="flex items-start gap-2 text-[11.5px] font-medium text-gray-700 mb-3 cursor-pointer">
+            <input type="checkbox" name="setuju" required class="mt-0.5 w-4 h-4 accent-blue-600">
+            Saya sudah membaca &amp; menyetujui Syarat &amp; Ketentuan di atas.
+          </label>
+
+          <% if (registrationMode === 'paid') { %>
+            <div class="border-2 border-black rounded-xl px-3 py-2.5 mb-3 text-[11.5px] font-bold text-white flex items-center gap-2" style="background:#2563eb;">
+              <i class="fa-solid fa-coins"></i> Biaya pendaftaran <b>Rp <%= registrationFee.toLocaleString('id-ID') %></b> akan dipotong dari saldo. Setelah bayar, akun langsung aktif.
+            </div>
+          <% } else if (registrationMode === 'auto') { %>
+            <div class="border-2 border-black rounded-xl px-3 py-2.5 mb-3 text-[11.5px] font-bold text-white flex items-center gap-2" style="background:#2563eb;">
+              <i class="fa-solid fa-bolt"></i> Pendaftaran langsung disetujui otomatis, tanpa perlu menunggu admin.
+            </div>
+          <% } %>
+
+          <% if (registrationMode === 'paid' && registrationFee > 0) { %><%- include('partials/voucher_checkout', { formId: 'gacha-access', service: 'gacha_access', amount: registrationFee }) %><% } %>
+<button type="submit" class="w-full py-2.5 rounded-xl border-2 border-black bg-blue-500 text-white text-[13px] font-bold shadow-[3px_3px_0_#14120f]">
+            <% if (registrationMode === 'paid') { %>Bayar &amp; Daftar Sekarang<% } else { %>Daftar Sebagai Member Gacha Nokos<% } %>
+          </button>
+        </form>
+      <% } %>
+    </div>
+
+  <% } else if (status === 'pending') { %>
+
+    <div class="comic-panel p-6 text-center">
+      <i class="fa-solid fa-hourglass-half text-3xl text-yellow-500 mb-3"></i>
+      <p class="text-[13px] font-bold text-gray-800 mb-1">Menunggu Review Admin</p>
+      <p class="text-[11.5px] text-gray-500">Pendaftaranmu sedang diperiksa admin. Kamu akan bisa mulai Gacha begitu di-ACC.</p>
+    </div>
+
+  <% } else if (status === 'approved') { %>
+
+    <div class="comic-panel p-6 text-center mb-4">
+      <div class="text-5xl mb-3">🎰</div>
+      <p class="text-[13px] font-bold text-gray-800 mb-1">Kamu member aktif Gacha Nokos!</p>
+      <p class="text-[11.5px] text-gray-500 mb-4">
+        <% if (cost > 0) { %>Setiap tarik dipotong saldo <b>Rp <%= cost.toLocaleString('id-ID') %></b>.<% } else { %>Tarik nomor acak GRATIS, tanpa potongan saldo.<% } %>
+        Layanan &amp; negara dipilih otomatis (acak) dari stok yang tersedia.
+      </p>
+      <form id="gacha-draw" onsubmit="return false"></form>
+      <% if (cost > 0) { %><%- include('partials/voucher_checkout', { formId: 'gacha-draw', service: 'gacha_nokos', amount: cost }) %><% } %>
+      <button id="btnTarik" onclick="tarikGacha()" class="w-full py-3 rounded-xl border-2 border-black bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[14px] font-extrabold shadow-[3px_3px_0_#14120f]">
+        <i class="fa-solid fa-dice mr-1"></i> TARIK SEKARANG
+      </button>
+    </div>
+
+    <div id="gachaResult" class="hidden comic-panel p-5">
+      <p class="text-[11px] font-bold text-gray-500 uppercase mb-1">Nomor Kamu</p>
+      <p id="gachaNumber" class="text-lg font-extrabold text-gray-800 mb-2"></p>
+      <p id="gachaMeta" class="text-[11.5px] text-gray-500 mb-3"></p>
+      <p class="text-[11px] font-bold text-gray-500 uppercase mb-1">Kode OTP</p>
+      <p id="gachaOtp" class="text-base font-bold text-blue-600 mb-3">Menunggu OTP...</p>
+      <div class="flex gap-2">
+        <button onclick="cekOtp()" class="flex-1 py-2 rounded-xl border-2 border-black bg-white text-[12px] font-bold shadow-[2.5px_2.5px_0_#14120f]">
+          <i class="fa-solid fa-rotate mr-1"></i> Cek OTP
+        </button>
+        <button onclick="releaseNomor()" class="comic-btn-danger flex-1 py-2 rounded-xl text-[12px]" style="background:#ef2b2d;color:#fff;border:2.5px solid #14120f;box-shadow:2px 2px 0 #14120f;font-weight:800;">
+          <i class="fa-solid fa-ban mr-1"></i> Lepas Nomor
+        </button>
+      </div>
+    </div>
+
+    <script>
+      let currentOrderId = null;
+      let pollTimer = null;
+
+      async function tarikGacha() {
+        const btn = document.getElementById('btnTarik');
+        btn.disabled = true; btn.innerText = 'Menarik...';
+        try {
+          const res = await fetch('/gacha-nokos/tarik', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ voucherCode: window.VoucherUI.code('gacha-draw') }) });
+          const json = await res.json();
+          if (!json.success) { alert(json.error || 'Gagal tarik nomor'); return; }
+          currentOrderId = json.data._id;
+          document.getElementById('gachaNumber').innerText = json.data.phoneNumber;
+          document.getElementById('gachaMeta').innerText = json.data.service + ' · ' + json.data.country;
+          document.getElementById('gachaOtp').innerText = json.data.otpCode || 'Menunggu OTP...';
+          document.getElementById('gachaResult').classList.remove('hidden');
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = setInterval(cekOtp, 5000);
+        } catch (e) {
+          alert('Gagal menghubungi server.');
+        } finally {
+          btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-dice mr-1"></i> TARIK SEKARANG';
+        }
+      }
+
+      async function cekOtp() {
+        if (!currentOrderId) return;
+        const res = await fetch('/gacha-nokos/otp/' + currentOrderId);
+        const json = await res.json();
+        if (json.success && json.data.otpCode) {
+          document.getElementById('gachaOtp').innerText = json.data.otpCode;
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
+      }
+
+      async function releaseNomor() {
+        if (!currentOrderId) return;
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        await fetch('/gacha-nokos/release/' + currentOrderId, { method: 'POST' });
+        document.getElementById('gachaResult').classList.add('hidden');
+      }
+    </script>
+
+  <% } %>
+
+</div>
+
+<style>
+  .comic-panel { background: #fffdf7; border: 3px solid var(--comic-black); border-radius: 20px; box-shadow: 4px 4px 0 var(--comic-black); }
+</style>
+
+<%- include('partials/footer') %>
