@@ -1,0 +1,213 @@
+<%- include('partials/header', { title: 'Reseller Panel' }) %>
+
+<%
+  const panelLabel = { user: 'User (belum punya role panel)', reseller: 'Seller (Reseller Panel)', adminpanel: 'Admin Panel' }[user.panelRole || 'user'];
+%>
+
+<div class="max-w-lg mx-auto px-4 pt-4 pb-28">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/dashboard" class="w-9 h-9 rounded-xl border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0_#14120f]">
+      <i class="fa-solid fa-arrow-left text-sm"></i>
+    </a>
+    <h1 class="text-lg font-extrabold">Reseller Panel</h1>
+    <a href="/reseller/riwayat" class="ml-auto text-[11.5px] font-bold text-blue-600">
+      <i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat
+    </a>
+  </div>
+
+  <!-- Tab: Reseller | Admin Panel -->
+  <div class="flex items-center gap-2 mb-4 bg-white border-2 border-black rounded-2xl p-1 shadow-[2px_2px_0_#14120f]">
+    <a href="/reseller" class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold bg-[#ffd23f] border-2 border-black"><i class="fa-solid fa-store"></i> Reseller</a>
+    <a href="/admin-panel" class="flex-1 text-center px-3 py-2 rounded-xl text-[12.5px] font-bold text-gray-500"><i class="fa-solid fa-user-shield"></i> Admin Panel</a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-exclamation mr-1"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border-2 border-black rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-green-700 shadow-[3px_3px_0_#14120f]">
+      <i class="fa-solid fa-circle-check mr-1"></i><%= success %>
+    </div>
+  <% } %>
+
+  <!-- ===== STATUS AKUN ===== -->
+  <div class="comic-panel mb-4">
+    <div class="comic-panel-head">
+      <i class="fa-solid fa-crown text-base"></i>
+      <span>Status Akun</span>
+    </div>
+    <div class="p-4">
+      <% if (user.panelRole === 'reseller') { %>
+        <div class="flex items-center gap-3">
+          <span class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-store text-white text-base"></i>
+          </span>
+          <div class="min-w-0">
+            <p class="text-[13.5px] font-extrabold text-gray-800">Reseller Panel Aktif</p>
+            <% if (user.resellerExpiresAt) { %>
+              <p class="text-[11.5px] text-gray-500">Berlaku sampai <b><%= new Date(user.resellerExpiresAt).toLocaleString('id-ID') %></b></p>
+            <% } else { %>
+              <p class="text-[11.5px] text-green-600 font-bold"><i class="fa-solid fa-infinity mr-1"></i>Permanen (tidak akan expired)</p>
+            <% } %>
+          </div>
+        </div>
+      <% } else if (user.panelRole === 'adminpanel') { %>
+        <div class="flex items-center gap-3">
+          <span class="w-11 h-11 rounded-xl bg-red-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-user-shield text-white text-base"></i>
+          </span>
+          <div class="min-w-0">
+            <p class="text-[13.5px] font-extrabold text-gray-800">Akses Reseller via Admin Panel</p>
+            <p class="text-[11.5px] text-gray-500">Role Admin Panel kamu sudah otomatis membuka <b>Create Panel</b> &amp; <b>Add Server</b>, sama seperti role Seller.</p>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="flex items-center gap-3">
+          <span class="w-11 h-11 rounded-xl bg-gray-400 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-store text-white text-base"></i>
+          </span>
+          <div class="min-w-0">
+            <p class="text-[13.5px] font-extrabold text-gray-800">Belum Menjadi Reseller Panel</p>
+            <p class="text-[11.5px] text-gray-500">Beli role di bawah untuk mengaktifkan.</p>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (user.panelRole === 'reseller' || user.panelRole === 'adminpanel') { %>
+    <!-- ===== MENU KELOLA PANEL ===== -->
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-server text-base"></i>
+        <span>Kelola Panel</span>
+      </div>
+      <div class="p-3 grid grid-cols-2 gap-2.5">
+        <a href="/reseller/kelola?tab=create" class="comic-btn-primary px-3 py-3 rounded-xl text-[13px] font-bold text-center">
+          <i class="fa-solid fa-plus"></i> Create Panel
+        </a>
+        <a href="/reseller/kelola?tab=add" class="comic-btn-primary px-3 py-3 rounded-xl text-[13px] font-bold text-center">
+          <i class="fa-solid fa-server"></i> Add Server
+        </a>
+        <a href="/reseller/panel-riwayat" class="col-span-2 px-3 py-2.5 rounded-xl border-2 border-black bg-white text-[12.5px] font-bold text-center shadow-[2px_2px_0_#14120f]">
+          <i class="fa-solid fa-clock-rotate-left mr-1"></i> History Panel
+        </a>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (user.panelRole !== 'reseller' && user.panelRole !== 'adminpanel') { %>
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-lock text-base"></i>
+        <span>Kelola Panel Terkunci</span>
+      </div>
+      <div class="p-4 text-[12px] text-gray-600">
+        Role panel kamu saat ini <b><%= panelLabel %></b>, jadi <b>Create Panel</b> dan <b>Add Server</b> belum bisa dipakai.
+        Beli role Seller atau Admin Panel di bawah untuk membukanya.
+      </div>
+    </div>
+  <% } %>
+
+  <% if (user.panelRole === 'reseller' && !user.resellerExpiresAt) { %>
+
+    <div class="comic-panel">
+      <div class="p-6 text-center">
+        <i class="fa-solid fa-circle-check text-3xl text-green-500 mb-2"></i>
+        <p class="text-xs font-medium text-gray-600">Akun kamu sudah menjadi Reseller Panel Permanen. Tidak perlu membeli lagi.</p>
+      </div>
+    </div>
+
+  <% } else if (user.panelRole === 'adminpanel') { %>
+
+    <div class="comic-panel">
+      <div class="p-6 text-center">
+        <i class="fa-solid fa-circle-check text-3xl text-green-500 mb-2"></i>
+        <p class="text-xs font-medium text-gray-600">Role Admin Panel kamu sudah otomatis membuka fitur Create Panel &amp; Add Server. Tidak perlu beli Role Reseller Panel lagi.</p>
+      </div>
+    </div>
+
+  <% } else { %>
+
+    <!-- ===== PILIHAN BELI ===== -->
+    <div class="comic-panel mb-4">
+      <div class="comic-panel-head">
+        <i class="fa-solid fa-cart-shopping text-base"></i>
+        <span><%= resellerSetting.mode === 'separate' ? 'Pilih Paket Reseller Panel' : 'Beli Role Reseller Panel' %></span>
+      </div>
+      <div class="p-3 flex flex-col gap-2.5">
+
+        <% if (resellerSetting.mode !== 'separate') { %>
+          <!-- MODE PERMANEN SAJA -->
+          <% const permPrice = resellerSetting.permanentPrice || 0; %>
+          <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+            <span class="flex items-center gap-2.5 min-w-0">
+              <span class="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-infinity text-white text-sm"></i>
+              </span>
+              <span class="min-w-0">
+                <span class="block text-[13px] font-bold text-gray-800">Reseller Panel Permanen</span>
+                <span class="block text-[12.5px] font-extrabold text-blue-600">Rp <%= permPrice.toLocaleString('id-ID') %></span>
+              </span>
+            </span>
+          </div>
+          <% if (permPrice > 0) { %>
+            <form id="<%= 'reseller-permanent' %>" method="POST" action="/reseller/beli" onsubmit="return window.VoucherUI.confirm(this);">
+              <%- include('partials/voucher_checkout', { formId: 'reseller-permanent', service: 'reseller', amount: permPrice }) %>
+<button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold">
+                <i class="fa-solid fa-bolt"></i> Beli Sekarang
+              </button>
+            </form>
+          <% } else { %>
+            <p class="text-center text-[11.5px] text-gray-400 py-1">Harga belum diatur admin.</p>
+          <% } %>
+
+        <% } else { %>
+          <!-- MODE PAKET TERPISAH -->
+          <% (resellerSetting.packages || []).forEach(function(pkg) { %>
+            <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white shadow-[2.5px_2.5px_0_#14120f]">
+              <span class="flex items-center gap-2.5 min-w-0">
+                <span class="w-10 h-10 rounded-lg <%= pkg.key === 'permanen' ? 'bg-green-600' : (pkg.key === '5bulan' ? 'bg-purple-600' : 'bg-blue-600') %> flex items-center justify-center shrink-0">
+                  <i class="fa-solid <%= pkg.key === 'permanen' ? 'fa-infinity' : 'fa-calendar-days' %> text-white text-sm"></i>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[13px] font-bold text-gray-800"><%= pkg.label %></span>
+                  <span class="block text-[12.5px] font-extrabold text-blue-600">Rp <%= (pkg.price || 0).toLocaleString('id-ID') %></span>
+                  <span class="block text-[10.5px] text-gray-400">
+                    <%= pkg.durationDays > 0 ? ('Aktif ' + pkg.durationDays + ' hari sejak dibeli') : 'Permanen, tidak expired' %>
+                  </span>
+                </span>
+              </span>
+            </div>
+            <% if ((pkg.price || 0) > 0) { %>
+              <form id="<%= 'reseller-' + pkg.key %>" method="POST" action="/reseller/beli" class="-mt-1.5 mb-1" onsubmit="return window.VoucherUI.confirm(this);">
+                <input type="hidden" name="packageKey" value="<%= pkg.key %>">
+                <%- include('partials/voucher_checkout', { formId: 'reseller-' + pkg.key, service: 'reseller', amount: pkg.price }) %>
+<button type="submit" class="w-full comic-btn-primary px-4 py-3 rounded-xl text-[13.5px] font-bold">
+                  <i class="fa-solid fa-bolt"></i> Beli <%= pkg.label %>
+                </button>
+              </form>
+            <% } else { %>
+              <p class="text-center text-[11.5px] text-gray-400 -mt-1.5 mb-1">Harga belum diatur admin.</p>
+            <% } %>
+          <% }); %>
+        <% } %>
+
+      </div>
+    </div>
+
+    <p class="text-[11px] text-gray-400 text-center px-4">Saldo akan langsung terpotong saat pembelian. Setelah berhasil, role akun kamu otomatis berubah menjadi Reseller Panel.</p>
+
+  <% } %>
+
+</div>
+
+<style>
+  .comic-panel { border: 2.5px solid #14120f; border-radius: 18px; background:#fffdf7; box-shadow: 3px 3px 0 #14120f; overflow: hidden; }
+  .comic-panel-head { display:flex; align-items:center; gap:8px; padding:10px 14px; background: var(--comic-yellow, #ffd23f); border-bottom: 2.5px solid #14120f; font-weight:800; font-size:13px; }
+</style>
+
+<%- include('partials/footer') %>
