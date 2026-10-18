@@ -1,0 +1,2674 @@
+<%- include('partials/header', { title: 'Settings' }) %>
+<% if (locals.serverless) { %>
+<aside style="margin:16px;padding:16px;border:2px solid #d39f19;border-radius:12px;background:#fff8dc;color:#242424;font:14px/1.6 system-ui">
+<strong>Mode Vercel aktif</strong> · Login memakai MongoDB. Upload harus memakai cloud (maksimal total 3,8 MB).
+Aktifkan scheduler pembayaran sesuai README_VERCEL.md. Gunakan OTP email; bot Telegram polling dan WhatsApp pairing membutuhkan hosting Node/VPS.
+<a href="/api/runtime/status" style="color:#2348a6">Lihat status scheduler</a>
+</aside>
+<% } %>
+<link rel="stylesheet" href="/bot-controls.css?v=7.0">
+<script src="/bot-controls.js?v=7.0" defer></script>
+
+<!-- Library jsQR untuk decode QR dari gambar (client-side) -->
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<style>
+  .custom-scroll::-webkit-scrollbar { width: 2px; height: 2px; }
+  .custom-scroll::-webkit-scrollbar-track { background: transparent; margin-top: 10px; margin-bottom: 10px; }
+  .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+  .custom-scroll:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
+</style>
+
+<div class="px-6 pb-6 mt-1 max-w-[480px] md:max-w-lg mx-auto">
+
+  <!-- Notifikasi lokal (dinamis via JS) -->
+  <div id="localNotif" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+    <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+    <p id="localNotifMessage"></p>
+    <button type="button" onclick="this.parentElement.classList.add('hidden')" class="ml-auto text-gray-400 hover:text-gray-600">&times;</button>
+  </div>
+
+  <!-- Alert Success dari server -->
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-check-circle text-xs"></i></div>
+      <p><%= success %></p>
+    </div>
+  <% } %>
+  
+  <!-- Alert Error dari server -->
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-circle text-xs"></i></div>
+      <p><%= error %></p>
+    </div>
+  <% } %>
+
+  <style data-comic-owned>
+/* Tombol aktif/nonaktif (switch) gaya komik: pasti terlihat di tema hitam & kuning. Menimpa utilitas Tailwind peer-checked. */
+html body label.relative > input.sr-only.peer + div{display:block!important;position:relative!important;flex:none!important;width:70px!important;height:32px!important;margin:0!important;border:3px solid #171717!important;border-radius:999px!important;background:#fca5a5!important;box-shadow:2px 2px 0 #171717!important;transition:background .15s!important}
+html body label.relative > input.sr-only.peer + div::before{content:'OFF'!important;position:absolute!important;right:9px!important;left:auto!important;top:50%!important;transform:translateY(-50%)!important;font:700 11px/1 Arial,sans-serif!important;letter-spacing:.5px!important;color:#171717!important;-webkit-text-fill-color:#171717!important}
+html body label.relative > input.sr-only.peer + div::after{content:''!important;position:absolute!important;left:3px!important;right:auto!important;top:50%!important;width:20px!important;height:20px!important;transform:translateY(-50%)!important;border-radius:50%!important;background:#fff!important;border:3px solid #171717!important;transition:left .15s!important}
+html body label.relative > input.sr-only.peer:checked + div{background:#22c55e!important}
+html body label.relative > input.sr-only.peer:checked + div::before{content:'ON'!important;left:10px!important;right:auto!important}
+html body label.relative > input.sr-only.peer:checked + div::after{left:37px!important;transform:translateY(-50%)!important}
+html body label.relative > input.sr-only.peer:focus-visible + div{outline:3px solid #facc15!important;outline-offset:2px}
+</style>
+<form method="POST" action="/admin/settings" id="mainSettingsForm">
+    <!-- JSON withdrawMethods akan diisi oleh JavaScript -->
+    <input type="hidden" name="withdrawMethodsJson" id="withdrawMethodsJsonInput" value="<%= JSON.stringify(settings.withdrawMethods || []) %>">
+    <!-- JSON instantWithdrawMethods -->
+    <input type="hidden" name="instantWithdrawMethodsJson" id="instantWithdrawMethodsJsonInput" value="<%= JSON.stringify(settings.instantWithdrawMethods || []) %>">
+
+    <!-- ===================== PENGATURAN UMUM ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-globe text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Pengaturan Umum</h2>
+      </div>
+      <div class="flex flex-col gap-3">
+        <!-- Nama Gateway -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nama Gateway</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="name" type="text" value="<%= settings.name %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Nama Gateway">
+          </div>
+        </div>
+        <!-- WhatsApp Channel -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Channel Telegram</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="channelInformation" type="url" value="<%= settings.channelInformation %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://...">
+          </div>
+        </div>
+        <!-- Download Aplikasi (link + on/off) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-medium text-gray-700">Link Download Aplikasi</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="appDownloadEnabled" id="appDownloadEnabled" class="sr-only peer" <%= settings.appDownloadEnabled ? "checked" : "" %>>
+              <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+              <span class="ml-2 text-xs font-medium text-gray-600" id="appDownloadLabel"><%= settings.appDownloadEnabled ? "Aktif" : "Nonaktif" %></span>
+            </label>
+          </div>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="appDownloadUrl" type="url" value="<%= settings.appDownloadUrl %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://... (link APK / Play Store)">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2">Kalau <strong>Aktif</strong> dan link diisi, menu "Download Aplikasi" akan muncul di menu user, mengarah ke link ini. Kalau <strong>Nonaktif</strong>, menu tidak ditampilkan.</p>
+        </div>
+        <!-- Transfer antar-user -->
+        <div class="border-2 border-black rounded-2xl p-4 bg-yellow-50">
+          <div class="flex items-center justify-between mb-3"><div><b class="text-sm">Transfer Saldo Antar User</b><p class="text-[11px] text-gray-500">Tidak tersedia untuk role Merchant.</p></div><input type="checkbox" name="transferEnabled" <%= settings.transferEnabled !== false ? 'checked' : '' %> class="w-5 h-5"></div>
+          <div class="grid grid-cols-2 gap-3"><div><label class="text-xs font-bold">Biaya Admin Transfer Username (Rp)</label><input name="transferAdminFee" type="number" min="0" value="<%= settings.transferAdminFee || 0 %>" class="w-full border-2 border-black rounded-xl p-2 mt-1"></div><div><label class="text-xs font-bold">Biaya Admin Transfer QRIS (Rp)</label><input name="transferQrisAdminFee" type="number" min="0" value="<%= (settings.transferQrisAdminFee === null || settings.transferQrisAdminFee === undefined) ? '' : settings.transferQrisAdminFee %>" placeholder="Kosong = sama dengan username" class="w-full border-2 border-black rounded-xl p-2 mt-1"></div><div class="col-span-2"><label class="text-xs font-bold">Minimal Transfer (Rp)</label><input name="minTransfer" type="number" min="1" value="<%= settings.minTransfer || 1000 %>" class="w-full border-2 border-black rounded-xl p-2 mt-1"></div></div>
+          <p class="text-[11px] text-gray-500 mt-2">Biaya admin dipotong dari saldo pengirim di atas nominal transfer. Isi 0 untuk gratis.</p>
+        </div>
+        <!-- Contact Developer -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Contact Developer</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="contactDeveloper" type="url" value="<%= settings.contactDeveloper %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://...">
+          </div>
+        </div>
+        <!-- ID Channel Telegram (untuk notifikasi Deposit/Withdraw Berhasil ke channel) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">ID Channel Telegram (notifikasi Deposit/Withdraw)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramChannelId" type="text" value="<%= settings.telegramChannelId %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Contoh: @namachannel atau -1001234567890">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-2">Terpisah dari link "Channel Telegram" di atas. Isi username publik channel (cth: <code>@namachannel</code>) atau ID numerik channel privat (cth: <code>-1001234567890</code>). Bot harus sudah jadi admin di channel ini. Kosongkan kalau tidak ingin ada notifikasi Deposit/Withdraw Berhasil ke channel.</p>
+        </div>
+        <!-- Contact Gmail -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Contact Gmail</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="contactGmail" type="email" value="<%= settings.contactGmail %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="emailanda@gmail.com">
+          </div>
+        </div>
+        <!-- Nama Pembuat (tampil di login & footer semua menu) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nama Pembuat (tampil di Login &amp; menu lain)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="creatorName" type="text" maxlength="40" value="<%= settings.creatorName %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Contoh: Xskycode (kosongkan untuk menyembunyikan)">
+          </div>
+        </div>
+        <%- include('partials/theme_templates') %>
+        <!-- Judul Landing Page -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Judul Landing Page</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="title" type="text" value="<%= settings.title %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Judul landing page">
+          </div>
+        </div>
+        <!-- Deskripsi Landing Page -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Deskripsi Landing Page</label>
+          <textarea name="description" rows="3" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="Deskripsi singkat..."><%= settings.description %></textarea>
+        </div>
+        <!-- ===== LOGO (URL) ===== -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Logo (URL Gambar)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="logoUrl" id="logoUrlInput" type="url" value="<%= settings.logoUrl || '' %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://.../logo.png">
+          </div>
+          <div id="logoPreview" class="mt-2 <%= settings.logoUrl ? '' : 'hidden' %>">
+            <img id="logoPreviewImg" src="<%= settings.logoUrl %>" class="h-12 w-auto object-cover" alt="Logo Preview">
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1">Masukkan link gambar (PNG, JPG, GIF). Bisa upload ke layanan seperti imgur/postimages lalu tempel link-nya di sini.</p>
+        </div>
+      </div>
+      <!-- Tombol simpan khusus card ini -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Pengaturan Umum
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== PAYMENT GATEWAY (PILIH PROVIDER) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-plug text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Payment Gateway</h2>
+      </div>
+
+      <!-- Pilihan Gateway -->
+      <div class="mb-5">
+        <label class="block text-xs font-medium text-gray-700 mb-3">Pilih Provider Integrasi</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-gray-200 cursor-pointer transition-all duration-200"
+                 id="label-orderkuota">
+            <input type="radio" name="paymentGateway" value="orderkuota" class="peer hidden"
+                   <%= settings.paymentGateway === 'orderkuota' ? 'checked' : '' %>>
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+              <img src="https://i.ibb.co.com/FqK256JH/IMG-20260603-WA0000.jpg" alt="Orderkuota" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-800">Orderkuota</p>
+            </div>
+            <div class="absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center peer-checked:border-[#3b5bdb] peer-checked:bg-[#3b5bdb] transition-all">
+              <div class="w-2.5 h-2.5 rounded-full bg-white hidden peer-checked:block"></div>
+            </div>
+          </label>
+
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-green-200 bg-green-50/50 cursor-pointer transition-all duration-200"
+                 id="label-gopaymerchant">
+            <input type="radio" name="paymentGateway" value="gopaymerchant" class="peer hidden"
+                   <%= settings.paymentGateway === 'gopaymerchant' ? 'checked' : '' %>>
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+              <img src="https://i.ibb.co.com/VYL8rKdc/IMG-20260603-WA0001.jpg" alt="GoPay Merchant" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-800">Gopay Merchant</p>
+            </div>
+            <div class="absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center peer-checked:border-green-500 peer-checked:bg-green-500 transition-all">
+              <div class="w-2.5 h-2.5 rounded-full bg-white hidden peer-checked:block"></div>
+            </div>
+          </label>
+
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-orange-200 bg-orange-50/50 cursor-pointer transition-all duration-200"
+                 id="label-kianarapay">
+            <input type="radio" name="paymentGateway" value="kianarapay" class="peer hidden"
+                   <%= settings.paymentGateway === 'kianarapay' ? 'checked' : '' %>>
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+              <img src="https://img3.pixhost.to/images/6091/776776751_356980.jpg" alt="ShopeePay" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-800">ShopeePay</p>
+            </div>
+            <div class="absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all">
+              <div class="w-2.5 h-2.5 rounded-full bg-white hidden peer-checked:block"></div>
+            </div>
+          </label>
+
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-sky-200 bg-sky-50/50 cursor-pointer transition-all duration-200"
+                 id="label-dana">
+            <input type="radio" name="paymentGateway" value="dana" class="peer hidden"
+                   <%= settings.paymentGateway === 'dana' ? 'checked' : '' %>>
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+              <img src="https://img3.pixhost.to/images/6091/776776856_356979.jpg" alt="DANA" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-800">DANA</p>
+            </div>
+            <div class="absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all">
+              <div class="w-2.5 h-2.5 rounded-full bg-white hidden peer-checked:block"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Konfigurasi Orderkuota -->
+      <div id="config-orderkuota" class="<%= settings.paymentGateway !== 'orderkuota' ? 'hidden' : '' %>">
+        <div class="flex items-center gap-3 mb-3">
+          <img src="https://i.ibb.co.com/FqK256JH/IMG-20260603-WA0000.jpg" alt="Orderkuota" class="w-8 h-8 rounded-xl object-cover border border-gray-200">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Orderkuota</p>
+            <p class="text-[10px] text-gray-400">Integrasi dengan API Orderkuota</p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Domain Rest API</label>
+            <input name="orderkuotaDomain" type="text" value="<%= settings.orderkuotaDomain || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="api.orderkuota.com">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Apikey Rest API</label>
+            <input name="orderkuotaApiKey" type="text" value="<%= settings.orderkuotaApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="API Key">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Username Orderkuota</label>
+            <input name="orderkuotaUsername" type="text" value="<%= settings.orderkuotaUsername || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="Username">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Token Orderkuota</label>
+            <input name="orderkuotaToken" type="text" value="<%= settings.orderkuotaToken || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="Token">
+          </div>
+        </div>
+      </div>
+
+      <!-- Konfigurasi Gopay Merchant -->
+      <div id="config-gopaymerchant" class="<%= settings.paymentGateway !== 'gopaymerchant' ? 'hidden' : '' %>">
+        <div class="flex items-center gap-3 mb-3">
+          <img src="https://i.ibb.co.com/VYL8rKdc/IMG-20260603-WA0001.jpg" alt="GoPay Merchant" class="w-8 h-8 rounded-xl object-cover border border-gray-200">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Gopay Merchant</p>
+            <p class="text-[10px] text-gray-400">Integrasi otomatis dengan API Gopay Merchant</p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Domain Rest API</label>
+            <input name="gopayDomain" type="text" value="<%= settings.gopayDomain || 'gomerch.vercel.app' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="api.example.com">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Token Gopay Merchant</label>
+            <textarea name="gopayToken" rows="3" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="Token dari Gopay Merchant"><%= settings.gopayToken %></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Refresh Token Gopay Merchant</label>
+            <textarea name="gopayRefreshToken" rows="3" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="Refresh token dari Gopay Merchant"><%= settings.gopayRefreshToken || '' %></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">String QR Gopay Merchant</label>
+            <!-- Upload Gambar QR -->
+            <div class="mb-3">
+              <label class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-4 py-2 text-xs font-medium text-gray-700 cursor-pointer hover:bg-gray-100 transition-all inline-flex items-center">
+                <i class="fas fa-upload mr-2"></i> Upload Gambar QR
+                <input type="file" id="qrImageInput" accept="image/*" class="hidden">
+              </label>
+              <span id="qrFileName" class="text-xs text-gray-400 ml-2">Tidak ada file</span>
+            </div>
+            <textarea name="gopayStaticQr" id="gopayStaticQr" rows="3" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="000201010211..."><%= settings.gopayStaticQr || '' %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Konfigurasi DANA -->
+      <div id="config-dana" class="<%= settings.paymentGateway !== 'dana' ? 'hidden' : '' %>">
+        <div class="flex items-center gap-3 mb-3">
+          <img src="https://img3.pixhost.to/images/6091/776776856_356979.jpg" alt="DANA" class="w-8 h-8 rounded-xl object-cover border border-gray-200">
+          <div>
+            <p class="text-xs font-medium text-gray-800">DANA</p>
+            <p class="text-[10px] text-gray-400">Pembayaran QRIS DANA. Saldo langsung masuk tanpa hold.</p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+            <textarea name="danaApiKey" rows="2" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="kg_live_..."><%= settings.danaApiKey || '' %></textarea>
+            <p class="text-[10px] text-gray-400 mt-2">Pastikan akun DANA sudah terhubung (QRIS statis + aplikasi forwarder notifikasi) di akun penyedia API kamu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Konfigurasi ShopeePay -->
+      <div id="config-kianarapay" class="<%= settings.paymentGateway !== 'kianarapay' ? 'hidden' : '' %>">
+        <div class="flex items-center gap-3 mb-3">
+          <img src="https://img3.pixhost.to/images/6091/776776751_356980.jpg" alt="ShopeePay" class="w-8 h-8 rounded-xl object-cover border border-gray-200">
+          <div>
+            <p class="text-xs font-medium text-gray-800">ShopeePay</p>
+            <p class="text-[10px] text-gray-400">Pembayaran QRIS ShopeePay Merchant</p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+            <textarea name="kianarapayApiKey" rows="2" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 resize-none" placeholder="kg_live_..."><%= settings.kianarapayApiKey || '' %></textarea>
+            <p class="text-[10px] text-gray-400 mt-2">Isi API key akun ShopeePay Merchant kamu. Pastikan akun Shopee sudah terhubung terlebih dahulu.</p>
+          </div>
+
+          <div class="border-t border-gray-100 pt-3 mt-1">
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-medium text-gray-700">Tahan Saldo (Hold) Deposit ShopeePay</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="shopeepayHoldEnabled" id="shopeepayHoldEnabled" class="sr-only peer" <%= settings.shopeepayHoldEnabled ? "checked" : "" %>>
+                <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                <span class="ml-2 text-xs font-medium text-gray-600" id="shopeepayHoldLabel"><%= settings.shopeepayHoldEnabled ? "Aktif" : "Nonaktif" %></span>
+              </label>
+            </div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Jam Otomatis Cair (semua role)</label>
+            <input name="shopeepayHoldHours" type="number" min="1" max="720" value="<%= settings.shopeepayHoldHours || 24 %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="24">
+            <p class="text-[10px] text-gray-500 mt-2">Kalau <strong>Aktif</strong>: saldo hasil deposit ShopeePay (semua role) masuk dulu ke "Saldo Tertahan" dan otomatis cair ke saldo aktif sesuai jam di atas. Admin tetap bisa mencairkan manual dari menu User. Kalau <strong>Nonaktif</strong>, langsung masuk saldo tanpa ditahan.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tombol simpan khusus card ini -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Gateway
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== ATURAN FINANSIAL (DENGAN RENTANG FEE) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-money-bill-wave text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Aturan Finansial</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Kolom Kiri: Minimal Deposit & Minimal Fee Random (Start) -->
+        <div class="space-y-3">
+          <!-- Minimal Deposit -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Minimal Deposit</label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+              <div class="pl-2 text-gray-400 text-xs font-medium">Rp</div>
+              <input name="minDeposit" type="number" value="<%= (typeof settings.minDeposit === 'number' && !isNaN(settings.minDeposit)) ? settings.minDeposit : 1000 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" required>
+            </div>
+          </div>
+          <!-- Minimal Fee Random (Start) -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Minimal Fee Random (Start)</label>
+            <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+              <div class="pl-2 text-gray-400 text-xs font-medium">Rp</div>
+              <input name="minFee" type="number" value="<%= (typeof settings.minFee === 'number' && !isNaN(settings.minFee)) ? settings.minFee : 0 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1">Nilai awal biaya acak, default 0.</p>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Maksimal Fee Random (Max) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Maksimal Fee Random (Max)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <div class="pl-2 text-gray-400 text-xs font-medium">Rp</div>
+            <input name="maxFee" type="number" value="<%= (typeof settings.maxFee === 'number' && !isNaN(settings.maxFee)) ? settings.maxFee : 500 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" required>
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1">Batas atas biaya acak.</p>
+        </div>
+      </div>
+      <!-- Tombol simpan -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Aturan Finansial
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== METODE WITHDRAW (MANUAL) ===================== -->
+    <div id="metode-withdraw" class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4 scroll-mt-24">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-wallet text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800">Metode Withdraw Manual</h2>
+        </div>
+        <button type="button" id="btnAddMethod" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex items-center gap-2">
+          <i class="fas fa-plus text-xs"></i>Metode
+        </button>
+      </div>
+      <div id="withdrawMethodList" class="space-y-2 mb-3"></div>
+    </div>
+    
+    <!-- ===================== FR3 NEWERA — KREDENSIAL (WITHDRAW INSTAN) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-link text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">FR3 NEWERA — Kredensial</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Dipakai untuk withdraw instan langsung ke E-Wallet (Dana/GoPay/OVO/ShopeePay/dll). Generate API Key dari akun <a href="https://fr3newera.com/akun/login" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">fr3newera.com</a> Anda, menu Profil &rarr; Daftar Apikey Sekarang. Lihat <a href="https://fr3newera.com/docs" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dokumentasi resmi</a>.</p>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="fr3ApiKey" type="text" value="<%= settings.fr3ApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="AO_xxxxx221220241234abcdefghij">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API <span class="text-gray-400">(opsional, isi kalau berbeda dari default)</span></label>
+          <input name="fr3BaseUrl" type="text" value="<%= settings.fr3BaseUrl || 'https://fr3newera.com' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://fr3newera.com">
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial FR3 NEWERA
+        </button>
+      </div>
+    </div>    
+
+    <!-- ===================== VIP RESELLER — KREDENSIAL (WITHDRAW INSTAN) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-link text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">VIP Reseller — Kredensial</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Provider alternatif untuk withdraw instan (pilih "VIP Reseller" pada Provider di Metode Withdraw Instan). Ambil API ID &amp; API Key dari akun <a href="https://vip-reseller.co.id" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">vip-reseller.co.id</a> (menu Profile). Signature dibuat otomatis: md5(API ID + API Key).</p>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API ID</label>
+          <input name="vipApiId" type="text" value="<%= settings.vipApiId || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="API ID VIP Reseller">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="vipApiKey" type="text" value="<%= settings.vipApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="API Key VIP Reseller">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API <span class="text-gray-400">(opsional, isi kalau berbeda dari default)</span></label>
+          <input name="vipBaseUrl" type="text" value="<%= settings.vipBaseUrl || 'https://vip-reseller.co.id/api/prepaid' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://vip-reseller.co.id/api/prepaid">
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p class="text-[11px] font-medium text-gray-700 mb-1">Webhook (opsional, status lebih cepat)</p>
+          <p class="text-[11px] text-gray-500 break-all">URL callback: <code class="font-bold"><%= typeof vipCallbackUrl !== 'undefined' ? vipCallbackUrl : 'https://DOMAIN-ANDA/webhook/vipreseller' %></code></p>
+          <p class="text-[11px] text-gray-500 mt-1">Whitelist IP VIP Reseller <b>178.248.73.218</b>. Tanpa webhook pun status tetap dicek otomatis oleh sistem (polling).</p>
+          <p class="text-[11px] text-gray-500 mt-1">Callback memakai JSON dan header <code>X-Client-Signature</code> = md5(API ID + API Key). Status waiting/processing tetap pending, success selesai, error gagal.</p>
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p class="text-[11px] font-medium text-gray-700 mb-1">API Prepaid VIP Reseller</p>
+          <p class="text-[11px] text-gray-500 break-all">POST <code>https://vip-reseller.co.id/api/prepaid</code> dengan key, sign, dan type.</p>
+          <p class="text-[11px] text-gray-500 mt-1">Order: <code>type=order</code>, <code>service</code>, <code>data_no</code>. Cek status: <code>type=status</code> dan <code>trxid</code>. Daftar layanan: <code>type=services</code>, filter opsional type/brand.</p>
+          <p class="text-[11px] text-gray-500 mt-1">Untuk daftar status sekaligus, kirim limit tanpa trxid. Harga layanan tersedia dalam tingkat basic, premium, dan special. Kode produk memakai kolom code.</p>
+          <a href="/admin/vipreseller/services" target="_blank" rel="noopener" class="inline-block text-xs font-bold underline mt-2">Lihat kode layanan VIP Reseller (JSON) ↗</a>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial VIP Reseller
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== AUSTIN PAY — KREDENSIAL (WITHDRAW INSTAN, BEBAS NOMINAL) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-link text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Austin Pay — Kredensial</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Provider ke-3 untuk withdraw instan ke E-Wallet &amp; Virtual Account dengan mode <b>Bebas Nominal</b> (user bebas menarik berapa pun dalam batas min-max yang kamu atur). Buat API Key di <a href="https://austinstore.id/profile" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">austinstore.id/profile</a> dan <b>whitelist IP server ini</b> di halaman yang sama. Lihat <a href="https://austinstore.id/api-docs#instant-withdraw-wallets" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dokumentasi resmi</a>.</p>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="austinApiKey" type="text" value="<%= settings.austinApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="apg_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Secret <span class="text-gray-400">(opsional — isi kalau kamu sudah membuat API Secret di Austin)</span></label>
+          <input name="austinApiSecret" type="text" value="<%= settings.austinApiSecret || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="Kosongkan kalau tidak memakai HMAC" autocomplete="off">
+          <p class="text-[11px] text-gray-500 mt-1">Kalau secret sudah dibuat di Austin, semua request wajib bertanda tangan HMAC-SHA256 — sistem menghitungnya otomatis.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API <span class="text-gray-400">(opsional, isi kalau berbeda dari default)</span></label>
+          <input name="austinBaseUrl" type="text" value="<%= settings.austinBaseUrl || 'https://austinstore.id' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://austinstore.id">
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p class="text-[11px] text-gray-500">Austin tidak menyediakan webhook untuk withdraw instan, jadi status transaksi dicek otomatis oleh sistem (polling). Saldo user otomatis dikembalikan kalau Austin menolak / gagal.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial Austin Pay
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== SEKALIPAY — KREDENSIAL (WITHDRAW INSTAN E-WALLET, BEBAS NOMINAL) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-link text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Sekalipay — Kredensial</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Provider ke-4 untuk withdraw instan ke E-Wallet lewat produk PPOB <b>open denom</b> (nominal bebas) dengan <b>cek nama</b> sebelum saldo dipotong. Ambil API Key di dashboard reseller <a href="https://sekalipay.com/api-docs" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">sekalipay.com</a> dan <b>whitelist IP server ini</b> di sana.</p>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="sekalipayApiKey" type="text" value="<%= settings.sekalipayApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="sk_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API <span class="text-gray-400">(opsional, isi kalau berbeda dari default)</span></label>
+          <input name="sekalipayBaseUrl" type="text" value="<%= settings.sekalipayBaseUrl || 'https://sekalipay.com/api' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://sekalipay.com/api">
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p class="text-[11px] text-gray-500">Status transaksi dicek otomatis oleh sistem (polling) memakai <code>ref_id</code> unik per penarikan. Saldo user otomatis dikembalikan kalau Sekalipay menolak / gagal. Pastikan saldo akun Sekalipay kamu cukup.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial Sekalipay
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== DIBANANA.ID — KREDENSIAL (FITUR NOKOS) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-sim-card text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Dibanana.id — Kredensial (Nokos)</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Dipakai untuk fitur Nokos (sewa nomor virtual untuk terima OTP). Generate token dari <a href="https://dibanana.id" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dibanana.id</a>, menu Profile → API Key. Lihat <a href="https://dibanana.id" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dokumentasi resmi</a>.</p>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-3">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Aktifkan Fitur Nokos</p>
+            <p class="text-[11px] text-gray-500">Kalau nonaktif, menu Nokos disembunyikan dari user.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="smscodeEnabled" class="sr-only peer" <%= settings.smscodeEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key (Bearer)</label>
+          <input name="dibananaApiKey" type="text" value="<%= settings.dibananaApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="bn_live_...">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Webhook Secret (opsional)</label>
+          <input name="dibananaWebhookSecret" type="password" autocomplete="new-password" value="<%= settings.dibananaWebhookSecret || '' %>" class="w-full border rounded-2xl p-3" placeholder="whsec_...">
+          <p class="text-xs mt-2">Base URL: https://dibanana.id/api/v1. Daftarkan URL website kamu + /webhook/dibanana di Profile Dibanana. Tanpa webhook, OTP tetap dicek lewat polling 5 detik.</p>
+          <p class="text-xs mt-2">Sesudah simpan: <a href="/admin/nokos/dibanana/balance" target="_blank" rel="noopener">Cek saldo provider ↗</a> · <a href="/admin/nokos/dibanana/orders" target="_blank" rel="noopener">Riwayat provider ↗</a></p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Markup Harga (%)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="smscodeMarkupPercent" type="number" min="0" value="<%= (typeof settings.smscodeMarkupPercent === 'number' && !isNaN(settings.smscodeMarkupPercent)) ? settings.smscodeMarkupPercent : 20 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1.5">Persentase keuntungan di atas harga asli Dibanana sebelum dipotong dari saldo user. Contoh: harga asli Rp15.000, markup 20% &rarr; user membayar Rp18.000.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial Dibanana.id
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== PREMKU.COM — KREDENSIAL (FITUR APLIKASI PREMIUM) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-crown text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">premku.com — Kredensial (Aplikasi Premium)</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Dipakai untuk fitur Aplikasi Premium (jual akun Capcut, Netflix, Alight Motion, dll secara otomatis). Ambil API Key dari <a href="https://premku.com/app/dashboard.php" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dashboard premku.com</a>. Lihat <a href="https://premku.com/app/docs" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">dokumentasi resmi</a>.</p>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-3">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Aktifkan Fitur Aplikasi Premium</p>
+            <p class="text-[11px] text-gray-500">Kalau nonaktif, menu Aplikasi Premium disembunyikan dari user.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="premkuEnabled" class="sr-only peer" <%= settings.premkuEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="premkuApiKey" type="text" value="<%= settings.premkuApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="YOUR_API_KEY">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API</label>
+          <input name="premkuBaseUrl" type="text" value="<%= settings.premkuBaseUrl || 'https://premku.com/api' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://premku.com/api">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Markup Harga (%)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="premkuMarkupPercent" type="number" min="0" value="<%= (typeof settings.premkuMarkupPercent === 'number' && !isNaN(settings.premkuMarkupPercent)) ? settings.premkuMarkupPercent : 15 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1.5">Persentase keuntungan di atas harga asli premku.com sebelum dipotong dari saldo user. Contoh: harga asli Rp10.000, markup 15% &rarr; user membayar Rp11.500.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Kredensial premku.com
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== SUNTIK SOSMED (SMM PANEL) VIA HERU PEDIA ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-bullhorn text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Suntik Sosmed — Heru Pedia</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Layanan Suntik Sosmed (Followers, Likes, Views, dll) memakai <b>Heru Pedia</b> (<a href="https://herupedia.id/api" target="_blank" rel="noopener" class="text-blue-500 hover:underline font-medium">herupedia.id/api</a>). Ambil API Key dari dashboard Heru Pedia, isi di bawah, lalu pastikan saldo akun Heru Pedia cukup.</p>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-3">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Aktifkan Fitur Suntik Sosmed</p>
+            <p class="text-[11px] text-gray-500">Kalau nonaktif, menu Suntik Sosmed disembunyikan dari user.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="fayupediaEnabled" class="sr-only peer" <%= settings.fayupediaEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <input name="sosmedApiKey" type="text" value="<%= settings.sosmedApiKey || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="API Key dari dashboard Heru Pedia" autocomplete="off">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">URL API <span class="text-gray-400">(biarkan default)</span></label>
+          <input name="sosmedApiUrl" type="text" value="<%= settings.sosmedApiUrl || 'https://herupedia.id/api/v2' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://herupedia.id/api/v2">
+        </div>
+        <input type="hidden" name="sosmedApiStyle" value="v2">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Markup Harga (%)</label>
+          <input name="fayupediaMarkupPercent" type="number" min="0" value="<%= (typeof settings.fayupediaMarkupPercent === 'number' && !isNaN(settings.fayupediaMarkupPercent)) ? settings.fayupediaMarkupPercent : 20 %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+          <p class="text-[11px] text-gray-500 mt-1.5">Keuntungan di atas rate Heru Pedia (per 1000 unit) sebelum dipotong dari saldo user. Contoh: rate Rp10.000/1000, markup 20% &rarr; user membayar Rp12.000/1000.</p>
+        </div>
+      </div>
+      <div class="mt-4 p-3 border-2 border-black rounded-2xl bg-white">
+        <p class="text-xs font-bold text-gray-800 mb-1">Cek Koneksi &amp; Layanan</p>
+        <p class="text-[11px] text-gray-500 mb-2">Simpan pengaturan dulu, lalu klik tombol ini untuk melihat saldo panel (kalau tersedia), jumlah layanan, dan contoh harga. Boleh isi kata kunci (mis. <code>instagram</code>).</p>
+        <div class="flex gap-2">
+          <input id="sosmedDiagSearch" type="text" maxlength="60" placeholder="Kata kunci (opsional)" class="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 outline-none">
+          <button type="button" id="sosmedDiagBtn" class="shrink-0 px-3 py-2.5 rounded-xl text-xs font-bold border-2 border-black" style="background:#facc15;color:#171717">CEK KONEKSI</button>
+        </div>
+        <pre id="sosmedDiagOut" class="hidden mt-2 p-3 rounded-xl border-2 border-black text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap" style="background:#fefce8;color:#171717"></pre>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Pengaturan Suntik Sosmed
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ===================== JAM KERJA PENARIKAN ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-clock text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800">Jam Kerja Penarikan</h2>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="workHoursEnabled" id="workHoursEnabled" class="sr-only peer" <%= settings.workHoursEnabled ? "checked" : "" %>>
+          <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+          <span class="ml-2 text-xs font-medium text-gray-600" id="workHoursLabel"><%= settings.workHoursEnabled ? "Aktif" : "Nonaktif" %></span>
+        </label>
+      </div>
+      <p class="text-xs text-gray-500 mb-4">Jika aktif, penarikan manual & instan hanya bisa dilakukan pada jam dan hari yang ditentukan.</p>
+      <div id="workHoursFields" class="<%= settings.workHoursEnabled ? '' : 'opacity-50 pointer-events-none' %> space-y-4">
+        <!-- Jam Buka & Tutup -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1.5">
+              <i class="fas fa-door-open text-xs mr-1"></i>Jam Buka
+            </label>
+            <input type="time" name="workOpenTime" value="<%= settings.workOpenTime || '08:00' %>"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 px-3 py-2.5 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1.5">
+              <i class="fas fa-door-closed text-xs mr-1"></i>Jam Tutup
+            </label>
+            <input type="time" name="workCloseTime" value="<%= settings.workCloseTime || '17:00' %>"
+              class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 px-3 py-2.5 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+          </div>
+        </div>
+        <!-- Hari Buka & Tutup -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1.5">
+              <i class="fas fa-calendar-day text-xs mr-1"></i>Buka Hari
+            </label>
+            <select name="workOpenDay" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 px-3 py-2.5 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+              <% const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']; %>
+              <% hari.forEach(function(h, i) { %>
+                <option value="<%= i %>" <%= (settings.workOpenDay != null ? settings.workOpenDay : 1) == i ? 'selected' : '' %>><%= h %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1.5">
+              <i class="fas fa-calendar-times text-xs mr-1"></i>Tutup Hari
+            </label>
+            <select name="workCloseDay" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 px-3 py-2.5 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+              <% hari.forEach(function(h, i) { %>
+                <option value="<%= i %>" <%= (settings.workCloseDay != null ? settings.workCloseDay : 5) == i ? 'selected' : '' %>><%= h %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <!-- Preview jadwal -->
+        <div class="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 text-xs text-gray-600 flex items-center gap-2">
+          <i class="fas fa-info-circle text-blue-400"></i>
+          <span>Penarikan tersedia: <strong id="workSchedulePreview"></strong></span>
+        </div>
+      </div>
+      <!-- Tombol simpan jam kerja -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-clock text-xs"></i> Simpan Jam Kerja
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== PILIH PROVIDER WITHDRAW INSTAN (VIP Reseller / FR3 / Austin) ===================== -->
+    <div id="instantProviderSwitch" class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4 scroll-mt-24">
+      <div class="flex items-center gap-2 mb-2 pb-3 border-b border-gray-200">
+        <i class="fas fa-random text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Pilih Provider Penarikan Instan</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Pilih provider, lalu daftar metode di bawah otomatis berganti. Kalau provider itu belum punya metode, daftarnya kosong &mdash; buat dulu lalu <b>Simpan</b> (tersimpan di database MongoDB). <b>VIP Reseller &amp; FR3</b> = user memilih <b>nominal pilihan</b>. <b>Austin</b> = <b>nominal bebas</b> (beda sendiri).</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" data-provider="vipreseller" class="instant-provider-tab px-2 py-3 rounded-2xl text-xs font-medium border transition-all">VIP Reseller<span class="block text-[10px] font-normal opacity-80 mt-0.5" data-count="vipreseller">0 metode</span></button>
+        <button type="button" data-provider="fr3" class="instant-provider-tab px-2 py-3 rounded-2xl text-xs font-medium border transition-all">FR3 NEWERA<span class="block text-[10px] font-normal opacity-80 mt-0.5" data-count="fr3">0 metode</span></button>
+        <button type="button" data-provider="austin" class="instant-provider-tab px-2 py-3 rounded-2xl text-xs font-medium border transition-all">Austin Pay<span class="block text-[10px] font-normal opacity-80 mt-0.5" data-count="austin">0 metode</span></button>
+        <button type="button" data-provider="sekalipay" class="instant-provider-tab px-2 py-3 rounded-2xl text-xs font-medium border transition-all">Sekalipay<span class="block text-[10px] font-normal opacity-80 mt-0.5" data-count="sekalipay">0 metode</span></button>
+      </div>
+      <p class="text-[11px] text-gray-500 mt-3">Provider aktif untuk user: <b id="instantActiveLabel">-</b></p>
+      <button type="button" id="btnSaveActiveProvider" class="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white px-3 py-3 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+        <i class="fas fa-save text-xs"></i> Simpan Provider Aktif
+      </button>
+    </div>
+
+    <!-- ===================== METODE WITHDRAW INSTAN (H2H) ===================== -->
+    <div id="metode-withdraw-instan" class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4 scroll-mt-24">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-bolt text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800" id="instantCardTitle">Metode Withdraw Instan — Nominal Pilihan</h2>
+        </div>
+        <button type="button" id="btnAddInstantMethod" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex items-center gap-2">
+          <i class="fas fa-plus text-xs"></i><span id="btnAddInstantLabel">Metode Instan</span>
+        </button>
+      </div>
+      <div id="instantMethodList" class="space-y-2 mb-3"></div>
+    </div>
+
+    <!-- ===================== METODE WITHDRAW INSTAN AUSTIN (BEBAS NOMINAL) — TERPISAH ===================== -->
+    <div id="metode-withdraw-austin" class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4 scroll-mt-24">
+      <div class="flex items-center justify-between mb-2 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-bolt text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800">Metode Withdraw Instan Austin Pay — Nominal Bebas</h2>
+        </div>
+        <button type="button" id="btnAddAustinMethod" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex items-center gap-2">
+          <i class="fas fa-plus text-xs"></i>Metode Austin
+        </button>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Daftar ini terpisah dari FR3/VIP. User bebas mengetik nominal, dibatasi Min &amp; Max di bawah (seperti penarikan manual). Tiap metode dibuat &amp; disimpan sendiri.</p>
+      <div id="austinMethodList" class="space-y-2 mb-3"></div>
+    </div>
+
+    <!-- ===================== METODE WITHDRAW INSTAN SEKALIPAY (BEBAS NOMINAL) — TERPISAH ===================== -->
+    <div id="metode-withdraw-sekalipay" class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4 scroll-mt-24">
+      <div class="flex items-center justify-between mb-2 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-bolt text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800">Metode Withdraw Instan Sekalipay — Nominal Bebas + Cek Nama</h2>
+        </div>
+        <button type="button" id="btnAddSekalipayMethod" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex items-center gap-2">
+          <i class="fas fa-plus text-xs"></i>Metode Sekalipay
+        </button>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">Satu metode = satu item <b>open denom</b> e-wallet di Sekalipay. User mengetik nominal (dibatasi Min &amp; Max), nomor tujuan dicek namanya dulu, lalu saldo dipotong. Tiap metode dibuat &amp; disimpan sendiri.</p>
+      <div id="sekalipayMethodList" class="space-y-2 mb-3"></div>
+    </div>
+
+    <!-- ===================== SISTEM OTOMATISASI ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-cogs text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Sistem Otomatisasi</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Interval Cek Mutasi -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Interval Cek Mutasi (Detik)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="checkInterval" type="number" value="<%= (typeof settings.checkInterval === 'number' && !isNaN(settings.checkInterval)) ? settings.checkInterval : 20 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" required>
+          </div>
+        </div>
+        <!-- Kedaluwarsa QRIS -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Kedaluwarsa QRIS (Menit)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="qrisExpiredMinutes" type="number" value="<%= (typeof settings.qrisExpiredMinutes === 'number' && !isNaN(settings.qrisExpiredMinutes)) ? settings.qrisExpiredMinutes : 30 %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" required>
+          </div>
+        </div>
+      </div>
+      <!-- Tombol simpan khusus card ini -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Otomatisasi
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== TELEGRAM BOT ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fab fa-telegram-plane text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Telegram Bot</h2>
+      </div>
+
+      <div class="cm-bot-controls" id="telegramBotControls" data-state="checking">
+        <div class="cm-bot-heading" role="status" aria-live="polite">
+          <span class="cm-bot-dot" aria-hidden="true"></span>
+          <span id="botStatusText">Memeriksa status bot…</span>
+        </div>
+        <div class="cm-bot-actions" aria-label="Kontrol bot Telegram">
+          <button type="button" id="botOnBtn" data-bot-action="on" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9m-5-7a9 9 0 1 0 10 0"/></svg> ON</button>
+          <button type="button" id="botOffBtn" data-bot-action="off" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg> OFF</button>
+          <button type="button" id="restartBotBtn" data-bot-action="restart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 14-2l1 6M4 12l1 6a8 8 0 0 0 14-2"/></svg> Restart</button>
+        </div>
+        <p id="botControlMessage" class="cm-bot-message" role="status" aria-live="polite"></p>
+        <p class="cm-bot-help">ON / Restart menyimpan Token dan Owner ID di bawah. OFF tetap bisa dipakai tanpa mengisi token. Status diperbarui otomatis.</p>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <!-- Token Bot -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Token Bot</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramBotToken" type="password" autocomplete="new-password" spellcheck="false" value="<%= settings.telegramBotToken %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Masukkan token dari @BotFather">
+          </div>
+        </div>
+        <!-- Owner ID -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Owner ID (ID Telegram Anda)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramOwnerId" type="text" value="<%= settings.telegramOwnerId %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Contoh: 123456789">
+          </div>
+        </div>
+        <!-- ID Group CS Bantuan (Tiket) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">ID Group CS Bantuan (Tiket)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramTicketGroupId" type="text" value="<%= settings.telegramTicketGroupId %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Contoh: -1001234567890 (kosongkan = ke Owner ID)">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1">
+            Notifikasi Tiket CS Bantuan dari user dikirim ke group ini, bukan ke chat pribadi Owner, supaya semua staf CS di group bisa saling bantu balas. Balas (reply) pesan notifikasi tiket di group ini untuk membalas ke user. Kosongkan untuk pakai perilaku lama (ke chat pribadi Owner ID).
+          </p>
+        </div>
+        <!-- Nama Bot -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nama Bot</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramBotName" type="text" value="<%= settings.telegramBotName %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Contoh: Nexapay Bot (kosongkan = pakai Nama Website)">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1">Nama yang ditampilkan bot saat menyapa user (perintah /start).</p>
+        </div>
+        <!-- Foto bersama untuk pesan bot dan notifikasi channel -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Foto Bot (URL Gambar)</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramStartPhotoUrl" type="text" value="<%= settings.telegramStartPhotoUrl %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://example.com/pp-bot.jpg">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1">URL gambar langsung yang bisa diakses publik (.jpg/.png). Dipakai untuk /start, menu, profil bot, serta notifikasi member baru dan transaksi di channel. Klik Simpan Pengaturan Bot untuk menerapkan ke pesan berikutnya. Kosongkan untuk pesan tanpa foto.</p>
+        </div>
+        <!-- URL Profil untuk pendaftaran ID Telegram -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">URL Halaman Profil</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="telegramProfileUrl" type="text" value="<%= settings.telegramProfileUrl %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="https://app.nevapedia.com/profile">
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1">Link halaman website (bukan gambar) untuk tombol "Buka Halaman Profil" yang muncul saat user belum terdaftar.</p>
+        </div>
+        <!-- Enabled (hidden) -->
+        <input type="hidden" name="telegramBotEnabled" id="telegramBotEnabledInput" value="<%= settings.telegramBotEnabled ? 'on' : '' %>">
+      </div>
+
+      <!-- Tombol simpan -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Pengaturan Bot
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== KONFIGURASI SMTP EMAIL ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-envelope text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">Konfigurasi SMTP Email</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Email Gmail -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Email Gmail</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="smtpUser" type="email" value="<%= settings.smtpUser %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="emailanda@gmail.com">
+          </div>
+        </div>
+        <!-- App Password -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">App Password</label>
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input name="smtpPass" type="text" value="<%= settings.smtpPass %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="16 karakter App Password">
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1.5">Gunakan App Password dari Google, bukan password login biasa.</p>
+        </div>
+      </div>
+      <!-- Tombol simpan khusus card ini -->
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan SMTP
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== VERIFIKASI REGISTRASI ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-user-shield text-gray-700 text-sm"></i>
+          <h2 class="text-sm font-medium text-gray-800">Verifikasi Registrasi</h2>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="registerVerificationEnabled" id="registerVerificationEnabled" class="sr-only peer" <%= settings.registerVerificationEnabled ? "checked" : "" %>>
+          <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+          <span class="ml-2 text-xs font-medium text-gray-600" id="registerVerificationLabel"><%= settings.registerVerificationEnabled ? "Aktif" : "Nonaktif" %></span>
+        </label>
+      </div>
+      <p class="text-xs text-gray-500">
+        Jika <strong>Aktif</strong>, user baru wajib memverifikasi kode OTP yang dikirim ke email (Gmail) yang didaftarkan sebelum akunnya benar-benar dibuat.
+        Jika <strong>Nonaktif</strong>, registrasi langsung jadi tanpa verifikasi apa pun.
+        User bisa memilih <strong>2 metode</strong>: <strong>Verifikasi Nomor WhatsApp</strong> (butuh WhatsApp Sender tertaut di bawah) atau <strong>Verifikasi Gmail</strong> (butuh Konfigurasi SMTP Email di atas).
+        Metode yang konfigurasinya masih kosong tampil nonaktif di halaman registrasi.
+      </p>
+
+      <!-- ===== WhatsApp Sender (Baileys) ===== -->
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-between mb-3">
+          <label class="block text-xs font-medium text-gray-700"><i class="fab fa-whatsapp mr-1" style="color:#25D366"></i>WhatsApp Sender (pengirim OTP)</label>
+          <span id="waBadge" class="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+            <span id="waDot" class="w-2 h-2 rounded-full bg-gray-300"></span><span id="waBadgeText">Memuat...</span>
+          </span>
+        </div>
+
+        <div id="waFormArea">
+          <div class="flex items-center bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 p-1.5 transition-all focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500">
+            <input id="waNumberInput" type="tel" inputmode="numeric" value="<%= settings.waSenderNumber || '' %>" class="flex-1 bg-transparent px-2 py-2 text-xs font-medium text-gray-800 outline-none w-full" placeholder="Nomor sender + kode negara, contoh: 628123456789">
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1.5">Nomor WhatsApp yang akan mengirim OTP ke user. Klik Tautkan Perangkat, lalu masukkan kode yang muncul.</p>
+          <button type="button" id="waPairBtn" class="mt-3 w-full px-3 py-3 rounded-xl text-xs font-medium text-white shadow-sm transition-all inline-flex justify-center items-center gap-2" style="background:#25D366">
+            <i class="fas fa-link text-xs"></i> <span id="waPairBtnText">Tautkan Perangkat</span>
+          </button>
+        </div>
+
+        <!-- Kode pairing -->
+        <div id="waCodeBox" class="hidden mt-3 rounded-2xl border p-4 text-center" style="border-color:#bbf7d0;background:#f0fdf4">
+          <p class="text-[11px] text-gray-500 mb-1">Kode perangkat kamu</p>
+          <p id="waCodeText" class="text-2xl font-bold tracking-widest text-gray-800 select-all">----</p>
+          <button type="button" id="waCopyBtn" class="mt-3 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border-2 border-black bg-white text-gray-800 shadow-[2px_2px_0_#14120f] active:translate-y-[1px] active:shadow-none transition-all">
+            <i class="fa-regular fa-copy"></i> <span id="waCopyBtnText">Salin Kode</span>
+          </button>
+          <p class="text-[11px] text-gray-500 mt-2 leading-relaxed">
+            Buka WhatsApp di nomor sender &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan Perangkat</b> &rarr; <b>Tautkan dengan nomor telepon</b>, lalu masukkan kode di atas. Halaman ini otomatis berubah saat tersambung.
+          </p>
+        </div>
+
+        <p id="waError" class="hidden mt-3 text-[11px] font-medium text-red-600"></p>
+
+        <!-- Sudah tersambung -->
+        <div id="waConnectedBox" class="hidden mt-1 rounded-2xl border p-4 flex items-center justify-between gap-3" style="border-color:#bbf7d0;background:#f0fdf4">
+          <div>
+            <p class="text-xs font-semibold text-gray-800">Sender tersambung</p>
+            <p id="waConnectedNumber" class="text-[11px] text-gray-500"></p>
+          </div>
+          <button type="button" id="waLogoutBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-all">Putuskan</button>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Verifikasi
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== AI ASSISTANT (Groq) ===================== -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+        <i class="fas fa-robot text-gray-700 text-sm"></i>
+        <h2 class="text-sm font-medium text-gray-800">AI Assistant (Groq)</h2>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-3">AI tampil sebagai menu biasa (<b>/ai</b>), dengan model Groq. User memilih model sendiri dari daftar di bawah, bisa upload ZIP dokumentasi &amp; gambar, dan dapat saran chat otomatis. Dokumentasi: <a href="https://console.groq.com/docs" target="_blank" rel="noopener" class="text-blue-600 underline">console.groq.com/docs</a></p>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm p-3">
+          <div>
+            <p class="text-xs font-medium text-gray-800">Aktifkan Menu AI</p>
+            <p class="text-[11px] text-gray-500">Nonaktif = menu AI disembunyikan &amp; bot Telegram/WhatsApp AI berhenti.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="aiBubbleEnabled" class="sr-only peer" <%= settings.aiBubbleEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm p-3">
+          <div><p class="text-xs font-medium text-gray-800">Balas chat Telegram dengan AI</p><p class="text-[11px] text-gray-500">Pakai model default di bawah.</p></div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="aiBubbleTelegramEnabled" class="sr-only peer" <%= settings.aiBubbleTelegramEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm p-3">
+          <div><p class="text-xs font-medium text-gray-800">Balas chat WhatsApp dengan AI</p><p class="text-[11px] text-gray-500">Pakai model default di bawah.</p></div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="aiBubbleWhatsappEnabled" class="sr-only peer" <%= settings.aiBubbleWhatsappEnabled ? "checked" : "" %>>
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Base URL API</label>
+          <input name="aiApiBaseUrl" type="text" value="<%= settings.aiApiBaseUrl || 'https://api.groq.com/openai/v1' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none" placeholder="https://api.groq.com/openai/v1">
+          <p class="text-[11px] text-gray-500 mt-1.5">OpenAI-compatible. Cukup isi <code>https://api.groq.com</code>, otomatis jadi <code>/openai/v1</code>.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">API Key</label>
+          <div class="flex gap-2">
+            <input id="aiApiKeyInput" name="aiApiKey" type="password" value="<%= settings.aiApiKey || '' %>" autocomplete="off" class="flex-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none" placeholder="gsk_...">
+            <button type="button" id="aiToggleKeyBtn" class="shrink-0 px-3 py-3 rounded-2xl border border-gray-100 shadow-sm text-gray-500 hover:text-gray-700"><i class="fas fa-eye text-xs"></i></button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Daftar Model yang Bisa Dipilih User (satu per baris)</label>
+          <div class="mb-2">
+            <div class="flex gap-2">
+              <button type="button" id="aiLoadModelsBtn" class="shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-700 hover:bg-gray-50"><i class="fas fa-cloud-arrow-down text-xs"></i> Ambil dari Groq</button>
+              <input id="aiModelSearch" type="text" placeholder="Cari model (mis. llama, gpt-oss)" class="hidden flex-1 min-w-0 bg-white border border-gray-100 rounded-xl shadow-sm px-3 py-2 text-xs outline-none">
+            </div>
+            <div id="aiModelResults" class="hidden mt-2 max-h-48 overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-100"></div>
+          </div>
+          <textarea id="aiModelsInput" name="aiModels" rows="6" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none font-mono"><%= settings.aiModels || '' %></textarea>
+          <p class="text-[11px] text-gray-500 mt-1.5">Pakai ID model Groq, misalnya <code>llama-3.3-70b-versatile</code> atau <code>llama-3.1-8b-instant</code>. Cari di <a href="https://console.groq.com/docs/models" target="_blank" rel="noopener" class="text-blue-600 underline">console.groq.com/docs/models</a> atau isi API key lalu klik Ambil dari Groq. Model yang tersedia mengikuti akses akun; periksa dukungan gambar di dokumentasi model. Model teks tidak dapat membaca gambar.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Model Default</label>
+          <input id="aiDefaultModelInput" name="aiDefaultModel" type="text" value="<%= settings.aiDefaultModel || 'llama-3.3-70b-versatile' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none font-mono">
+          <p class="text-[11px] text-gray-500 mt-1.5">Terpilih awal di menu AI, dan dipakai bot Telegram/WhatsApp. Harus ada di daftar model.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="aiTestBtn" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-700 hover:bg-gray-50"><i class="fas fa-plug text-xs"></i> Tes Koneksi</button>
+        </div>
+        <p id="aiTestResult" class="hidden text-[11px] font-medium rounded-xl px-3 py-2"></p>
+
+        <div class="pt-2 border-t border-gray-100"><p class="text-xs font-semibold text-gray-800">Bola AI Melayang (Gelombang)</p><p class="text-[11px] text-gray-500">Bola tetap tampil di semua halaman. Balasannya sekarang lewat Groq (model default di atas).</p></div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Nama Asisten</label>
+          <input name="aiBubbleName" type="text" maxlength="40" value="<%= settings.aiBubbleName || 'AI Assistant' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="AI Assistant">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Posisi Bola</label>
+          <select name="aiBubblePosition" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+            <option value="right" <%= settings.aiBubblePosition !== 'left' ? 'selected' : '' %>>Kanan bawah</option>
+            <option value="left" <%= settings.aiBubblePosition === 'left' ? 'selected' : '' %>>Kiri bawah</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Template Bingkai Bola</label>
+          <select id="aiBubbleFrameSelect" name="aiBubbleFrameStyle" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+            <option value="animation" <%= settings.aiBubbleFrameStyle !== 'comic' ? 'selected' : '' %>>Animasi — pakai video custom (.mp4)</option>
+            <option value="comic" <%= settings.aiBubbleFrameStyle === 'comic' ? 'selected' : '' %>>Komik — bingkai tebal ala komik, tanpa video</option>
+          </select>
+          <p class="text-[11px] text-gray-500 mt-1.5">"Animasi" menampilkan video di URL animasi bola di bawah. "Komik" menampilkan bingkai bola bertema komik (border tebal, shadow keras) mengikuti tema situs — video tidak dipakai di mode ini.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Ukuran Bola: <span id="aiBubbleSizeVal"><%= settings.aiBubbleSize || 60 %></span>px</label>
+          <input id="aiBubbleSizeInput" name="aiBubbleSize" type="range" min="40" max="110" step="2" value="<%= settings.aiBubbleSize || 60 %>" class="w-full accent-blue-500">
+          <div class="flex justify-between text-[10px] text-gray-400 mt-1"><span>Kecil (40px)</span><span>Besar (110px)</span></div>
+          <div class="mt-3 flex items-center gap-3">
+            <div id="aiBubbleSizePreview" class="rounded-full flex items-center justify-center flex-shrink-0 border-2" style="width:<%= settings.aiBubbleSize || 60 %>px;height:<%= settings.aiBubbleSize || 60 %>px;background:linear-gradient(135deg,var(--comic-red,#ef2b2d),var(--comic-red-dark,#b91c1c));border-color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2)">
+              <i class="fa-solid fa-robot text-white"></i>
+            </div>
+            <p class="text-[11px] text-gray-500">Preview ukuran bola (bentuk asli mengikuti template bingkai yang dipilih).</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Ukuran Popup Chat</label>
+          <select name="aiBubblePopupSize" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+            <option value="compact" <%= settings.aiBubblePopupSize === 'compact' ? 'selected' : '' %>>Kecil (compact)</option>
+            <option value="normal" <%= (!settings.aiBubblePopupSize || settings.aiBubblePopupSize === 'normal') ? 'selected' : '' %>>Sedang (normal)</option>
+            <option value="large" <%= settings.aiBubblePopupSize === 'large' ? 'selected' : '' %>>Besar (large)</option>
+          </select>
+        </div>
+
+        <div id="aiBubbleAnimField">
+          <label class="block text-xs font-medium text-gray-700 mb-2">URL Video Animasi Bola (.mp4) <span class="text-gray-400">(opsional)</span></label>
+          <input id="aiBubbleAnimInput" name="aiBubbleAnimationUrl" type="text" value="<%= settings.aiBubbleAnimationUrl || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="https://contoh.com/animasi-bola.mp4">
+          <p class="text-[11px] text-gray-500 mt-1.5">Video akan diputar loop tanpa suara di dalam bola (bentuk lingkaran). Kalau dikosongkan, dipakai animasi gradient bawaan.</p>
+          <div class="mt-3">
+            <% if (settings.aiBubbleAnimationUrl) { %>
+              <video id="aiBubbleAnimPreview" src="<%= settings.aiBubbleAnimationUrl %>" autoplay loop muted playsinline class="w-16 h-16 rounded-full object-cover border-2 border-gray-100 shadow-sm"></video>
+            <% } else { %>
+              <video id="aiBubbleAnimPreview" class="w-16 h-16 rounded-full object-cover border-2 border-gray-100 shadow-sm hidden" autoplay loop muted playsinline></video>
+            <% } %>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Pesan Sambutan Pertama</label>
+          <input name="aiBubbleGreeting" type="text" maxlength="300" value="<%= settings.aiBubbleGreeting || '' %>" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm shadow-gray-200/50 hover:shadow-md transition-shadow duration-300 px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500" placeholder="Halo! Ada yang bisa saya bantu?">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Saran Chat Otomatis (satu per baris)</label>
+          <textarea name="aiSuggestions" rows="4" maxlength="1000" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none"><%= settings.aiSuggestions || '' %></textarea>
+          <p class="text-[11px] text-gray-500 mt-1.5">Tombol saran di menu AI; sekali tap langsung terkirim. Saran khusus akun (mis. <i>"Saldo saya tertahan…"</i> saat user punya saldo tertahan) muncul otomatis.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">System Prompt (Kepribadian &amp; Batasan AI)</label>
+          <textarea name="aiBubbleSystemPrompt" rows="4" maxlength="4000" class="w-full bg-white border border-gray-100 rounded-2xl shadow-sm p-3 text-xs font-medium outline-none"><%= settings.aiBubbleSystemPrompt || '' %></textarea>
+          <p class="text-[11px] text-gray-500 mt-1.5">Dikirim ke AI di setiap percakapan (tidak terlihat user). Data saldo &amp; transaksi user ditambahkan otomatis.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-5 pt-4 border-t border-gray-100">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white w-full px-3 py-4 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex items-center justify-center gap-2">
+          <i class="fas fa-save text-xs"></i> Simpan Pengaturan AI
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+  <script>
+  (function () {
+    var key = document.getElementById('aiApiKeyInput'), tg = document.getElementById('aiToggleKeyBtn');
+    if (key && tg) tg.addEventListener('click', function () {
+      var show = key.type === 'password'; key.type = show ? 'text' : 'password';
+      tg.innerHTML = '<i class="fas ' + (show ? 'fa-eye-slash' : 'fa-eye') + ' text-xs"></i>';
+    });
+        var loadBtn = document.getElementById('aiLoadModelsBtn'), search = document.getElementById('aiModelSearch'), results = document.getElementById('aiModelResults'), ta = document.getElementById('aiModelsInput');
+    var allModels = [];
+    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function renderModels() {
+      var q = (search.value || '').toLowerCase().trim();
+      var list = allModels.filter(function (m) { return !q || m.id.toLowerCase().indexOf(q) >= 0 || m.name.toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+      results.innerHTML = list.length ? '' : '<p class="p-3 text-[11px] text-gray-500">Tidak ada hasil.</p>';
+      list.forEach(function (m) {
+        var b = document.createElement('button'); b.type = 'button';
+        b.className = 'w-full text-left px-3 py-2 text-[11.5px] hover:bg-gray-50';
+        b.innerHTML = '<span class="font-mono font-semibold">' + esc(m.id) + '</span> ' + '<br><span class="text-gray-500">' + esc(m.name) + '</span>';
+        b.onclick = function () {
+          var cur = ta.value.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+          if (cur.indexOf(m.id) < 0) cur.push(m.id);
+          ta.value = cur.join('\n');
+        };
+        results.appendChild(b);
+      });
+    }
+    if (loadBtn) loadBtn.addEventListener('click', function () {
+      var old = loadBtn.innerHTML; loadBtn.disabled = true; loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Memuat...';
+      var f = document.querySelector('[name="aiApiBaseUrl"]');
+      fetch('/admin/ai/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aiApiBaseUrl: f ? f.value : '', aiApiKey: key.value }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.success) { alert(d.message || 'Gagal memuat model.'); return; }
+          allModels = d.models; search.classList.remove('hidden'); results.classList.remove('hidden'); renderModels();
+        })
+        .catch(function () { alert('Gagal menghubungi server.'); })
+        .finally(function () { loadBtn.disabled = false; loadBtn.innerHTML = old; });
+    });
+    if (search) search.addEventListener('input', renderModels);
+    var btn = document.getElementById('aiTestBtn'), out = document.getElementById('aiTestResult');
+    if (btn && out) btn.addEventListener('click', function () {
+      var old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Menguji...';
+      var f = document.querySelector('[name="aiApiBaseUrl"]');
+      fetch('/admin/ai/test', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiApiKey: key.value, aiApiBaseUrl: f ? f.value : '', aiDefaultModel: document.getElementById('aiDefaultModelInput').value }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          out.className = 'text-[11px] font-medium rounded-xl px-3 py-2 ' + (d.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
+          out.textContent = d.message + (d.reply ? ' — balasan: "' + d.reply + '"' : '');
+        })
+        .catch(function () { out.className = 'text-[11px] font-medium rounded-xl px-3 py-2 bg-red-50 text-red-700'; out.textContent = 'Gagal menghubungi server.'; })
+        .finally(function () { btn.disabled = false; btn.innerHTML = old; });
+    });
+    var animInput = document.getElementById('aiBubbleAnimInput');
+    var animPreview = document.getElementById('aiBubbleAnimPreview');
+    if (animInput && animPreview) {
+      animInput.addEventListener('input', function () {
+        var url = animInput.value.trim();
+        if (url) {
+          animPreview.src = url;
+          animPreview.classList.remove('hidden');
+        } else {
+          animPreview.removeAttribute('src');
+          animPreview.classList.add('hidden');
+        }
+      });
+    }
+
+    // ---- Ukuran bola: slider + preview langsung ----
+    var sizeInput = document.getElementById('aiBubbleSizeInput');
+    var sizeVal = document.getElementById('aiBubbleSizeVal');
+    var sizePreview = document.getElementById('aiBubbleSizePreview');
+    if (sizeInput) {
+      sizeInput.addEventListener('input', function () {
+        var px = sizeInput.value + 'px';
+        if (sizeVal) sizeVal.textContent = sizeInput.value;
+        if (sizePreview) { sizePreview.style.width = px; sizePreview.style.height = px; }
+      });
+    }
+
+    // ---- Template bingkai: sembunyikan field URL animasi kalau mode "komik" dipilih,
+    // dan ganti tampilan preview bola supaya admin lihat gambaran bingkai komik ----
+    var frameSelect = document.getElementById('aiBubbleFrameSelect');
+    var animField = document.getElementById('aiBubbleAnimField');
+    function applyFramePreview() {
+      var isComic = frameSelect && frameSelect.value === 'comic';
+      if (animField) animField.style.display = isComic ? 'none' : '';
+      if (sizePreview) {
+        if (isComic) {
+          sizePreview.style.background = 'var(--comic-yellow, #ffd400)';
+          sizePreview.style.border = '3px solid var(--comic-black, #14120f)';
+          sizePreview.style.boxShadow = '3px 3px 0 var(--comic-black, #14120f)';
+          sizePreview.style.borderRadius = '50%';
+          sizePreview.innerHTML = '<i class="fa-solid fa-comment-dots" style="color:var(--comic-black,#14120f)"></i>';
+        } else {
+          sizePreview.style.background = 'linear-gradient(135deg,var(--comic-red,#ef2b2d),var(--comic-red-dark,#b91c1c))';
+          sizePreview.style.border = '2px solid #fff';
+          sizePreview.style.boxShadow = '0 4px 12px rgba(0,0,0,.2)';
+          sizePreview.style.borderRadius = '50%';
+          sizePreview.innerHTML = '<i class="fa-solid fa-robot text-white"></i>';
+        }
+      }
+    }
+    if (frameSelect) {
+      frameSelect.addEventListener('change', applyFramePreview);
+      applyFramePreview();
+    }
+
+  })();
+  </script>
+
+  <!-- ===================== ZONA BERBAHAYA — RESET DATABASE ===================== -->
+  <div class="bg-white border border-red-200 rounded-xl p-5 mb-8">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-red-100">
+      <i class="fas fa-exclamation-triangle text-gray-700 text-sm"></i>
+      <div>
+        <h2 class="text-sm font-medium text-gray-800">Zona Berbahaya</h2>
+        <p class="text-xs font-medium text-gray-500 mt-0.5">Pengaturan di bawah ini akan berdampak fatal pada data Anda.</p>
+      </div>
+    </div>
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between bg-red-50/50 rounded-xl p-4 border border-red-100 gap-3">
+      <div>
+        <h3 class="text-xs font-medium text-red-600">Reset Database</h3>
+        <p class="text-[11px] text-red-500 mt-1 max-w-xl">Menghapus permanen semua data pengguna, invoice, transaksi, dan withdrawal. Data admin & pengaturan tidak akan terhapus.</p>
+      </div>
+      <form action="/admin/settings/reset" method="POST" 
+            onsubmit="var answer = prompt('Ketik RESET untuk melanjutkan reset database:'); 
+                      if (answer !== 'RESET') { 
+                        alert('Reset dibatalkan. Anda harus mengetik RESET dengan benar.'); 
+                        return false; 
+                      } 
+                      return confirm('⚠️ PERINGATAN TERAKHIR!\n\nApakah Anda yakin ingin mereset database?\nSemua data pengguna, invoice, transaksi, dan withdrawal akan DIHAPUS PERMANEN.\nData admin & pengaturan TIDAK akan terhapus.\n\nKlik OK untuk melanjutkan atau Batal.');">
+        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white w-full md:w-auto px-5 py-3 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2 whitespace-nowrap">
+          <i class="fas fa-trash-alt text-xs"></i> Reset Database
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL METODE WITHDRAW MANUAL ===================== -->
+<div id="methodModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="hideModal()"></div>
+  <div class="relative bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(20,18,15,1)] w-full max-w-sm transform transition-all scale-95 opacity-0 duration-200 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden" id="modalContent">
+    <div class="bg-comic-yellow px-5 py-4 relative flex items-center justify-between border-b-[3px] border-black shrink-0" style="background: var(--comic-yellow);">
+      <h3 class="font-comic text-lg tracking-wide text-black" id="modalTitle">TAMBAH METODE WITHDRAW MANUAL</h3>
+      <button type="button" id="btnCloseModal" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border-2 border-black text-black font-bold hover:bg-gray-100 transition-colors shrink-0">&times;</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <form id="methodForm" class="flex flex-col gap-3">
+        <input type="hidden" id="editIndex" value="-1">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Nama Metode</label>
+          <input type="text" id="methodName" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: Dana" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Biaya Admin (Rp)</label>
+          <input type="number" id="methodFee" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="1000" min="0" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Minimal Penarikan (Rp)</label>
+          <input type="number" id="methodMin" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="0" min="0" value="0" required>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btnCancelModal" class="px-4 py-3 rounded-2xl text-xs font-bold text-black bg-white border-2 border-black hover:bg-gray-100 transition-colors">Batal</button>
+          <button type="submit" class="px-5 py-3 rounded-2xl text-xs font-bold text-white bg-blue-500 border-2 border-black shadow-[3px_3px_0px_0px_rgba(20,18,15,1)] hover:shadow-[1px_1px_0px_0px_rgba(20,18,15,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL METODE WITHDRAW INSTAN ===================== -->
+<div id="instantMethodModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="hideInstantModal()"></div>
+  <div class="relative bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(20,18,15,1)] w-full max-w-sm transform transition-all scale-95 opacity-0 duration-200 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden" id="instantModalContent">
+    <div class="bg-comic-yellow px-5 py-4 relative flex items-center justify-between border-b-[3px] border-black shrink-0" style="background: var(--comic-yellow);">
+      <h3 class="font-comic text-lg tracking-wide text-black" id="instantModalTitle">TAMBAH METODE WITHDRAW INSTAN</h3>
+      <button type="button" id="btnCloseInstantModal" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border-2 border-black text-black font-bold hover:bg-gray-100 transition-colors shrink-0">&times;</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <form id="instantMethodForm" class="flex flex-col gap-3">
+        <input type="hidden" id="instantEditIndex" value="-1">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Nama Metode</label>
+          <input type="text" id="instantMethodName" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: Dana" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Provider</label>
+          <select id="instantMethodProvider" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="fr3">FR3 NEWERA</option>
+            <option value="vipreseller">VIP Reseller</option>
+          </select>
+          <p class="text-[11px] text-gray-500 mt-2" id="instantProviderHint">Kode produk = kode produk FR3 NEWERA.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">E-Wallet</label>
+          <select id="instantMethodEwallet" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" required>
+            <option value="dana">Dana</option>
+            <option value="gopay">GoPay</option>
+            <option value="ovo">OVO</option>
+            <option value="shopee">ShopeePay</option>
+            <option value="linkaja">LinkAja</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="instantMethodActive" class="w-4 h-4 rounded border-2 border-black text-blue-500 focus:ring-blue-500">
+          <label for="instantMethodActive" class="text-xs font-bold text-gray-700">Aktif</label>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Biaya Admin (Rp)</label>
+          <input type="number" id="instantMethodFee" min="0" value="0" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: 2000">
+          <p class="text-[11px] text-gray-500 mt-2">Biaya ini <b>ditambahkan</b> ke total tagihan pengguna, bukan dipotong dari nominal penarikan. Contoh: narik Rp 50.000 + biaya admin Rp 2.000 = saldo terpotong Rp 52.000, dan pengguna tetap menerima Rp 50.000 penuh.</p>
+        </div>
+
+        <div class="pt-1">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-bold text-gray-700" id="instantProductLabel">Kode Produk</label>
+            <button type="button" id="btnAddProductRow" class="text-[11px] font-bold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+              <i class="fas fa-plus text-[10px]"></i>Tambah Produk
+            </button>
+          </div>
+          <p class="text-[11px] text-gray-500 mb-2">Kode produk resmi dari provider (FR3 NEWERA: kode produk dashboard; VIP Reseller: kode layanan dari daftar layanan/services, mis. top-up saldo e-wallet). Satu kode = satu nominal pasti. Pengguna akan memilih dari daftar ini — tidak bisa mengetik nominal bebas.</p>
+          <div id="instantProductRows" class="flex flex-col gap-2"></div>
+          <p id="instantProductError" class="text-[11px] text-red-500 mt-1 hidden">Tambahkan minimal 1 produk dengan kode dan nominal yang valid.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btnCancelInstantModal" class="px-4 py-3 rounded-2xl text-xs font-bold text-black bg-white border-2 border-black hover:bg-gray-100 transition-colors">Batal</button>
+          <button type="submit" class="px-5 py-3 rounded-2xl text-xs font-bold text-white bg-blue-500 border-2 border-black shadow-[3px_3px_0px_0px_rgba(20,18,15,1)] hover:shadow-[1px_1px_0px_0px_rgba(20,18,15,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL METODE SEKALIPAY (BEBAS NOMINAL) ===================== -->
+<div id="sekalipayMethodModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="document.getElementById('btnCloseSekalipayModal').click()"></div>
+  <div class="relative bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(20,18,15,1)] w-full max-w-sm rounded-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="px-5 py-4 flex items-center justify-between border-b-[3px] border-black shrink-0" style="background: var(--comic-yellow);">
+      <h3 class="font-comic text-lg tracking-wide text-black" id="sekalipayModalTitle">TAMBAH METODE SEKALIPAY</h3>
+      <button type="button" id="btnCloseSekalipayModal" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border-2 border-black text-black font-bold hover:bg-gray-100 shrink-0">&times;</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <form id="sekalipayMethodForm" class="flex flex-col gap-3">
+        <input type="hidden" id="sekalipayEditIndex" value="-1">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Nama Metode</label>
+          <input type="text" id="sekalipayName" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: DANA Sekalipay" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">E-Wallet</label>
+          <select id="sekalipayWallet" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="DANA">DANA</option><option value="GoPay">GoPay</option><option value="OVO">OVO</option>
+            <option value="ShopeePay">ShopeePay</option><option value="LinkAja">LinkAja</option><option value="iSaku">iSaku</option>
+          </select>
+        </div>
+        <div>
+          <div class="flex gap-2">
+            <input type="text" id="sekalipaySearch" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Cari item, mis. dana">
+            <button type="button" id="btnSekalipayFetch" class="px-3 rounded-2xl text-[11px] font-bold text-white bg-blue-500 border-2 border-black shrink-0">Cari</button>
+          </div>
+          <div id="sekalipayFetchList" class="mt-2 max-h-40 overflow-y-auto space-y-1 hidden"></div>
+          <p id="sekalipayFetchInfo" class="text-[11px] text-gray-500 mt-1 hidden"></p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Item ID Sekalipay (open denom)</label>
+          <input type="text" id="sekalipayItemId" inputmode="numeric" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: 2451" required>
+          <p class="text-[11px] text-gray-500 mt-1">Pakai item e-wallet dengan <code>open_denom: true</code> (hasil pencarian di atas hanya menampilkan item seperti itu).</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-xs font-bold text-gray-700 mb-2">Minimal (Rp)</label><input type="number" id="sekalipayMin" min="0" value="10000" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-2">Maksimal (Rp)</label><input type="number" id="sekalipayMax" min="1" value="1000000" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Biaya Admin (Rp)</label>
+          <input type="number" id="sekalipayFee" min="0" value="0" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+          <p class="text-[11px] text-gray-500 mt-1">Ditambahkan ke total tagihan user (bukan dipotong dari nominal).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="sekalipayNameCheck" checked class="w-4 h-4 rounded border-2 border-black">
+          <label for="sekalipayNameCheck" class="text-xs font-bold text-gray-700">Wajib cek nama sebelum saldo dipotong</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="sekalipayActive" checked class="w-4 h-4 rounded border-2 border-black">
+          <label for="sekalipayActive" class="text-xs font-bold text-gray-700">Aktif</label>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btnCancelSekalipayModal" class="px-4 py-3 rounded-2xl text-xs font-bold text-black bg-white border-2 border-black hover:bg-gray-100">Batal</button>
+          <button type="submit" class="px-5 py-3 rounded-2xl text-xs font-bold text-white bg-blue-500 border-2 border-black shadow-[3px_3px_0px_0px_rgba(20,18,15,1)]">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL METODE AUSTIN (BEBAS NOMINAL) ===================== -->
+<div id="austinMethodModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="document.getElementById('btnCloseAustinModal').click()"></div>
+  <div class="relative bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(20,18,15,1)] w-full max-w-sm rounded-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="px-5 py-4 flex items-center justify-between border-b-[3px] border-black shrink-0" style="background: var(--comic-yellow);">
+      <h3 class="font-comic text-lg tracking-wide text-black" id="austinModalTitle">TAMBAH METODE AUSTIN</h3>
+      <button type="button" id="btnCloseAustinModal" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border-2 border-black text-black font-bold hover:bg-gray-100 shrink-0">&times;</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <form id="austinMethodForm" class="flex flex-col gap-3">
+        <input type="hidden" id="austinEditIndex" value="-1">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Nama Metode</label>
+          <input type="text" id="austinName" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: DANA Bebas" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Wallet Austin</label>
+          <select id="austinWallet" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="DANA">DANA</option>
+            <option value="GoPay">GoPay</option>
+            <option value="ShopeePay">ShopeePay</option>
+            <option value="LinkAja">LinkAja</option>
+            <option value="iSaku">iSaku</option>
+            <option value="Doku">Doku</option>
+            <option value="Kaspro">Kaspro</option>
+            <option value="AstraPay">AstraPay</option>
+            <option value="Mandiri">Mandiri</option>
+            <option value="BNI">BNI</option>
+            <option value="BRI">BRI</option>
+            <option value="CIMB">CIMB</option>
+            <option value="Permata">Permata</option>
+          </select>
+        </div>
+        <div>
+          <button type="button" id="btnAustinFetch" class="text-[11px] font-bold text-blue-600 inline-flex items-center gap-1"><i class="fas fa-cloud-download-alt text-[10px]"></i>Ambil kode produk dari Austin</button>
+          <p id="austinFetchInfo" class="text-[11px] text-gray-500 mt-1 hidden"></p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Kode Produk Bebas Nominal</label>
+          <input type="text" id="austinOpenCode" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: BBSDN" required>
+          <p class="text-[11px] text-gray-500 mt-1">Produk dengan <code>open_denom:true</code> di Austin (BBSDN = DANA, BBSSH = ShopeePay, BBSVAMDR = VA Mandiri).</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-2">Minimal (Rp)</label>
+            <input type="number" id="austinMin" min="0" value="10000" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-2">Maksimal (Rp)</label>
+            <input type="number" id="austinMax" min="1" value="1000000" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Biaya Admin (Rp)</label>
+          <input type="number" id="austinFee" min="0" value="0" class="w-full bg-white border-2 border-black rounded-2xl px-3 py-3 text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-yellow-400">
+          <p class="text-[11px] text-gray-500 mt-1">Ditambahkan ke total tagihan user (bukan dipotong dari nominal).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="austinActive" checked class="w-4 h-4 rounded border-2 border-black">
+          <label for="austinActive" class="text-xs font-bold text-gray-700">Aktif</label>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btnCancelAustinModal" class="px-4 py-3 rounded-2xl text-xs font-bold text-black bg-white border-2 border-black hover:bg-gray-100">Batal</button>
+          <button type="submit" class="px-5 py-3 rounded-2xl text-xs font-bold text-white bg-blue-500 border-2 border-black shadow-[3px_3px_0px_0px_rgba(20,18,15,1)]">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('sosmedDiagBtn'); if (!btn) return;
+  var out = document.getElementById('sosmedDiagOut');
+  btn.addEventListener('click', async function () {
+    out.classList.remove('hidden'); out.style.color = '#171717'; out.textContent = 'Mengambil katalog Heru Pedia...';
+    try {
+      var r = await fetch('/admin/settings/sosmed-diagnose?search=' + encodeURIComponent(document.getElementById('sosmedDiagSearch').value.trim()), { credentials: 'same-origin' });
+      var d = await r.json();
+      if (!d.success) { out.style.color = '#b91c1c'; out.textContent = 'Gagal: ' + (d.error || 'tidak diketahui'); return; }
+      var t = 'Saldo panel: ' + (d.balance === null ? '(tidak tersedia)' : d.balance) + '\nGaya API: ' + d.style + '\nLayanan terbaca: ' + d.total + ' | bisa dipesan: ' + d.usable + '\n\nContoh layanan (harga Rp per 1000, sebelum markup):';
+      (d.sample || []).forEach(function (s) { t += '\n#' + s.id + ' ' + s.name + ' | ' + s.category + ' | Rp' + s.rate + ' | min ' + s.min + ' max ' + s.max + (s.refill ? ' | refill' : ''); });
+      if (!(d.sample || []).length) t += '\n(tidak ada yang cocok)';
+      out.textContent = t;
+    } catch (e) { out.style.color = '#b91c1c'; out.textContent = 'Gagal menghubungi server.'; }
+  });
+})();
+</script>
+<%- include('partials/footer') %>
+
+<script>
+  // "Portal": pindahkan kedua modal ke langsung jadi child dari <body>.
+  // <main> di layout punya animasi masuk halaman (comicPageIn) yang memakai
+  // transform — di beberapa browser mobile, elemen dengan position:fixed yang
+  // masih jadi keturunan elemen ber-animasi transform begitu ikut "terjebak"
+  // jadi relatif ke elemen itu (bukan ke layar penuh), sehingga modal
+  // kelihatan kepotong/nempel di posisi yang salah. Dengan dipindah jadi
+  // langsung anak dari <body>, position:fixed pasti dihitung relatif ke
+  // viewport asli, bukan ke <main>.
+  (function() {
+    const mM = document.getElementById('methodModal');
+    const iM = document.getElementById('instantMethodModal');
+    if (mM) document.body.appendChild(mM);
+    if (iM) document.body.appendChild(iM);
+  })();
+
+  // Kunci scroll body selama modal terbuka, tanpa bikin halaman "lompat".
+  // Modal sendiri selalu tampil DI TENGAH LAYAR (position:fixed + flex center)
+  // jadi tidak butuh scroll halaman apapun untuk menampilkannya.
+  let _lockedScrollY = 0;
+  function lockBodyScroll() {
+    _lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${_lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function unlockBodyScroll() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _lockedScrollY);
+  }
+
+  // ==============================
+  // QR Decoder dari Upload Gambar
+  // ==============================
+  document.getElementById('qrImageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const fileNameSpan = document.getElementById('qrFileName');
+    if (!file) {
+      fileNameSpan.textContent = 'Tidak ada file';
+      return;
+    }
+    fileNameSpan.textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        if (typeof jsQR === 'undefined') {
+          alert('Library jsQR tidak ditemukan. Pastikan koneksi internet aktif.');
+          return;
+        }
+        
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          document.getElementById('gopayStaticQr').value = code.data;
+          const notif = document.getElementById('localNotif');
+          if (notif) {
+            document.getElementById('localNotifMessage').textContent = 'QR Code berhasil dibaca dan string terisi.';
+            notif.classList.remove('hidden');
+            setTimeout(() => notif.classList.add('hidden'), 3000);
+          }
+        } else {
+          alert('Tidak dapat mendeteksi QR Code pada gambar. Pastikan gambar jelas dan berisi QR Code.');
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ==============================
+  // Withdraw Methods Manual (dengan field min)
+  // ==============================
+  (function() {
+    let withdrawMethods = <%- JSON.stringify(settings.withdrawMethods || []) %>;
+    // Pastikan setiap item memiliki field min (default 0)
+    withdrawMethods = withdrawMethods.map(m => ({
+      name: m.name,
+      fee: typeof m.fee === 'number' ? m.fee : 0,
+      min: (typeof m.min === 'number' && m.min > 0) ? m.min : 0
+    }));
+
+    const listContainer = document.getElementById('withdrawMethodList');
+    const jsonInput = document.getElementById('withdrawMethodsJsonInput');
+    const modal = document.getElementById('methodModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    const methodForm = document.getElementById('methodForm');
+    const editIndexInput = document.getElementById('editIndex');
+    const nameInput = document.getElementById('methodName');
+    const feeInput = document.getElementById('methodFee');
+    const minInput = document.getElementById('methodMin');
+    const btnAdd = document.getElementById('btnAddMethod');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const notifBox = document.getElementById('localNotif');
+    const notifMessage = document.getElementById('localNotifMessage');
+    const mainForm = document.getElementById('mainSettingsForm');
+
+    // Logo preview (URL based)
+    const logoUrlInput = document.getElementById('logoUrlInput');
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPreviewImg = document.getElementById('logoPreviewImg');
+
+    if (logoUrlInput) {
+      logoUrlInput.addEventListener('input', function() {
+        const url = logoUrlInput.value.trim();
+        if (url) {
+          logoPreviewImg.src = url;
+          logoPreview.classList.remove('hidden');
+        } else {
+          logoPreview.classList.add('hidden');
+        }
+      });
+    }
+
+    function showLocalNotification(message, type = 'success') {
+      if (!notifBox || !notifMessage) return;
+      notifBox.className = type === 'success' 
+        ? 'bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3'
+        : 'bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3';
+      notifMessage.textContent = message;
+      notifBox.classList.remove('hidden');
+      setTimeout(() => notifBox.classList.add('hidden'), 5000);
+    }
+
+    function renderList() {
+      if (!listContainer) return;
+      if (withdrawMethods.length === 0) {
+        listContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-medium bg-gray-50 rounded-xl border border-gray-200">Belum ada metode withdraw manual. Klik tombol "Tambah Metode".</div>`;
+      } else {
+        listContainer.innerHTML = withdrawMethods.map((m, i) => `
+          <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 hover:border-gray-400 transition-all">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                ${m.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p class="text-xs font-medium text-gray-800">${escapeHtml(m.name)}</p>
+                <p class="text-xs font-medium text-gray-800">Fee: Rp ${m.fee.toLocaleString('id-ID')} | Min: ${m.min > 0 ? 'Rp ' + m.min.toLocaleString('id-ID') : '<span class="text-gray-400">Sesuai Default</span>'}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white transition-colors rounded-xl shadow-sm" onclick="editMethod(${i}, this)" title="Edit">
+                <i class="fas fa-pen text-xs"></i>
+              </button>
+              <button type="button" class="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-colors rounded-xl shadow-sm" onclick="deleteMethod(${i})" title="Hapus">
+                <i class="fas fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+      if (jsonInput) {
+        jsonInput.value = JSON.stringify(withdrawMethods);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function showModal(editing = false, index = -1, triggerEl = null) {
+      if (editing && index >= 0 && index < withdrawMethods.length) {
+        modalTitle.textContent = 'Edit Metode Withdraw Manual';
+        editIndexInput.value = index;
+        nameInput.value = withdrawMethods[index].name;
+        feeInput.value = withdrawMethods[index].fee;
+        minInput.value = withdrawMethods[index].min;
+      } else {
+        modalTitle.textContent = 'Tambah Metode Withdraw Manual';
+        editIndexInput.value = -1;
+        nameInput.value = '';
+        feeInput.value = '1000';
+        minInput.value = '0';
+      }
+      modal.classList.remove('hidden');
+      lockBodyScroll();
+      if (modalContent) modalContent.scrollTop = 0;
+      setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    function hideModal() {
+      modalContent.classList.remove('scale-100', 'opacity-100');
+      modalContent.classList.add('scale-95', 'opacity-0');
+      unlockBodyScroll();
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    methodForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const fee = parseInt(feeInput.value);
+      const min = parseInt(minInput.value) || 0;
+      if (!name || isNaN(fee) || fee < 0 || isNaN(min) || min < 0) {
+        alert('Nama, biaya, dan minimal penarikan harus diisi dengan benar.');
+        return;
+      }
+
+      const editIdx = parseInt(editIndexInput.value);
+      if (editIdx >= 0) {
+        withdrawMethods[editIdx] = { name, fee, min };
+      } else {
+        withdrawMethods.push({ name, fee, min });
+      }
+
+      jsonInput.value = JSON.stringify(withdrawMethods);
+      renderList();
+
+      try {
+        const response = await fetch('/admin/settings/withdraw-methods', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ withdrawMethods })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          showLocalNotification('Metode withdraw manual berhasil disimpan.');
+          hideModal();
+        } else {
+          if (editIdx >= 0) {
+            showLocalNotification('Gagal menyimpan metode.', 'error');
+          } else {
+            withdrawMethods.pop();
+            renderList();
+            alert('Gagal menyimpan metode.');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan jaringan.\n' + err);
+        if (editIdx === -1) {
+          withdrawMethods.pop();
+          renderList();
+        }
+      }
+    });
+
+    btnAdd.addEventListener('click', function() { showModal(false, -1, btnAdd); });
+    btnCloseModal.addEventListener('click', hideModal);
+    btnCancelModal.addEventListener('click', hideModal);
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) hideModal();
+    });
+
+    window.editMethod = function(index, triggerEl) {
+      showModal(true, index, triggerEl);
+    };
+    
+    window.deleteMethod = async function(index) {
+      if (!confirm('Hapus metode ini?')) return;
+      const deletedMethod = withdrawMethods.splice(index, 1)[0];
+      jsonInput.value = JSON.stringify(withdrawMethods);
+      renderList();
+
+      try {
+        const response = await fetch('/admin/settings/withdraw-methods', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ withdrawMethods })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          showLocalNotification('Metode berhasil dihapus.');
+        } else {
+          withdrawMethods.splice(index, 0, deletedMethod);
+          jsonInput.value = JSON.stringify(withdrawMethods);
+          renderList();
+          alert('Gagal menghapus metode.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan jaringan.');
+        withdrawMethods.splice(index, 0, deletedMethod);
+        jsonInput.value = JSON.stringify(withdrawMethods);
+        renderList();
+      }
+    };
+
+    mainForm.addEventListener('submit', function(e) {
+      jsonInput.value = JSON.stringify(withdrawMethods);
+    });
+
+    renderList();
+  })();
+
+  // ==============================
+  // Instant Withdraw Methods (H2H) - Disimpan via AJAX langsung
+  // ==============================
+  (function() {
+    let instantMethods = <%- JSON.stringify(settings.instantWithdrawMethods || []) %>;
+    // Produk (kode + nominal + fee) yang sedang diedit di dalam modal, terpisah
+    // dari instantMethods supaya bisa dibatalkan (Batal) tanpa menyentuh data asli.
+    let editingProducts = [];
+    const listContainer = document.getElementById('instantMethodList');
+    const jsonInput = document.getElementById('instantWithdrawMethodsJsonInput');
+    // ===== Pilihan provider (VIP Reseller / FR3 / Austin) — ganti provider = daftar metode otomatis berganti =====
+    const austinMethodsInit = <%- JSON.stringify(settings.austinWithdrawMethods || []) %>;
+    const sekalipayMethodsInit = <%- JSON.stringify(settings.sekalipayWithdrawMethods || []) %>;
+    const PROVIDER_LABEL = { vipreseller: 'VIP Reseller', fr3: 'FR3 NEWERA', austin: 'Austin Pay', sekalipay: 'Sekalipay' };
+    const provOf = (m) => (m && m.provider === 'vipreseller') ? 'vipreseller' : 'fr3';
+    let activeProvider = <%- JSON.stringify(settings.instantActiveProvider || '') %>; // provider yang sudah TERSIMPAN di database
+    let currentProvider = (function() {
+      if (PROVIDER_LABEL[activeProvider]) return activeProvider;
+      try { const saved = sessionStorage.getItem('instantProviderTab'); if (saved && PROVIDER_LABEL[saved]) return saved; } catch (e) {}
+      const fixed = <%- JSON.stringify(settings.instantWithdrawMethods || []) %>;
+      if (fixed.some(m => provOf(m) === 'vipreseller')) return 'vipreseller';
+      if (fixed.some(m => provOf(m) === 'fr3')) return 'fr3';
+      if (austinMethodsInit.length) return 'austin';
+      if (sekalipayMethodsInit.length) return 'sekalipay';
+      return 'fr3';
+    })();
+    function updateProviderTabs() {
+      document.querySelectorAll('.instant-provider-tab').forEach(btn => {
+        const on = btn.dataset.provider === currentProvider;
+        btn.className = 'instant-provider-tab px-2 py-3 rounded-2xl text-xs font-medium border transition-all ' + (on ? 'bg-blue-500 text-white border-blue-500 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-400');
+      });
+      const counts = { vipreseller: 0, fr3: 0, austin: (window.__austinCount ? window.__austinCount() : austinMethodsInit.length), sekalipay: (window.__sekalipayCount ? window.__sekalipayCount() : sekalipayMethodsInit.length) };
+      instantMethods.forEach(m => { counts[provOf(m)]++; });
+      Object.keys(counts).forEach(k => {
+        const el = document.querySelector('[data-count="' + k + '"]');
+        if (el) el.textContent = counts[k] + ' metode';
+      });
+      const actLbl = document.getElementById('instantActiveLabel');
+      if (actLbl) actLbl.textContent = activeProvider ? PROVIDER_LABEL[activeProvider] : 'Belum dipilih (semua provider tampil)';
+      const saveBtn = document.getElementById('btnSaveActiveProvider');
+      if (saveBtn) {
+        const same = currentProvider === activeProvider;
+        saveBtn.disabled = same;
+        saveBtn.className = 'mt-3 w-full px-3 py-3 rounded-xl text-xs font-medium shadow-sm transition-all inline-flex justify-center items-center gap-2 ' + (same ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white');
+        saveBtn.innerHTML = same ? '<i class="fas fa-check text-xs"></i> ' + PROVIDER_LABEL[currentProvider] + ' sudah aktif' : '<i class="fas fa-save text-xs"></i> Simpan Provider Aktif: ' + PROVIDER_LABEL[currentProvider];
+      }
+      const fixedCard = document.getElementById('metode-withdraw-instan');
+      const austinCard = document.getElementById('metode-withdraw-austin');
+      const sekalipayCard = document.getElementById('metode-withdraw-sekalipay');
+      const openProv = currentProvider === 'austin' || currentProvider === 'sekalipay';
+      if (fixedCard) fixedCard.style.display = openProv ? 'none' : '';
+      if (austinCard) austinCard.style.display = currentProvider === 'austin' ? '' : 'none';
+      if (sekalipayCard) sekalipayCard.style.display = currentProvider === 'sekalipay' ? '' : 'none';
+      const title = document.getElementById('instantCardTitle');
+      if (title) title.textContent = 'Metode Withdraw Instan ' + PROVIDER_LABEL[currentProvider] + ' — Nominal Pilihan';
+      const lbl = document.getElementById('btnAddInstantLabel');
+      if (lbl) lbl.textContent = 'Metode ' + PROVIDER_LABEL[currentProvider];
+    }
+    window.setInstantProvider = function(p) {
+      if (!PROVIDER_LABEL[p]) return;
+      currentProvider = p;
+      try { sessionStorage.setItem('instantProviderTab', p); } catch (e) {}
+      renderList();
+    };
+    window.__refreshProviderTabs = function() { updateProviderTabs(); };
+    const btnSaveActive = document.getElementById('btnSaveActiveProvider');
+    if (btnSaveActive) btnSaveActive.addEventListener('click', async function() {
+      btnSaveActive.disabled = true;
+      try {
+        const r = await fetch('/admin/settings/instant-active-provider', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: currentProvider }) });
+        const d = await r.json();
+        if (!r.ok || !d.success) throw new Error(d.error || 'Gagal menyimpan');
+        activeProvider = d.provider;
+        showLocalNotification('Provider aktif disimpan: ' + PROVIDER_LABEL[activeProvider] + '. User sekarang hanya melihat metode provider ini.');
+      } catch (e) { alert('Gagal menyimpan provider aktif: ' + e.message); }
+      updateProviderTabs();
+    });
+    document.querySelectorAll('.instant-provider-tab').forEach(btn => btn.addEventListener('click', () => window.setInstantProvider(btn.dataset.provider)));
+    const modal = document.getElementById('instantMethodModal');
+    const modalContent = document.getElementById('instantModalContent');
+    const modalTitle = document.getElementById('instantModalTitle');
+    const form = document.getElementById('instantMethodForm');
+    const editIndexInput = document.getElementById('instantEditIndex');
+    const nameInput = document.getElementById('instantMethodName');
+    const ewalletInput = document.getElementById('instantMethodEwallet');
+    const providerInput = document.getElementById('instantMethodProvider');
+    function syncProviderHint() {
+      const vip = providerInput && providerInput.value === 'vipreseller';
+      const hint = document.getElementById('instantProviderHint');
+      const lbl = document.getElementById('instantProductLabel');
+      if (hint) hint.textContent = vip ? 'Kode produk = KODE LAYANAN VIP Reseller (type=services). Nomor tujuan dikirim sebagai data_no.' : 'Kode produk = kode produk FR3 NEWERA.';
+      if (lbl) lbl.textContent = vip ? 'Kode Layanan VIP Reseller' : 'Kode Produk FR3 NEWERA';
+    }
+    if (providerInput) providerInput.addEventListener('change', syncProviderHint);
+    const activeCheck = document.getElementById('instantMethodActive');
+    const feeInput = document.getElementById('instantMethodFee');
+    const btnAdd = document.getElementById('btnAddInstantMethod');
+    const btnCloseModal = document.getElementById('btnCloseInstantModal');
+    const btnCancelModal = document.getElementById('btnCancelInstantModal');
+    const btnAddProductRow = document.getElementById('btnAddProductRow');
+    const productRowsContainer = document.getElementById('instantProductRows');
+    const productError = document.getElementById('instantProductError');
+    const notifBox = document.getElementById('localNotif');
+    const notifMessage = document.getElementById('localNotifMessage');
+
+    function renderProductRows() {
+      if (!productRowsContainer) return;
+      if (editingProducts.length === 0) {
+        productRowsContainer.innerHTML = `<div class="text-center py-4 text-gray-400 text-[11px] font-medium bg-gray-50 rounded-xl border border-gray-200">Belum ada produk. Klik "Tambah Produk".</div>`;
+        return;
+      }
+      productRowsContainer.innerHTML = editingProducts.map((p, i) => `
+        <div class="flex items-center gap-2 bg-gray-50 rounded-xl border border-gray-200 p-2 pr-3">
+          <input type="text" data-idx="${i}" data-field="code" value="${escapeHtml(p.code)}" placeholder="Kode (mis. g1)" class="product-code-input w-24 bg-white border border-gray-100 rounded-xl px-2 py-2 text-[11px] font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+          <input type="number" data-idx="${i}" data-field="amount" value="${p.amount}" placeholder="Nominal" min="0" class="product-amount-input flex-1 bg-white border border-gray-100 rounded-xl px-2 py-2 text-[11px] font-medium text-gray-800 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+          <button type="button" data-idx="${i}" class="product-remove-btn shrink-0 w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-colors rounded-xl shadow-sm" title="Hapus produk">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        </div>
+      `).join('');
+
+      productRowsContainer.querySelectorAll('.product-code-input, .product-amount-input').forEach(el => {
+        el.addEventListener('input', function() {
+          const idx = parseInt(this.dataset.idx);
+          const field = this.dataset.field;
+          if (!editingProducts[idx]) return;
+          editingProducts[idx][field] = field === 'code' ? this.value : (parseInt(this.value) || 0);
+        });
+      });
+      productRowsContainer.querySelectorAll('.product-remove-btn').forEach(el => {
+        el.addEventListener('click', function() {
+          const idx = parseInt(this.dataset.idx);
+          editingProducts.splice(idx, 1);
+          renderProductRows();
+        });
+      });
+    }
+
+    if (btnAddProductRow) {
+      btnAddProductRow.addEventListener('click', function() {
+        editingProducts.push({ code: '', amount: 10000 });
+        renderProductRows();
+      });
+    }
+
+    function showLocalNotification(message, type = 'success') {
+      if (!notifBox || !notifMessage) return;
+      notifBox.className = type === 'success' 
+        ? 'bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3'
+        : 'bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3';
+      notifMessage.textContent = message;
+      notifBox.classList.remove('hidden');
+      setTimeout(() => notifBox.classList.add('hidden'), 5000);
+    }
+
+    function renderList() {
+      if (!listContainer) return;
+      updateProviderTabs();
+      const visible = instantMethods.map((m, i) => ({ m, i })).filter(x => provOf(x.m) === currentProvider);
+      if (currentProvider === 'austin' || currentProvider === 'sekalipay') {
+        // Kartu Austin/Sekalipay punya daftar & penyimpanan sendiri; di sini hanya perlu menyimpan pilihan tab.
+      } else if (visible.length === 0) {
+        listContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-medium bg-gray-50 rounded-xl border border-gray-200">Belum ada metode ${PROVIDER_LABEL[currentProvider]}. Kosong &mdash; buat dulu dengan tombol "Metode ${PROVIDER_LABEL[currentProvider]}" lalu Simpan.</div>`;
+      } else {
+        listContainer.innerHTML = visible.map(({ m, i }) => `
+          <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 hover:border-gray-400 transition-all">
+            <div class="flex items-center gap-3 flex-1">
+              <div class="w-8 h-8 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                ${m.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <p class="text-xs font-medium text-gray-800">${escapeHtml(m.name)}</p>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded-xl font-medium ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${m.active ? 'Aktif' : 'Nonaktif'}</span>
+                </div>
+                <p class="text-xs text-gray-500">Provider: ${PROVIDER_LABEL[provOf(m)]} | E-Wallet: ${escapeHtml(m.ewallet || '-')} | ${(m.products || []).length} produk | Biaya admin: Rp${(m.fee || 0).toLocaleString('id-ID')} (ditambahkan)</p>
+                <p class="text-[11px] text-gray-400">${(m.products || []).map(p => `${escapeHtml(p.code)}: Rp${p.amount.toLocaleString('id-ID')}`).join(', ') || 'Belum ada produk'}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white transition-colors rounded-xl shadow-sm" onclick="editInstantMethod(${i}, this)" title="Edit">
+                <i class="fas fa-pen text-xs"></i>
+              </button>
+              <button type="button" class="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-colors rounded-xl shadow-sm" onclick="deleteInstantMethod(${i})" title="Hapus">
+                <i class="fas fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+      if (jsonInput) {
+        jsonInput.value = JSON.stringify(instantMethods);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function showModal(editing = false, index = -1, triggerEl = null) {
+      if (productError) productError.classList.add('hidden');
+      if (editing && index >= 0 && index < instantMethods.length) {
+        modalTitle.textContent = 'Edit Metode Withdraw Instan';
+        editIndexInput.value = index;
+        nameInput.value = instantMethods[index].name;
+        ewalletInput.value = instantMethods[index].ewallet || 'dana';
+        if (providerInput) providerInput.value = instantMethods[index].provider === 'vipreseller' ? 'vipreseller' : 'fr3';
+        activeCheck.checked = instantMethods[index].active;
+        if (feeInput) feeInput.value = instantMethods[index].fee || 0;
+        editingProducts = JSON.parse(JSON.stringify(instantMethods[index].products || []));
+      } else {
+        modalTitle.textContent = 'Tambah Metode Withdraw Instan';
+        editIndexInput.value = -1;
+        nameInput.value = '';
+        ewalletInput.value = 'dana';
+        if (providerInput) providerInput.value = (currentProvider === 'vipreseller') ? 'vipreseller' : 'fr3';
+        activeCheck.checked = true;
+        if (feeInput) feeInput.value = 0;
+        editingProducts = [];
+      }
+      if (providerInput) providerInput.disabled = true; // provider mengikuti tab yang dipilih
+      syncProviderHint();
+      renderProductRows();
+      modal.classList.remove('hidden');
+      lockBodyScroll();
+      if (modalContent) modalContent.scrollTop = 0;
+      setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    function hideModal() {
+      modalContent.classList.remove('scale-100', 'opacity-100');
+      modalContent.classList.add('scale-95', 'opacity-0');
+      unlockBodyScroll();
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    // Fungsi untuk menyimpan ke server via endpoint khusus
+    async function saveToServer() {
+      try {
+        const response = await fetch('/admin/settings/instant-withdraw-methods', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instantWithdrawMethods: instantMethods })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal menyimpan');
+        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        alert('Gagal menyimpan metode instan: ' + err.message);
+        return false;
+      }
+    }
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const ewallet = ewalletInput.value.trim();
+      const active = activeCheck.checked;
+      const fee = parseInt(feeInput && feeInput.value) || 0;
+
+      // Validasi daftar produk: kode wajib diisi & unik, nominal harus > 0.
+      const products = editingProducts
+        .map(p => ({ code: (p.code || '').trim(), amount: parseInt(p.amount) || 0 }));
+      const validProducts = products.filter(p => p.code !== '' && p.amount > 0);
+      const codes = validProducts.map(p => p.code);
+      const hasDuplicate = new Set(codes).size !== codes.length;
+
+      if (!name || !ewallet) {
+        alert('Nama metode dan E-Wallet harus diisi.');
+        return;
+      }
+      if (validProducts.length === 0 || validProducts.length !== products.length) {
+        if (productError) productError.classList.remove('hidden');
+        return;
+      }
+      if (hasDuplicate) {
+        alert('Kode produk tidak boleh duplikat dalam satu metode.');
+        return;
+      }
+      if (productError) productError.classList.add('hidden');
+
+      const editIdx = parseInt(editIndexInput.value);
+      const provider = (providerInput && providerInput.value === 'vipreseller') ? 'vipreseller' : 'fr3'; // select disabled tetap terbaca via JS
+      const methodObj = { name, ewallet, provider, active, fee, products: validProducts };
+
+      // Backup array sebelum perubahan
+      const oldMethods = JSON.parse(JSON.stringify(instantMethods));
+
+      if (editIdx >= 0) {
+        instantMethods[editIdx] = methodObj;
+      } else {
+        instantMethods.push(methodObj);
+      }
+
+      renderList();
+
+      const saved = await saveToServer();
+      if (saved) {
+        showLocalNotification('Metode withdraw instan berhasil disimpan.');
+        hideModal();
+      } else {
+        // Rollback
+        instantMethods = oldMethods;
+        renderList();
+      }
+    });
+
+    btnAdd.addEventListener('click', function() { showModal(false, -1, btnAdd); });
+    btnCloseModal.addEventListener('click', hideModal);
+    btnCancelModal.addEventListener('click', hideModal);
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) hideModal();
+    });
+
+    window.editInstantMethod = function(index, triggerEl) {
+      showModal(true, index, triggerEl);
+    };
+
+    window.deleteInstantMethod = async function(index) {
+      if (!confirm('Hapus metode ini?')) return;
+      const deleted = instantMethods.splice(index, 1)[0];
+      renderList();
+
+      const saved = await saveToServer();
+      if (!saved) {
+        // Rollback
+        instantMethods.splice(index, 0, deleted);
+        renderList();
+      } else {
+        showLocalNotification('Metode berhasil dihapus.');
+      }
+    };
+
+    // Render awal
+    renderList();
+  })();
+
+  // ==============================
+  // Metode Withdraw Instan AUSTIN (Bebas Nominal) — daftar terpisah, disimpan lewat endpoint sendiri
+  // ==============================
+  (function() {
+    let methods = <%- JSON.stringify(settings.austinWithdrawMethods || []) %>;
+    const $ = (id) => document.getElementById(id);
+    const modal = $('austinMethodModal');
+    if (!modal) return;
+    document.body.appendChild(modal);
+    const list = $('austinMethodList');
+    const esc = (t) => String(t).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    const rp = (n) => 'Rp' + (Number(n) || 0).toLocaleString('id-ID');
+
+    window.__austinCount = function() { return methods.length; };
+    function render() {
+      if (typeof window.__refreshProviderTabs === 'function') window.__refreshProviderTabs();
+      if (!methods.length) {
+        list.innerHTML = '<div class="text-center py-6 text-gray-400 text-xs font-medium bg-gray-50 rounded-xl border border-gray-200">Belum ada metode Austin. Kosong &mdash; buat dulu dengan tombol "Metode Austin" lalu Simpan.</div>';
+        return;
+      }
+      list.innerHTML = methods.map((m, i) => `
+        <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-xs font-medium text-gray-800">${esc(m.name)}</p>
+              <span class="text-[10px] px-1.5 py-0.5 rounded-xl font-medium ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${m.active ? 'Aktif' : 'Nonaktif'}</span>
+            </div>
+            <p class="text-xs text-gray-500">Wallet: ${esc(m.wallet)} | Kode: ${esc(m.openCode)} | Biaya admin: ${rp(m.fee)}</p>
+            <p class="text-[11px] text-gray-400">Bebas nominal: Min ${rp(m.min)} — Max ${rp(m.max)}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" data-edit="${i}" class="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-sm"><i class="fas fa-pen text-xs"></i></button>
+            <button type="button" data-del="${i}" class="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-sm"><i class="fas fa-trash text-xs"></i></button>
+          </div>
+        </div>`).join('');
+    }
+    async function save() {
+      try {
+        const r = await fetch('/admin/settings/austin-withdraw-methods', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ austinWithdrawMethods: methods }) });
+        const d = await r.json();
+        if (!r.ok || !d.success) throw new Error(d.error || 'Gagal menyimpan');
+        if (Array.isArray(d.methods)) methods = d.methods;
+        return true;
+      } catch (e) { alert('Gagal menyimpan metode Austin: ' + e.message); return false; }
+    }
+    function open(idx) {
+      const m = idx >= 0 ? methods[idx] : { name: '', wallet: 'DANA', openCode: '', min: 10000, max: 1000000, fee: 0, active: true };
+      $('austinModalTitle').textContent = idx >= 0 ? 'EDIT METODE AUSTIN' : 'TAMBAH METODE AUSTIN';
+      $('austinEditIndex').value = idx;
+      $('austinName').value = m.name; $('austinWallet').value = m.wallet; $('austinOpenCode').value = m.openCode;
+      $('austinMin').value = m.min; $('austinMax').value = m.max; $('austinFee').value = m.fee; $('austinActive').checked = !!m.active;
+      $('austinFetchInfo').classList.add('hidden');
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    $('btnAddAustinMethod').addEventListener('click', () => open(-1));
+    $('btnCloseAustinModal').addEventListener('click', close);
+    $('btnCancelAustinModal').addEventListener('click', close);
+    list.addEventListener('click', async (e) => {
+      const ed = e.target.closest('[data-edit]'); const de = e.target.closest('[data-del]');
+      if (ed) return open(parseInt(ed.dataset.edit));
+      if (de) {
+        if (!confirm('Hapus metode ini?')) return;
+        const backup = methods.slice();
+        methods.splice(parseInt(de.dataset.del), 1);
+        render();
+        if (!(await save())) { methods = backup; render(); }
+      }
+    });
+    $('btnAustinFetch').addEventListener('click', async () => {
+      const info = $('austinFetchInfo');
+      const show = (t, err) => { info.textContent = t; info.classList.remove('hidden'); info.style.color = err ? '#dc2626' : ''; };
+      show('Mengambil katalog dari Austin...');
+      try {
+        const d = await (await fetch('/admin/settings/austin-catalog?wallet=' + encodeURIComponent($('austinWallet').value))).json();
+        if (!d.success) throw new Error(d.message || d.error || 'Gagal');
+        const open = (d.products || []).find(p => p.open_denom);
+        if (!open) return show('Wallet ini tidak punya produk Bebas Nominal di Austin.', true);
+        $('austinOpenCode').value = open.code;
+        if (open.min) $('austinMin').value = open.min;
+        if (open.max) $('austinMax').value = open.max;
+        show('Terisi: ' + open.code + ' (batas Austin ' + rp(open.min) + ' – ' + rp(open.max) + ').');
+      } catch (err) { show('Gagal: ' + err.message, true); }
+    });
+    $('austinMethodForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const obj = {
+        name: $('austinName').value.trim(), wallet: $('austinWallet').value, openCode: $('austinOpenCode').value.trim(),
+        min: parseInt($('austinMin').value) || 0, max: parseInt($('austinMax').value) || 0,
+        fee: parseInt($('austinFee').value) || 0, active: $('austinActive').checked
+      };
+      if (!obj.name || !obj.openCode) return alert('Nama metode dan kode produk wajib diisi.');
+      if (obj.max <= 0) return alert('Maksimal harus lebih dari 0.');
+      if (obj.min > obj.max) return alert('Minimal tidak boleh lebih besar dari maksimal.');
+      const idx = parseInt($('austinEditIndex').value);
+      if (methods.some((m, i) => i !== idx && m.name.toLowerCase() === obj.name.toLowerCase())) return alert('Nama metode Austin sudah dipakai.');
+      const backup = methods.slice();
+      if (idx >= 0) methods[idx] = obj; else methods.push(obj);
+      render();
+      if (await save()) { close(); if (typeof showLocalNotification === 'function') showLocalNotification('Metode Austin berhasil disimpan.'); }
+      else { methods = backup; render(); }
+    });
+    render();
+  })();
+
+  // ==============================
+  // Metode Withdraw Instan SEKALIPAY (Bebas Nominal + cek nama) — daftar terpisah, endpoint sendiri
+  // ==============================
+  (function() {
+    let methods = <%- JSON.stringify(settings.sekalipayWithdrawMethods || []) %>;
+    const $ = (id) => document.getElementById(id);
+    const modal = $('sekalipayMethodModal');
+    if (!modal) return;
+    document.body.appendChild(modal);
+    const list = $('sekalipayMethodList');
+    const esc = (t) => String(t).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    const rp = (n) => 'Rp' + (Number(n) || 0).toLocaleString('id-ID');
+    window.__sekalipayCount = function() { return methods.length; };
+    function render() {
+      if (typeof window.__refreshProviderTabs === 'function') window.__refreshProviderTabs();
+      if (!methods.length) {
+        list.innerHTML = '<div class="text-center py-6 text-gray-400 text-xs font-medium bg-gray-50 rounded-xl border border-gray-200">Belum ada metode Sekalipay. Buat dulu dengan tombol "Metode Sekalipay".</div>';
+        return;
+      }
+      list.innerHTML = methods.map((m, i) => `
+        <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-xs font-medium text-gray-800">${esc(m.name)}</p>
+              <span class="text-[10px] px-1.5 py-0.5 rounded-xl font-medium ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${m.active ? 'Aktif' : 'Nonaktif'}</span>
+            </div>
+            <p class="text-xs text-gray-500">E-Wallet: ${esc(m.wallet)} | Item ID: ${esc(m.itemId)} | Biaya admin: ${rp(m.fee)}</p>
+            <p class="text-[11px] text-gray-400">Bebas nominal: Min ${rp(m.min)} — Max ${rp(m.max)} | Cek nama: ${m.nameCheck === false ? 'nonaktif' : 'wajib'}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" data-edit="${i}" class="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-sm"><i class="fas fa-pen text-xs"></i></button>
+            <button type="button" data-del="${i}" class="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-sm"><i class="fas fa-trash text-xs"></i></button>
+          </div>
+        </div>`).join('');
+    }
+    async function save() {
+      try {
+        const r = await fetch('/admin/settings/sekalipay-withdraw-methods', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sekalipayWithdrawMethods: methods }) });
+        const d = await r.json();
+        if (!r.ok || !d.success) throw new Error(d.error || 'Gagal menyimpan');
+        if (Array.isArray(d.methods)) methods = d.methods;
+        return true;
+      } catch (e) { alert('Gagal menyimpan metode Sekalipay: ' + e.message); return false; }
+    }
+    function open(idx) {
+      const m = idx >= 0 ? methods[idx] : { name: '', wallet: 'DANA', itemId: '', nameCheck: true, min: 10000, max: 1000000, fee: 0, active: true };
+      $('sekalipayModalTitle').textContent = idx >= 0 ? 'EDIT METODE SEKALIPAY' : 'TAMBAH METODE SEKALIPAY';
+      $('sekalipayEditIndex').value = idx;
+      $('sekalipayName').value = m.name; $('sekalipayWallet').value = m.wallet; $('sekalipayItemId').value = m.itemId;
+      $('sekalipayMin').value = m.min; $('sekalipayMax').value = m.max; $('sekalipayFee').value = m.fee;
+      $('sekalipayNameCheck').checked = m.nameCheck !== false; $('sekalipayActive').checked = !!m.active;
+      $('sekalipayFetchInfo').classList.add('hidden'); $('sekalipayFetchList').classList.add('hidden'); $('sekalipayFetchList').innerHTML = '';
+      $('sekalipaySearch').value = String(m.wallet || '').toLowerCase();
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    $('btnAddSekalipayMethod').addEventListener('click', () => open(-1));
+    $('btnCloseSekalipayModal').addEventListener('click', close);
+    $('btnCancelSekalipayModal').addEventListener('click', close);
+    list.addEventListener('click', async (e) => {
+      const ed = e.target.closest('[data-edit]'); const de = e.target.closest('[data-del]');
+      if (ed) return open(parseInt(ed.dataset.edit));
+      if (de) {
+        if (!confirm('Hapus metode ini?')) return;
+        const backup = methods.slice();
+        methods.splice(parseInt(de.dataset.del), 1);
+        render();
+        if (!(await save())) { methods = backup; render(); }
+      }
+    });
+    let found = [];
+    $('btnSekalipayFetch').addEventListener('click', async () => {
+      const info = $('sekalipayFetchInfo'), box = $('sekalipayFetchList');
+      const show = (t, err) => { info.textContent = t; info.classList.remove('hidden'); info.style.color = err ? '#dc2626' : ''; };
+      show('Mencari item open denom di Sekalipay...'); box.classList.add('hidden');
+      try {
+        const d = await (await fetch('/admin/settings/sekalipay-catalog?search=' + encodeURIComponent($('sekalipaySearch').value.trim()))).json();
+        if (!d.success) throw new Error(d.error || 'Gagal');
+        found = d.items || [];
+        if (!found.length) return show('Tidak ada item open denom yang cocok. Coba kata kunci lain.', true);
+        box.innerHTML = found.map((it, i) => `<button type="button" data-pick="${i}" class="w-full text-left px-3 py-2 rounded-xl border-2 border-black bg-white hover:bg-yellow-100 text-[11px] font-bold">#${esc(it.id)} — ${esc(it.product)} / ${esc(it.name)}<span class="block font-medium text-gray-500">${rp(it.min)} – ${rp(it.max)} | cek nama: ${it.validation ? 'tersedia' : 'tidak tersedia'}</span></button>`).join('');
+        box.classList.remove('hidden'); show(found.length + ' item ditemukan. Pilih salah satu.');
+      } catch (err) { show('Gagal: ' + err.message, true); }
+    });
+    $('sekalipayFetchList').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-pick]'); if (!b) return;
+      const it = found[parseInt(b.dataset.pick)]; if (!it) return;
+      $('sekalipayItemId').value = it.id;
+      if (it.min) $('sekalipayMin').value = it.min;
+      if (it.max) $('sekalipayMax').value = it.max;
+      $('sekalipayNameCheck').checked = !!it.validation;
+      if (!$('sekalipayName').value.trim()) $('sekalipayName').value = it.product + ' Sekalipay';
+      const info = $('sekalipayFetchInfo'); info.textContent = 'Terpilih: #' + it.id + ' (' + it.product + ').'; info.style.color = ''; info.classList.remove('hidden');
+    });
+    $('sekalipayMethodForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const obj = {
+        name: $('sekalipayName').value.trim(), wallet: $('sekalipayWallet').value, itemId: $('sekalipayItemId').value.trim(),
+        nameCheck: $('sekalipayNameCheck').checked,
+        min: parseInt($('sekalipayMin').value) || 0, max: parseInt($('sekalipayMax').value) || 0,
+        fee: parseInt($('sekalipayFee').value) || 0, active: $('sekalipayActive').checked
+      };
+      if (!obj.name || !/^\d+$/.test(obj.itemId)) return alert('Nama metode wajib diisi dan Item ID harus berupa angka.');
+      if (obj.max <= 0) return alert('Maksimal harus lebih dari 0.');
+      if (obj.min > obj.max) return alert('Minimal tidak boleh lebih besar dari maksimal.');
+      const idx = parseInt($('sekalipayEditIndex').value);
+      if (methods.some((m, i) => i !== idx && m.name.toLowerCase() === obj.name.toLowerCase())) return alert('Nama metode Sekalipay sudah dipakai.');
+      const backup = methods.slice();
+      if (idx >= 0) methods[idx] = obj; else methods.push(obj);
+      render();
+      if (await save()) { close(); if (typeof showLocalNotification === 'function') showLocalNotification('Metode Sekalipay berhasil disimpan.'); }
+      else { methods = backup; render(); }
+    });
+    render();
+  })();
+
+  // ==============================
+  // Toggle Konfigurasi Payment Gateway
+  // ==============================
+  (function() {
+    const radioOrderkuota = document.querySelector('input[name="paymentGateway"][value="orderkuota"]');
+    const radioGopay = document.querySelector('input[name="paymentGateway"][value="gopaymerchant"]');
+    const radioKianarapay = document.querySelector('input[name="paymentGateway"][value="kianarapay"]');
+    const radioDana = document.querySelector('input[name="paymentGateway"][value="dana"]');
+    const configOrderkuota = document.getElementById('config-orderkuota');
+    const configGopay = document.getElementById('config-gopaymerchant');
+    const configKianarapay = document.getElementById('config-kianarapay');
+    const configDana = document.getElementById('config-dana');
+    const labelOrderkuota = document.getElementById('label-orderkuota');
+    const labelGopay = document.getElementById('label-gopaymerchant');
+    const labelKianarapay = document.getElementById('label-kianarapay');
+    const labelDana = document.getElementById('label-dana');
+
+    function toggleGatewayConfig() {
+      const active = radioDana.checked ? 'dana' : (radioKianarapay.checked ? 'kianarapay' : (radioGopay.checked ? 'gopaymerchant' : 'orderkuota'));
+
+      configOrderkuota.classList.toggle('hidden', active !== 'orderkuota');
+      configGopay.classList.toggle('hidden', active !== 'gopaymerchant');
+      configKianarapay.classList.toggle('hidden', active !== 'kianarapay');
+      configDana.classList.toggle('hidden', active !== 'dana');
+
+      // Catatan: input provider yang lagi non-aktif SENGAJA TIDAK di-disable, supaya
+      // datanya (domain/apikey/token dsb) tetap ikut kekirim & kesimpen pas Simpan Gateway,
+      // gak ke-timpa kosong walau provider yang lagi dipilih beda.
+
+      // Gaya label terpilih. Orderkuota tanpa warna background (cuma border); state terpilih
+      // ditandai border biru + shadow. Warna biru pakai hex (bukan kelas bg-blue-/border-blue-) karena
+      // comic-theme.css memaksa semua class*="bg-blue-" jadi berwarna walau peer-checked belum aktif.
+      labelOrderkuota.classList.toggle('border-[#3b5bdb]', active === 'orderkuota');
+      labelOrderkuota.classList.toggle('shadow-md', active === 'orderkuota');
+      labelOrderkuota.classList.toggle('border-gray-200', active !== 'orderkuota');
+      labelGopay.classList.toggle('border-green-500', active === 'gopaymerchant');
+      labelGopay.classList.toggle('bg-green-50', active === 'gopaymerchant');
+      labelGopay.classList.toggle('shadow-md', active === 'gopaymerchant');
+      labelGopay.classList.toggle('border-green-200', active !== 'gopaymerchant');
+      labelGopay.classList.toggle('bg-green-50/50', active !== 'gopaymerchant');
+      labelKianarapay.classList.toggle('border-orange-500', active === 'kianarapay');
+      labelKianarapay.classList.toggle('bg-orange-50', active === 'kianarapay');
+      labelKianarapay.classList.toggle('shadow-md', active === 'kianarapay');
+      labelKianarapay.classList.toggle('border-orange-200', active !== 'kianarapay');
+      labelKianarapay.classList.toggle('bg-orange-50/50', active !== 'kianarapay');
+      labelDana.classList.toggle('border-sky-500', active === 'dana');
+      labelDana.classList.toggle('bg-sky-50', active === 'dana');
+      labelDana.classList.toggle('shadow-md', active === 'dana');
+      labelDana.classList.toggle('border-sky-200', active !== 'dana');
+      labelDana.classList.toggle('bg-sky-50/50', active !== 'dana');
+    }
+
+    radioOrderkuota.addEventListener('change', toggleGatewayConfig);
+    radioGopay.addEventListener('change', toggleGatewayConfig);
+    radioKianarapay.addEventListener('change', toggleGatewayConfig);
+    radioDana.addEventListener('change', toggleGatewayConfig);
+    // Panggil saat load untuk sinkronisasi disable
+    toggleGatewayConfig();
+  })();
+
+  // Deklarasi ulang showLocalNotification agar bisa diakses di luar scope
+  function showLocalNotification(message, type = 'success') {
+    const notifBox = document.getElementById('localNotif');
+    const notifMessage = document.getElementById('localNotifMessage');
+    if (!notifBox || !notifMessage) return;
+    notifBox.className = type === 'success' 
+      ? 'bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3'
+      : 'bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-3';
+    notifMessage.textContent = message;
+    notifBox.classList.remove('hidden');
+    setTimeout(() => notifBox.classList.add('hidden'), 5000);
+  }
+
+  // ===== WHATSAPP SENDER (Baileys) =====
+  (function() {
+    const $ = id => document.getElementById(id);
+    const dot = $('waDot'), badgeText = $('waBadgeText'), formArea = $('waFormArea');
+    const codeBox = $('waCodeBox'), codeText = $('waCodeText'), errEl = $('waError');
+    const connBox = $('waConnectedBox'), connNum = $('waConnectedNumber');
+    const pairBtn = $('waPairBtn'), pairBtnText = $('waPairBtnText'), logoutBtn = $('waLogoutBtn'), numInput = $('waNumberInput');
+    if (!pairBtn) return;
+    let poll = null;
+
+    function render(d) {
+      const st = d.status || 'disconnected';
+      const map = { connected: ['#22c55e', 'Tersambung'], pairing: ['#f59e0b', 'Menunggu kode dimasukkan'], connecting: ['#f59e0b', 'Menyambungkan...'], disconnected: ['#d1d5db', 'Belum tertaut'] };
+      const m = map[st] || map.disconnected;
+      dot.style.background = m[0]; badgeText.textContent = m[1];
+      formArea.classList.toggle('hidden', st === 'connected');
+      connBox.classList.toggle('hidden', st !== 'connected');
+      connNum.textContent = d.number ? '+' + d.number : '';
+      const showCode = st === 'pairing' && d.pairingCode;
+      codeBox.classList.toggle('hidden', !showCode);
+      if (showCode) codeText.textContent = d.pairingCode;
+      if (d.error && st !== 'connected') { errEl.textContent = d.error; errEl.classList.remove('hidden'); } else { errEl.classList.add('hidden'); }
+      if (st === 'pairing' || st === 'connecting') startPoll(); else stopPoll();
+    }
+    // Tombol salin kode perangkat (fallback execCommand untuk halaman http / browser lama)
+    const copyBtn = $('waCopyBtn'), copyBtnText = $('waCopyBtnText');
+    if (copyBtn) copyBtn.addEventListener('click', function() {
+      const text = (codeText.textContent || '').trim();
+      if (!text || text === '----') return;
+      const done = function() {
+        copyBtnText.textContent = 'Tersalin!';
+        setTimeout(function() { copyBtnText.textContent = 'Salin Kode'; }, 1500);
+      };
+      const fallback = function() {
+        const t = document.createElement('textarea');
+        t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select(); t.setSelectionRange(0, text.length);
+        try { if (document.execCommand('copy')) done(); } catch (e) {}
+        document.body.removeChild(t);
+      };
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done).catch(fallback);
+      else fallback();
+    });
+    function startPoll() { if (!poll) poll = setInterval(refresh, 3000); }
+    function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
+    async function refresh() {
+      try { const r = await fetch('/admin/wa/status'); render(await r.json()); } catch (_) {}
+    }
+    pairBtn.addEventListener('click', async function() {
+      pairBtn.disabled = true; pairBtn.style.opacity = '0.7'; pairBtnText.textContent = 'Membuat kode...';
+      try {
+        const r = await fetch('/admin/wa/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: numInput.value }) });
+        const d = await r.json();
+        if (d.success === false) { errEl.textContent = d.error || 'Gagal membuat kode.'; errEl.classList.remove('hidden'); }
+        else render(d);
+      } catch (e) { errEl.textContent = 'Gagal menghubungi server.'; errEl.classList.remove('hidden'); }
+      pairBtn.disabled = false; pairBtn.style.opacity = '1'; pairBtnText.textContent = 'Tautkan Perangkat';
+    });
+    logoutBtn.addEventListener('click', async function() {
+      if (!confirm('Putuskan WhatsApp sender? Verifikasi WhatsApp tidak akan tersedia sampai ditautkan lagi.')) return;
+      try { const r = await fetch('/admin/wa/logout', { method: 'POST' }); render(await r.json()); } catch (_) {}
+    });
+    refresh();
+  })();
+
+  // ===== VERIFIKASI REGISTRASI =====
+  (function() {
+    const toggle = document.getElementById('registerVerificationEnabled');
+    const label = document.getElementById('registerVerificationLabel');
+    if (!toggle || !label) return;
+    toggle.addEventListener('change', function() {
+      label.textContent = toggle.checked ? 'Aktif' : 'Nonaktif';
+    });
+  })();
+
+  // ===== DOWNLOAD APLIKASI =====
+  (function() {
+    const toggle = document.getElementById('appDownloadEnabled');
+    const label = document.getElementById('appDownloadLabel');
+    if (!toggle || !label) return;
+    toggle.addEventListener('change', function() {
+      label.textContent = toggle.checked ? 'Aktif' : 'Nonaktif';
+    });
+  })();
+
+  // ===== HOLD SALDO SHOPEEPAY =====
+  (function() {
+    const toggle = document.getElementById('shopeepayHoldEnabled');
+    const label = document.getElementById('shopeepayHoldLabel');
+    if (!toggle || !label) return;
+    toggle.addEventListener('change', function() {
+      label.textContent = toggle.checked ? 'Aktif' : 'Nonaktif';
+    });
+  })();
+
+  // ===== JAM KERJA PENARIKAN =====
+  (function() {
+    const toggle = document.getElementById('workHoursEnabled');
+    const fields = document.getElementById('workHoursFields');
+    const label  = document.getElementById('workHoursLabel');
+    const preview = document.getElementById('workSchedulePreview');
+    const hariNama = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+    function updatePreview() {
+      var openEl  = document.querySelector('[name=workOpenTime]');
+      var closeEl = document.querySelector('[name=workCloseTime]');
+      var openDay = parseInt((document.querySelector('[name=workOpenDay]') || {}).value || 1);
+      var closeDay = parseInt((document.querySelector('[name=workCloseDay]') || {}).value || 5);
+      if (preview && openEl && closeEl) {
+        preview.textContent = hariNama[openDay] + ' – ' + hariNama[closeDay] + ', ' + openEl.value + ' s/d ' + closeEl.value + ' WIB';
+      }
+    }
+
+    if (toggle) {
+      toggle.addEventListener('change', function() {
+        if (this.checked) {
+          if (fields) { fields.classList.remove('opacity-50','pointer-events-none'); }
+          if (label) label.textContent = 'Aktif';
+        } else {
+          if (fields) { fields.classList.add('opacity-50','pointer-events-none'); }
+          if (label) label.textContent = 'Nonaktif';
+        }
+      });
+    }
+
+    document.querySelectorAll('[name=workOpenTime],[name=workCloseTime],[name=workOpenDay],[name=workCloseDay]').forEach(function(el) {
+      el.addEventListener('change', updatePreview);
+    });
+
+    updatePreview();
+  })();
+
+  // ==============================
+  // Perbaikan navigasi anchor (#metode-withdraw / #metode-withdraw-instan)
+  // dari tombol "Setting" di navbar. Di HP, gambar/ikon/font yang telat
+  // selesai render bikin tinggi halaman berubah SETELAH browser melakukan
+  // scroll-ke-anchor bawaan, sehingga posisi akhirnya geser turun (mis. jadi
+  // nyangkut di tengah "Jam Kerja Penarikan"). Di sini posisi anchor
+  // dikoreksi ulang setelah semua aset (gambar dll.) benar-benar selesai
+  // dimuat, supaya posisinya presisi.
+  // ==============================
+  (function() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    const SCROLL_OFFSET = 96;
+    function correctScroll() {
+      const rect = target.getBoundingClientRect();
+      const currentScrollY = window.scrollY || window.pageYOffset || 0;
+      const targetY = Math.max(0, rect.top + currentScrollY - SCROLL_OFFSET);
+      window.scrollTo(0, targetY);
+    }
+    // Koreksi beberapa kali: sesaat setelah load, dan lagi setelah jeda
+    // (mengakomodasi font/ikon yang telat selesai reflow di HP yang lebih lambat).
+    window.addEventListener('load', () => setTimeout(correctScroll, 50));
+    setTimeout(correctScroll, 400);
+    setTimeout(correctScroll, 1000);
+  })();
+
+</script>
+<style>
+  /* Offset anchor scroll bawaan browser, disamakan dengan tinggi navbar sticky */
+  #metode-withdraw, #metode-withdraw-instan { scroll-margin-top: 96px; }
+</style>
