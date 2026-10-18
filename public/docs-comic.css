@@ -1,0 +1,201 @@
+/* =====================================================================
+   DOKUMENTASI API — tema komik "Pikachu x Naruto"
+   Kuning Pikachu + oranye Naruto + biru headband, garis tebal, halftone.
+   Diperbaiki: blok kode bisa digeser kiri-kanan (tidak dipotong / dipaksa wrap).
+   ===================================================================== */
+@font-face{font-family:Bangers;src:url('/fonts/bangers.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Comic Neue';src:url('/fonts/comic-neue-regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Comic Neue';src:url('/fonts/comic-neue-bold.ttf') format('truetype');font-weight:700;font-display:swap}
+
+:root{
+  --pk-yellow:#ffd93b; --pk-yellow-2:#ffe98a; --pk-red:#e5322d; --pk-brown:#6b3e1a;
+  --nr-orange:#ff7a00; --nr-blue:#1e3a8a; --nr-cream:#fff6d6;
+  --ink:#171717; --paper:#fffdf2;
+}
+
+html{ overflow-x:hidden; -webkit-text-size-adjust:100%; }
+body{
+  font-family:'Comic Neue','Inter',system-ui,sans-serif !important;
+  font-weight:700; color:var(--ink) !important;
+  background-color:var(--pk-yellow) !important;
+  background-image:
+    radial-gradient(circle, rgba(255,122,0,.35) 1.6px, transparent 1.9px),
+    radial-gradient(circle, rgba(23,23,23,.16) 1.2px, transparent 1.5px) !important;
+  background-size:22px 22px, 22px 22px !important;
+  background-position:0 0, 11px 11px !important;
+  overflow-x:hidden; max-width:100vw;
+}
+/* semua area konten tidak boleh melebihi layar */
+.docs-shell,.docs-main,.docs-main *{ min-width:0; }
+.docs-main{ max-width:100%; padding-bottom:40px; }
+.docs-main li, .docs-main p, .docs-main span, .docs-main h1, .docs-main h2, .docs-main h3{ overflow-wrap:anywhere; }
+.docs-main img{ max-width:100%; height:auto; }
+.docs-main table{ display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-collapse:collapse; }
+.docs-main table th,.docs-main table td{ border:2px solid var(--ink); padding:6px 10px; white-space:nowrap; }
+.docs-main table th{ background:var(--nr-orange); color:#fff; font-family:Bangers,cursive; letter-spacing:.06em; font-weight:400; }
+
+/* ---------- TOP BAR: biru headband Naruto ---------- */
+.docs-topbar{
+  background:var(--nr-blue) !important; border-bottom:4px solid var(--ink) !important;
+  box-shadow:0 4px 0 var(--nr-orange);
+}
+.docs-topbar-name{ font-family:Bangers,cursive !important; font-weight:400 !important; font-size:22px !important; letter-spacing:.08em; color:var(--pk-yellow) !important; text-shadow:2px 2px 0 var(--ink); }
+.docs-icon-btn{
+  background:var(--pk-yellow) !important; color:var(--ink) !important;
+  border:3px solid var(--ink) !important; border-radius:10px !important; box-shadow:3px 3px 0 var(--ink);
+}
+.docs-icon-btn:active,.docs-auth-btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink); }
+.docs-auth-btn{ border:3px solid var(--ink) !important; box-shadow:3px 3px 0 var(--ink); font-family:Bangers,cursive; font-weight:400 !important; letter-spacing:.06em; font-size:15px !important; }
+.docs-auth-btn.login{ background:var(--nr-orange) !important; color:#fff !important; text-shadow:1px 1px 0 var(--ink); }
+.docs-auth-btn.logout{ background:var(--pk-red) !important; color:#fff !important; }
+.docs-search-wrap{ background:var(--nr-orange) !important; border-bottom:4px solid var(--ink) !important; }
+.docs-search-wrap input{ background:#fff !important; color:var(--ink) !important; border:3px solid var(--ink) !important; font-weight:700; box-shadow:3px 3px 0 var(--ink); }
+.docs-search-wrap input::placeholder{ color:#6b7280 !important; }
+
+/* ---------- SIDEBAR: kertas komik ---------- */
+.docs-sidebar{
+  background-color:var(--nr-cream) !important;
+  background-image:radial-gradient(circle, rgba(255,122,0,.3) 1.3px, transparent 1.6px) !important; background-size:14px 14px !important;
+  border-right:4px solid var(--ink) !important;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+}
+.docs-nav-title{ font-family:Bangers,cursive !important; font-weight:400 !important; font-size:16px !important; letter-spacing:.1em; color:var(--nr-blue) !important; text-shadow:1px 1px 0 var(--pk-yellow); }
+.docs-nav-item{ color:var(--ink) !important; font-weight:700 !important; border:2px solid transparent; }
+.docs-nav-item:hover{ background:var(--pk-yellow-2) !important; border-color:var(--ink); color:var(--ink) !important; }
+.docs-nav-item.active{ background:var(--nr-orange) !important; color:#fff !important; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); text-shadow:1px 1px 0 var(--ink); }
+.docs-nav-badge{ background:var(--pk-yellow) !important; color:var(--ink) !important; border:2px solid var(--ink); font-family:Bangers,cursive; font-weight:400 !important; letter-spacing:.05em; font-size:11px !important; }
+.docs-sidebar-overlay{ background:rgba(23,23,23,.6) !important; }
+
+/* ---------- KONTEN ---------- */
+.docs-main > *{ max-width:100%; }
+.docs-main h1{
+  font-family:Bangers,cursive !important; font-weight:400 !important; font-size:34px !important; letter-spacing:.08em; line-height:1.05;
+  color:var(--pk-yellow) !important; -webkit-text-stroke:1.5px var(--ink); text-shadow:4px 4px 0 var(--ink);
+}
+.docs-main section{
+  background:var(--paper); border:4px solid var(--ink); border-radius:14px;
+  padding:16px 14px; margin-bottom:22px !important; position:relative;
+  box-shadow:6px 6px 0 var(--ink);
+}
+.docs-main section::after{ /* petir Pikachu */
+  content:""; position:absolute; top:-16px; right:14px; width:26px; height:34px; background:var(--pk-yellow);
+  border:0; clip-path:polygon(55% 0,10% 55%,45% 55%,30% 100%,90% 40%,55% 40%);
+  filter:drop-shadow(2px 2px 0 var(--ink)); pointer-events:none;
+}
+.docs-main section h2{
+  display:inline-block; font-family:Bangers,cursive !important; font-weight:400 !important;
+  font-size:22px !important; letter-spacing:.06em; line-height:1.2;
+  background:var(--nr-orange); color:#fff !important; text-shadow:2px 2px 0 var(--ink);
+  border:3px solid var(--ink); border-radius:8px; padding:4px 12px; margin-bottom:12px !important;
+  transform:rotate(-1deg); box-shadow:3px 3px 0 var(--ink);
+}
+.docs-main h3{ font-family:Bangers,cursive !important; font-weight:400 !important; letter-spacing:.05em; font-size:18px !important; color:var(--nr-blue) !important; }
+.docs-main p,.docs-main li{ color:var(--ink) !important; font-weight:700 !important; font-size:14.5px !important; }
+.docs-main .text-gray-800,.docs-main .text-gray-700,.docs-main .text-gray-600{ color:var(--ink) !important; }
+.docs-main .text-blue-600{
+  color:var(--nr-blue) !important; background:var(--pk-yellow-2); border:2px solid var(--ink); border-radius:6px;
+  padding:0 6px; font-weight:700; display:inline; box-decoration-break:clone; -webkit-box-decoration-break:clone;
+}
+.docs-main .list-disc{ list-style:none; padding-left:0; }
+.docs-main .list-disc > li{ position:relative; padding-left:24px; margin-bottom:4px; }
+.docs-main .list-disc > li::before{ content:"⚡"; position:absolute; left:0; top:0; font-size:14px; }
+
+/* ---------- SWITCHER TAB BAHASA (bisa digeser) ---------- */
+.docs-main [data-code-switcher]{
+  background:#fff !important; border:3px solid var(--ink) !important; border-radius:12px !important;
+  overflow:hidden; box-shadow:5px 5px 0 var(--ink); max-width:100%;
+}
+.docs-main [data-code-switcher] > .flex{
+  background:var(--pk-yellow) !important; border-bottom:3px solid var(--ink) !important;
+  overflow-x:auto !important; overflow-y:hidden; flex-wrap:nowrap !important;
+  -webkit-overflow-scrolling:touch; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none;
+  padding:8px 8px 0 !important; gap:6px !important;
+}
+.docs-main [data-code-switcher] > .flex::-webkit-scrollbar{ display:none; }
+.docs-main .code-tab{
+  flex:0 0 auto !important; white-space:nowrap;
+  font-family:Bangers,cursive !important; font-weight:400 !important; letter-spacing:.06em; font-size:16px !important;
+  background:var(--nr-cream) !important; color:var(--ink) !important;
+  border:3px solid var(--ink) !important; border-bottom:0 !important; border-radius:10px 10px 0 0 !important;
+  margin-bottom:0 !important; padding:6px 12px !important;
+}
+.docs-main .code-tab i{ color:var(--ink) !important; }
+.docs-main .code-tab.active{ background:var(--nr-orange) !important; color:#fff !important; text-shadow:1px 1px 0 var(--ink); }
+.docs-main .code-tab.active i{ color:#fff !important; }
+
+/* ---------- BLOK KODE: tidak hitam lagi + BISA DIGESER ---------- */
+.docs-main [data-code-switcher] > .relative,
+.docs-main .bg-gray-900,
+.docs-main .bg-gray-50.relative{
+  background-color:var(--paper) !important;
+  background-image:radial-gradient(circle, rgba(255,122,0,.22) 1.2px, transparent 1.5px) !important; background-size:12px 12px !important;
+  padding:0 !important; border-radius:0; color:var(--ink) !important; position:relative;
+}
+/* blok kode mandiri (tanpa tab) */
+.docs-main .bg-gray-900{ border:3px solid var(--ink) !important; border-radius:12px !important; box-shadow:4px 4px 0 var(--ink); overflow:hidden; }
+.docs-main pre{
+  display:block !important; box-sizing:border-box;
+  width:100% !important; max-width:100% !important; margin:0 !important;
+  padding:14px 46px 14px 14px !important;
+  overflow-x:auto !important; overflow-y:hidden;
+  white-space:pre !important; word-break:normal !important; overflow-wrap:normal !important;
+  -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; overscroll-behavior-x:contain;
+  scrollbar-width:thin; scrollbar-color:var(--nr-orange) transparent;
+  background:transparent !important; color:var(--ink) !important;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace !important;
+  font-size:12.5px !important; font-weight:700 !important; line-height:1.65 !important;
+  border:0 !important; border-radius:0 !important; box-shadow:none !important;
+  tab-size:2;
+}
+.docs-main pre.ai-prompt-text{ white-space:pre-wrap !important; word-break:break-word !important; }
+.docs-main pre::-webkit-scrollbar{ height:8px; }
+.docs-main pre::-webkit-scrollbar-thumb{ background:var(--nr-orange); border:2px solid var(--ink); border-radius:8px; }
+.docs-main pre code,.docs-main pre span{ background:transparent !important; color:inherit !important; white-space:inherit !important; word-break:inherit !important; padding:0 !important; border:0 !important; }
+.docs-main pre .base-url-placeholder{ color:var(--nr-blue) !important; }
+.docs-main .text-gray-100{ color:var(--ink) !important; }
+.docs-main code.hidden,.docs-main .copy-content.hidden{ display:none !important; }
+.docs-main .bg-gray-900 > pre{ padding-right:14px !important; }
+
+/* tombol salin — komik */
+.docs-main [data-code-switcher] button[title="Salin"]{
+  position:absolute !important; top:8px !important; right:8px !important; z-index:5;
+  width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  background:var(--pk-yellow) !important; color:var(--ink) !important;
+  border:3px solid var(--ink) !important; border-radius:8px; box-shadow:2px 2px 0 var(--ink);
+}
+.docs-main [data-code-switcher] button[title="Salin"] i{ color:var(--ink) !important; }
+
+/* petunjuk geser di HP */
+@media (max-width:1023px){
+  .docs-main [data-code-switcher] > .relative::after{
+    content:"⇠ geser ⇢"; position:absolute; right:10px; bottom:4px; z-index:4; pointer-events:none;
+    font-family:Bangers,cursive; letter-spacing:.08em; font-size:11px; color:var(--ink);
+    background:var(--pk-yellow); border:2px solid var(--ink); border-radius:6px; padding:0 6px; opacity:.9;
+  }
+}
+
+/* ---------- Kotak Unduh JSON & Prompt AI ---------- */
+.ai-box{ background:var(--nr-cream) !important; border:4px solid var(--ink) !important; border-radius:14px !important; box-shadow:5px 5px 0 var(--nr-orange); }
+.ai-btn{ font-family:Bangers,cursive !important; font-weight:400 !important; letter-spacing:.06em; font-size:15px !important; background:var(--pk-yellow) !important; box-shadow:3px 3px 0 var(--ink) !important; }
+.ai-btn.alt{ background:var(--nr-orange) !important; color:#fff !important; text-shadow:1px 1px 0 var(--ink); }
+.ai-btn.alt i{ color:#fff !important; }
+.ai-card{ border:3px solid var(--ink) !important; border-radius:12px !important; box-shadow:4px 4px 0 var(--ink); }
+.ai-card-head{ background:var(--nr-orange) !important; }
+.ai-card-head,.ai-card-head *{ color:#fff !important; text-shadow:1px 1px 0 var(--ink); }
+.ai-card pre.ai-prompt-text{ background:#fff !important; max-height:260px; overflow:auto !important; }
+
+/* ---------- Footer ---------- */
+.docs-main footer,footer{
+  background:var(--nr-blue); color:#fff !important; border-top:4px solid var(--ink) !important;
+}
+footer p,footer a{ color:#fff !important; font-weight:700 !important; }
+footer a{ color:var(--pk-yellow) !important; }
+
+@media (min-width:1024px){
+  .docs-main{ padding:0 24px 40px; }
+  .docs-main section{ max-width:900px; }
+}
+@media (max-width:1023px){
+  .docs-main{ padding-left:12px; padding-right:12px; }
+}
+::selection{ background:var(--nr-orange); color:#fff; }
