@@ -1,0 +1,16 @@
+<%# Kartu "Tentang Saya" (nama depan + bio) dan kelola "Story Saya". Dipakai di /profile dan /admin/account. Param: person %>
+<%- include('story_boot') %>
+<section class="st-about">
+  <h4>Tentang Saya</h4>
+  <form method="POST" action="/profile/about" autocomplete="off">
+    <label for="stFirstName"><span>Nama Depan</span><span>maks 20</span></label>
+    <input type="text" id="stFirstName" name="firstName" maxlength="20" value="<%= person.firstName || '' %>" placeholder="<%= person.username %>">
+    <p class="note">Cuma pajangan di profil, bebas nama apa saja. Kalau dikosongkan, yang tampil username.</p>
+    <label for="stBio"><span>Bio</span><span>maks 150</span></label>
+    <textarea id="stBio" name="bio" rows="3" maxlength="150" placeholder="Ceritakan sedikit tentang kamu..."><%= person.bio || '' %></textarea>
+    <button type="submit" class="st-save">SIMPAN</button>
+  </form>
+  <a href="/u/<%= String(person._id) %>" class="st-close-x" style="display:inline-block">Lihat tampilan profil publik &rarr;</a>
+</section>
+<section class="st-mine" id="stMine"></section>
+<script>Story.mountMine(document.getElementById('stMine'));</script>
