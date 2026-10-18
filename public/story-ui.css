@@ -1,0 +1,198 @@
+/* ============ STORY UI v1 — story ala IG, tampilan komik ============
+   Stylesheet 'owned' (data-comic-owned): warna custom story tidak diratakan palette bridge.
+   Warna story dipasang lewat CSS variable (--st-bg / --st-fg), bukan inline background/color. */
+.st-bar, .st-ov, .st-cp, .st-mine, .up-wrap, .st-sheet-bg { --st-ink:#171717; --st-yellow:var(--cm-yellow,#edc531); --st-cream:#fffbe8; --st-white:#fff; --st-red:#dc2626; }
+.st-bar *, .st-ov *, .st-cp *, .st-mine *, .up-wrap *, .st-sheet-bg * { box-sizing: border-box; }
+.st-hide { display: none !important; }
+
+/* ---------- Bar story di dashboard ---------- */
+.st-bar { margin: 0 0 18px; }
+.st-bar-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.st-title { display: inline-block; font-family: Bangers, Impact, sans-serif; font-size: 1.25rem; letter-spacing: .08em; padding: 3px 12px 1px;
+  background: var(--st-ink); --cm-fg: var(--st-yellow); color: var(--st-yellow); border-radius: 8px; transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--st-yellow); }
+.st-hint { font-size: 11px; font-weight: 700; opacity: .75; }
+.st-row { display: flex; gap: 14px; overflow-x: auto; padding: 6px 6px 12px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.st-item { flex: 0 0 auto; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 5px; scroll-snap-align: start; background: none; border: 0; padding: 0; cursor: pointer; }
+.st-avwrap { position: relative; width: 66px; height: 66px; }
+.st-av { position: relative; width: 66px; height: 66px; padding: 0; border: 0; background: none; cursor: pointer; display: block; border-radius: 50%; }
+.st-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #fff; display: block; border: 3px solid var(--st-ink); }
+/* cincin komik: garis putus-putus tebal + bayangan offset */
+.st-av.ring { padding: 3px; background: repeating-conic-gradient(var(--st-red) 0 18deg, var(--st-yellow) 18deg 36deg); box-shadow: 3px 3px 0 var(--st-ink); }
+.st-av.ring img { border-width: 3px; }
+.st-av.ring.seen { background: #b8b8b8; box-shadow: 2px 2px 0 rgba(23,23,23,.55); }
+.st-av.empty { box-shadow: 3px 3px 0 var(--st-ink); }
+.st-plus { position: absolute; right: -4px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--st-ink); background: var(--st-yellow);
+  --cm-fg: var(--st-ink); color: var(--st-ink); font-family: Bangers, Impact, sans-serif; font-size: 20px; line-height: 17px; text-align: center; padding: 0; cursor: pointer; box-shadow: 2px 2px 0 var(--st-ink); }
+.st-plus:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--st-ink); }
+.st-name { max-width: 74px; font-family: 'Comic Neue', Arial, sans-serif; font-weight: 800; font-size: 11.5px; line-height: 1.15; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-skel { flex: 0 0 auto; width: 66px; height: 66px; border-radius: 50%; background: rgba(23,23,23,.12); border: 3px dashed rgba(23,23,23,.35); }
+
+/* ---------- Viewer ---------- */
+.st-ov { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; padding: 10px;
+  background-color: rgba(12,12,12,.94); background-image: radial-gradient(rgba(237,197,49,.16) 1.4px, transparent 1.6px); background-size: 14px 14px; animation: stFade .18s ease; }
+@keyframes stFade { from { opacity: 0; } to { opacity: 1; } }
+.st-stage { position: relative; width: min(100%, 420px); height: min(100%, 780px); max-height: calc(100dvh - 20px); border: 4px solid #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 8px 8px 0 var(--st-yellow); background: #000; touch-action: none; user-select: none; -webkit-user-select: none; }
+.st-prog { position: absolute; z-index: 5; left: 10px; right: 10px; top: 10px; display: flex; gap: 4px; }
+.st-seg { flex: 1; height: 6px; border-radius: 4px; background: rgba(255,255,255,.35); border: 1.5px solid #171717; overflow: hidden; }
+.st-seg i { display: block; height: 100%; width: 0; background: var(--st-yellow); }
+.st-seg.done i { width: 100%; }
+.st-top { position: absolute; z-index: 6; left: 0; right: 0; top: 0; padding: 26px 10px 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background-image: linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0)); --cm-fg: #fff; color: #fff; }
+.st-who { display: flex; align-items: center; gap: 9px; min-width: 0; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; --cm-fg: #fff; color: #fff; }
+.st-who img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--st-yellow); background: #fff; flex: 0 0 auto; }
+.st-who-t { min-width: 0; display: flex; flex-direction: column; }
+.st-who-n { font-family: Bangers, Impact, sans-serif; font-size: 1.15rem; letter-spacing: .05em; line-height: 1.05; --cm-fg: #fff; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 48vw; }
+.st-who-s { font-size: 11px; font-weight: 800; --cm-fg: #f1e2a0; color: #f1e2a0; }
+.st-tools { display: flex; gap: 6px; flex: 0 0 auto; }
+.st-tool { width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #fff; background: rgba(0,0,0,.55); --cm-fg: #fff; color: #fff; cursor: pointer; display: grid; place-items: center; padding: 0; font-size: 14px; }
+.st-tool:active { transform: scale(.9); }
+.st-body { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.st-body img, .st-body video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.st-zone { position: absolute; z-index: 4; top: 70px; bottom: 70px; }
+.st-zl { left: 0; width: 33%; } .st-zr { right: 0; width: 67%; }
+
+/* kartu story tulisan: warna dari variabel */
+.st-tcard { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 78px 26px 78px;
+  background-color: var(--st-bg) !important; --cm-fg: var(--st-fg) !important; color: var(--st-fg) !important; text-align: center; }
+.st-ttext { margin: 0; font-family: 'Comic Neue', Arial, sans-serif; font-weight: 800; font-size: clamp(1.35rem, 6.2vw, 2rem); line-height: 1.3; white-space: pre-wrap; overflow-wrap: anywhere;
+  --cm-fg: var(--st-fg) !important; color: var(--st-fg) !important; }
+.st-ttext.sm { font-size: clamp(1.05rem, 4.6vw, 1.45rem); }
+.st-topic { display: inline-block; max-width: 100%; font-family: Bangers, Impact, sans-serif; letter-spacing: .07em; font-size: 1.05rem; padding: 4px 14px 2px; border-radius: 999px;
+  background-color: var(--st-fg) !important; --cm-fg: var(--st-bg) !important; color: var(--st-bg) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: rotate(-2deg); }
+.st-mtopic { position: absolute; z-index: 5; left: 12px; top: 84px; background-color: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); border: 2.5px solid var(--st-ink); box-shadow: 3px 3px 0 var(--st-ink); }
+.st-cap { position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; padding: 30px 16px 58px; text-align: center; font-weight: 800; font-size: 1rem; line-height: 1.3; white-space: pre-wrap; overflow-wrap: anywhere;
+  background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.75)); --cm-fg: #fff; color: #fff; }
+.st-foot { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; padding: 12px 14px 14px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.st-views { display: inline-flex; align-items: center; gap: 7px; font-family: Bangers, Impact, sans-serif; letter-spacing: .06em; font-size: 1rem; padding: 4px 14px 2px; border-radius: 999px;
+  background-color: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); border: 2.5px solid var(--st-ink); box-shadow: 3px 3px 0 var(--st-ink); }
+.st-pause { position: absolute; z-index: 6; right: 12px; top: 84px; font-family: Bangers, Impact, sans-serif; font-size: 1rem; letter-spacing: .08em; padding: 3px 10px 1px; border-radius: 8px;
+  background-color: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); border: 2.5px solid var(--st-ink); transform: rotate(4deg); }
+
+/* sheet profil mini di viewer & menu profil di chat */
+.st-sheet-bg { position: fixed; inset: 0; z-index: 420; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.55); animation: stFade .15s ease; }
+.st-sheet { width: min(100%, 460px); background: var(--st-cream); border: 4px solid var(--st-ink); border-bottom: 0; border-radius: 20px 20px 0 0; padding: 18px 16px 22px; text-align: center;
+  --cm-fg: var(--st-ink); color: var(--st-ink); box-shadow: 0 -6px 0 var(--st-yellow); animation: stUp .22s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes stUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.st-sheet-av { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 4px solid var(--st-ink); background: #fff; box-shadow: 4px 4px 0 var(--st-yellow); }
+.st-sheet-av.ring { border-color: var(--st-red); }
+.st-sheet-name { margin: 10px 0 0; font-family: Bangers, Impact, sans-serif; font-size: 1.7rem; letter-spacing: .05em; line-height: 1.05; --cm-fg: var(--st-ink); color: var(--st-ink); overflow-wrap: anywhere; }
+.st-sheet-user { margin: 2px 0 0; font-weight: 800; font-size: 13px; opacity: .8; --cm-fg: var(--st-ink); color: var(--st-ink); }
+.st-role { display: inline-block; margin-top: 6px; padding: 3px 12px 1px; border-radius: 999px; font-family: Bangers, Impact, sans-serif; letter-spacing: .08em; font-size: .9rem; text-transform: uppercase;
+  background: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); border: 2px solid var(--st-ink); }
+.st-role.admin { background: var(--st-red); --cm-fg: #fff; color: #fff; }
+.st-bio { margin: 10px auto 0; max-width: 340px; font-weight: 700; font-size: 13.5px; line-height: 1.4; --cm-fg: var(--st-ink); color: var(--st-ink); overflow-wrap: anywhere; }
+.st-acts { display: flex; gap: 10px; margin-top: 14px; }
+.st-act { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 8px 8px; border-radius: 12px; border: 3px solid var(--st-ink); background: var(--st-yellow);
+  --cm-fg: var(--st-ink); color: var(--st-ink); font-family: Bangers, Impact, sans-serif; font-size: 1.15rem; letter-spacing: .06em; text-decoration: none; cursor: pointer; box-shadow: 3px 3px 0 var(--st-ink); }
+.st-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--st-ink); }
+.st-act.alt { background: #fff; }
+.st-act[disabled], .st-act.off { opacity: .45; cursor: not-allowed; }
+.st-close-x { margin-top: 12px; background: none; border: 0; font-weight: 800; font-size: 12.5px; text-decoration: underline; cursor: pointer; --cm-fg: var(--st-ink); color: var(--st-ink); }
+
+/* ---------- Composer (buat story) ---------- */
+.st-cp { position: fixed; inset: 0; z-index: 410; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.6); animation: stFade .15s ease; }
+.st-cp-box { width: min(100%, 520px); max-height: 96dvh; display: flex; flex-direction: column; background: var(--st-cream); border: 4px solid var(--st-ink); border-bottom: 0; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -6px 0 var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); animation: stUp .22s cubic-bezier(.2,.9,.3,1.2); }
+@media (min-width: 640px) { .st-cp { align-items: center; } .st-cp-box { border-bottom: 4px solid var(--st-ink); border-radius: 20px; box-shadow: 8px 8px 0 var(--st-yellow); } }
+.st-cp-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 8px; background: var(--st-yellow); border-bottom: 4px solid var(--st-ink); border-radius: 16px 16px 0 0; }
+.st-cp-head h3 { margin: 0; font-family: Bangers, Impact, sans-serif; font-size: 1.5rem; letter-spacing: .07em; --cm-fg: var(--st-ink); color: var(--st-ink); }
+.st-x { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--st-ink); background: #fff; --cm-fg: var(--st-ink); color: var(--st-ink); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.st-cp-body { padding: 12px 14px 4px; overflow-y: auto; flex: 1; min-height: 0; }
+.st-mode { display: flex; gap: 8px; margin-bottom: 12px; }
+.st-mode button { flex: 1; padding: 8px 6px 6px; border-radius: 10px; border: 3px solid var(--st-ink); background: #fff; --cm-fg: var(--st-ink); color: var(--st-ink); font-family: Bangers, Impact, sans-serif; font-size: 1.1rem; letter-spacing: .06em; cursor: pointer; }
+.st-mode button.on { background: var(--st-ink); --cm-fg: var(--st-yellow); color: var(--st-yellow); box-shadow: 3px 3px 0 var(--st-yellow); }
+.st-prev { position: relative; margin: 0 auto 12px; width: min(100%, 210px); aspect-ratio: 9 / 14; border: 4px solid var(--st-ink); border-radius: 14px; overflow: hidden; box-shadow: 5px 5px 0 var(--st-yellow); background: #000; }
+.st-prev .st-tcard { padding: 26px 14px; gap: 10px; }
+.st-prev .st-ttext { font-size: 1.05rem; }
+.st-prev .st-topic { font-size: .8rem; padding: 3px 10px 1px; }
+.st-prev img, .st-prev video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+.st-prev-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 14px; text-align: center; font-weight: 800; font-size: 12.5px; background: #fff; --cm-fg: var(--st-ink); color: var(--st-ink); }
+.st-prev .st-cap { padding: 20px 8px 10px; font-size: .78rem; }
+.st-lbl { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 5px; font-family: Bangers, Impact, sans-serif; font-size: 1.02rem; letter-spacing: .06em; }
+.st-lbl small { font-family: 'Comic Neue', Arial, sans-serif; font-size: 11px; font-weight: 800; opacity: .7; letter-spacing: 0; }
+.st-cp textarea, .st-cp input[type=text] { width: 100%; padding: 9px 11px; border: 3px solid var(--st-ink) !important; border-radius: 10px; font-weight: 700; font-size: 14px; resize: none; }
+.st-sw { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.st-sw button, .st-sw label { position: relative; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--st-ink); cursor: pointer; padding: 0; display: block; background-color: var(--sw); }
+.st-sw button.on { outline: 3px solid var(--st-yellow); outline-offset: 1px; box-shadow: 0 0 0 5px var(--st-ink); }
+.st-sw .custom { background-image: conic-gradient(#f43f5e, #f59e0b, #84cc16, #06b6d4, #6366f1, #d946ef, #f43f5e); overflow: hidden; }
+.st-sw .custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+.st-ct { margin-top: 10px; padding: 7px 10px 6px; border-radius: 10px; border: 2.5px dashed var(--st-ink); font-weight: 800; font-size: 12.5px; background: #fff; --cm-fg: var(--st-ink); color: var(--st-ink); }
+.st-ct.bad { background: #fee2e2; border-style: solid; border-color: var(--st-red); --cm-fg: #7f1d1d; color: #7f1d1d; }
+.st-ct.ok { background: #dcfce7; --cm-fg: #14532d; color: #14532d; }
+.st-pick { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 8px 10px; border-radius: 12px; border: 3px dashed var(--st-ink); background: #fff;
+  --cm-fg: var(--st-ink); color: var(--st-ink); font-family: Bangers, Impact, sans-serif; font-size: 1.15rem; letter-spacing: .06em; cursor: pointer; }
+.st-cp-foot { padding: 10px 14px 14px; border-top: 3px solid var(--st-ink); background: var(--st-cream); }
+.st-post { width: 100%; padding: 11px 8px 9px; border-radius: 12px; border: 3px solid var(--st-ink); background: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink);
+  font-family: Bangers, Impact, sans-serif; font-size: 1.4rem; letter-spacing: .08em; cursor: pointer; box-shadow: 4px 4px 0 var(--st-ink); }
+.st-post:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--st-ink); }
+.st-post[disabled] { opacity: .5; cursor: not-allowed; box-shadow: 2px 2px 0 var(--st-ink); }
+.st-err { min-height: 18px; margin: 0 0 6px; font-size: 12.5px; font-weight: 800; --cm-fg: #b91c1c; color: #b91c1c; }
+
+/* ---------- Kelola story sendiri (halaman profil) ---------- */
+.st-mine { margin: 14px 0; }
+.st-mine-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.st-mine-grid { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; }
+.st-thumb { position: relative; flex: 0 0 auto; width: 84px; height: 132px; border: 3px solid var(--st-ink); border-radius: 12px; overflow: hidden; cursor: pointer; padding: 0; box-shadow: 3px 3px 0 var(--st-ink); background: #000; }
+.st-thumb .st-tcard { padding: 8px; gap: 4px; }
+.st-thumb .st-ttext { font-size: .68rem; line-height: 1.2; max-height: 100%; overflow: hidden; }
+.st-thumb .st-topic { display: none; }
+.st-thumb img, .st-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.st-thumb .st-tv { position: absolute; left: 4px; bottom: 4px; padding: 1px 7px 0; border-radius: 999px; font-family: Bangers, Impact, sans-serif; font-size: .8rem; background: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink); border: 2px solid var(--st-ink); }
+.st-add { flex: 0 0 auto; width: 84px; height: 132px; border: 3px dashed var(--st-ink); border-radius: 12px; background: #fff; --cm-fg: var(--st-ink); color: var(--st-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+  font-family: Bangers, Impact, sans-serif; letter-spacing: .06em; font-size: .95rem; padding: 0; }
+.st-add b { font-size: 2rem; line-height: 1; }
+.st-empty { font-size: 12.5px; font-weight: 700; opacity: .75; margin: 2px 0 0; }
+
+/* form nama depan & bio */
+.st-about { margin: 14px 0; padding: 14px; border: 3px solid var(--st-ink); border-radius: 14px; background: #fff; box-shadow: 4px 4px 0 var(--st-ink); --cm-fg: var(--st-ink); color: var(--st-ink); }
+.st-about h4 { margin: 0 0 8px; font-family: Bangers, Impact, sans-serif; font-size: 1.25rem; letter-spacing: .06em; }
+.st-about label { display: flex; justify-content: space-between; margin: 8px 0 4px; font-weight: 800; font-size: 12.5px; }
+.st-about input[type=text], .st-about textarea { width: 100%; padding: 9px 11px; border: 3px solid var(--st-ink) !important; border-radius: 10px; font-weight: 700; font-size: 14px; resize: none; }
+.st-about .note { margin: 4px 0 0; font-size: 11px; font-weight: 700; opacity: .7; }
+.st-save { margin-top: 12px; width: 100%; padding: 10px 8px 8px; border-radius: 12px; border: 3px solid var(--st-ink); background: var(--st-yellow); --cm-fg: var(--st-ink); color: var(--st-ink);
+  font-family: Bangers, Impact, sans-serif; font-size: 1.2rem; letter-spacing: .07em; cursor: pointer; box-shadow: 3px 3px 0 var(--st-ink); }
+
+/* ---------- Profil publik /u/:id ---------- */
+.up-wrap { max-width: 560px; margin: 0 auto; padding: 12px 14px 96px; }
+.up-card { position: relative; overflow: hidden; background: #fff; border: 4px solid var(--st-ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--st-ink); --cm-fg: var(--st-ink); color: var(--st-ink); text-align: center; padding-bottom: 18px; }
+.up-top { height: 96px; background-color: var(--st-yellow); background-image: radial-gradient(rgba(23,23,23,.28) 1.6px, transparent 1.8px); background-size: 12px 12px; border-bottom: 4px solid var(--st-ink); }
+.up-avwrap { margin: -52px auto 0; width: 104px; height: 104px; position: relative; }
+.up-av { width: 104px; height: 104px; padding: 0; border: 0; display: block; border-radius: 50%; background: none; cursor: default; }
+.up-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #fff; border: 4px solid var(--st-ink); display: block; }
+.up-av.ring { padding: 4px; cursor: pointer; background: repeating-conic-gradient(var(--st-red) 0 18deg, var(--st-yellow) 18deg 36deg); box-shadow: 4px 4px 0 var(--st-ink); }
+.up-av.ring.seen { background: #b8b8b8; }
+.up-name { margin: 10px 14px 0; font-family: Bangers, Impact, sans-serif; font-size: 2rem; letter-spacing: .05em; line-height: 1.05; overflow-wrap: anywhere; --cm-fg: var(--st-ink); color: var(--st-ink); }
+.up-user { margin: 2px 0 0; font-weight: 800; font-size: 14px; opacity: .8; }
+.up-bio { margin: 12px auto 0; max-width: 380px; padding: 0 16px; font-weight: 700; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.up-meta { margin: 10px 0 0; font-size: 12px; font-weight: 800; opacity: .7; }
+.up-actions { display: flex; gap: 10px; padding: 14px 16px 0; }
+.up-sec { margin-top: 16px; }
+.up-sec h4 { display: inline-block; margin: 0 0 8px; font-family: Bangers, Impact, sans-serif; letter-spacing: .08em; font-size: 1.2rem; padding: 3px 12px 1px; background: var(--st-ink); --cm-fg: var(--st-yellow); color: var(--st-yellow); border-radius: 8px; transform: rotate(-1.5deg); box-shadow: 3px 3px 0 var(--st-yellow); }
+.up-stories { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; }
+
+/* header thread private: profil bisa diklik */
+.cu-peer-btn { display: flex; align-items: center; gap: 10px; min-width: 0; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+.cu-peer-btn .cu-peer-av.hasstory { border-color: var(--st-red, #dc2626); box-shadow: 0 0 0 2px #fff; }
+
+@media (prefers-reduced-motion: reduce) { .st-ov, .st-sheet, .st-cp-box, .st-cp, .st-sheet-bg { animation: none; } }
+
+/* ---------- Reset tombol dari tema komik (tema memberi border/bayangan ke semua <button>) ---------- */
+.st-bar button.st-item, .st-bar button.st-av, .st-ov button.st-who, .st-mine button.st-thumb, .up-wrap button.up-av, .cu-peer-btn, .st-close-x {
+  background-color: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.st-bar button.st-item { border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
+.st-bar button.st-av { border: 0 !important; padding: 0; }
+.st-bar button.st-av.ring { background-color: transparent !important; background-image: repeating-conic-gradient(var(--st-red) 0 18deg, var(--st-yellow) 18deg 36deg) !important; padding: 3px; box-shadow: 3px 3px 0 var(--st-ink) !important; }
+.st-bar button.st-av.ring.seen, .st-bar .st-item .st-av.ring.seen { background-image: none !important; background-color: #b8b8b8 !important; box-shadow: 2px 2px 0 rgba(23,23,23,.55) !important; }
+.st-bar span.st-av.ring { display: block; background-image: repeating-conic-gradient(var(--st-red) 0 18deg, var(--st-yellow) 18deg 36deg) !important; }
+.st-bar span.st-av.ring.seen { background-image: none !important; background-color: #b8b8b8 !important; }
+.st-bar button.st-av.empty { box-shadow: 3px 3px 0 var(--st-ink) !important; border-radius: 50%; }
+.st-mine button.st-thumb { border: 3px solid var(--st-ink) !important; box-shadow: 3px 3px 0 var(--st-ink) !important; background-color: #000 !important; }
+.up-wrap button.up-av.ring { background-image: repeating-conic-gradient(var(--st-red) 0 18deg, var(--st-yellow) 18deg 36deg) !important; box-shadow: 4px 4px 0 var(--st-ink) !important; }
+.up-wrap button.up-av.ring.seen { background-image: none !important; background-color: #b8b8b8 !important; }
+.st-plus, .st-tool, .st-x, .st-mode button, .st-pick, .st-post, .st-act, .st-add, .st-sw button { font-family: inherit; }
+.st-plus { font-family: Bangers, Impact, sans-serif; }
+.st-post, .st-act, .st-pick, .st-mode button, .st-add { font-family: Bangers, Impact, sans-serif; }
+.st-tool, .st-x { box-shadow: none !important; }
+.st-tool { background-color: rgba(0,0,0,.55) !important; border: 2.5px solid #fff !important; }
+.st-x { background-color: #fff !important; border: 3px solid var(--st-ink) !important; }
