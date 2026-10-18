@@ -1,0 +1,10 @@
+<%
+  const _tab = (typeof active !== 'undefined') ? active : 'room';
+  const _unread = (typeof unread !== 'undefined' && unread) ? unread : 0;
+  const _roomHref = (typeof user !== 'undefined' && user && user.role === 'admin') ? '/admin/chat' : '/chat/room';
+%>
+<nav class="cu-tabs">
+  <a href="<%= _roomHref %>" class="cu-tab <%= _tab === 'room' ? 'on' : '' %>"><i class="fa-solid fa-users"></i> Room Publik</a>
+  <a href="/chat/private" class="cu-tab <%= _tab === 'private' ? 'on' : '' %>"><i class="fa-solid fa-lock"></i> Private <span class="cu-badge" id="cuTabBadge"><%= _unread %></span></a>
+  <span class="rt-count" style="margin-left:auto;align-self:center"><b data-rt-count>0</b> online</span>
+</nav>
