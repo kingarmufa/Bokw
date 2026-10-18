@@ -1,0 +1,39 @@
+<%- include('partials/header', { title: 'Chat Private' }) %>
+<link rel="stylesheet" href="/chat-ui.css?v=4" data-comic-owned>
+<%
+  const cfg = {
+    mode: 'inbox', unread: unread || 0,
+    me: { id: String(user._id), username: user.username, role: user.role, avatarUrl: user.avatarUrl || '' },
+    conversations: conversations, admins: admins
+  };
+%>
+<div class="cu-wrap">
+  <%- include('partials/chat_tabs', { active: 'private', unread: unread, user: user }) %>
+
+  <div class="cu-banner">
+    <span class="cu-star">★</span>
+    <div>
+      <h1><i class="fa-solid fa-lock"></i> Chat Private</h1>
+      <p><i class="fa-solid fa-user-group"></i> Ngobrol berdua dengan user lain atau admin</p>
+    </div>
+  </div>
+
+  <div class="cu-inbox">
+    <div class="cu-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="cuSearch" placeholder="Cari username..." maxlength="30" autocomplete="off">
+    </div>
+    <div id="cuResults" style="display:none"></div>
+    <div id="cuAdmins" style="display:none">
+      <div class="cu-sec"><i class="fa-solid fa-shield-halved"></i> Chat Admin</div>
+      <div class="items"></div>
+    </div>
+    <div class="cu-sec"><i class="fa-solid fa-comments"></i> Percakapan</div>
+    <div id="cuConvs"></div>
+  </div>
+</div>
+
+<script>window.CHAT_CFG = <%- JSON.stringify(cfg).replace(/</g, '\\u003c') %>;</script>
+<script src="/chat-ui.js?v=5"></script>
+
+<%- include('partials/footer') %>
