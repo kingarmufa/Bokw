@@ -1,0 +1,54 @@
+<%- include('partials/header', { title: 'Buat Tiket Bantuan' }) %>
+
+<div class="max-w-3xl mx-auto px-6 pb-6 mt-1">
+
+  <div class="flex items-center gap-2 mb-4">
+    <a href="/bantuan" class="w-8 h-8 rounded-xl border-2 border-black bg-white flex items-center justify-center shrink-0">
+      <i class="fa-solid fa-arrow-left text-[13px]"></i>
+    </a>
+    <h1 class="text-lg font-medium text-gray-800 mb-0">Buat Tiket Baru</h1>
+  </div>
+
+  <form action="/bantuan/baru" method="POST" enctype="multipart/form-data" class="bg-white comic-anim border border-gray-100 rounded-2xl p-5 space-y-4">
+
+    <div>
+      <label class="block text-[12.5px] font-bold text-gray-700 mb-1.5">Judul Masalah</label>
+      <input type="text" name="title" required maxlength="120" placeholder="Contoh: Deposit tidak masuk saldo"
+        class="w-full bg-white border border-gray-200 rounded-2xl px-3.5 py-2.5 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+    </div>
+
+    <div>
+      <label class="block text-[12.5px] font-bold text-gray-700 mb-1.5">Deskripsi</label>
+      <textarea name="description" required rows="5" placeholder="Jelaskan kendala kamu selengkap mungkin..."
+        class="w-full bg-white border border-gray-200 rounded-2xl px-3.5 py-2.5 text-[13.5px] font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-[12.5px] font-bold text-gray-700 mb-1.5">Foto Bukti <span class="font-normal text-gray-400">(opsional)</span></label>
+      <label for="ticketImage" class="flex items-center gap-2 border-2 border-dashed border-gray-300 rounded-2xl px-3.5 py-3 cursor-pointer hover:border-blue-500 transition-colors">
+        <i class="fa-solid fa-image text-gray-400"></i>
+        <span id="fileNameLabel" class="text-[12.5px] font-medium text-gray-500">Pilih gambar (JPG/PNG/WEBP, maks 5MB)</span>
+      </label>
+      <input type="file" id="ticketImage" name="image" accept="image/*" class="hidden" onchange="document.getElementById('fileNameLabel').textContent = this.files[0] ? this.files[0].name : 'Pilih gambar (JPG/PNG/WEBP, maks 5MB)'" />
+      <img id="imgPreview" class="hidden mt-2 h-28 rounded-xl border border-gray-200 object-cover" />
+    </div>
+
+    <button type="submit" class="comic-btn-primary w-full rounded-full px-4 py-3 text-[14px]">
+      <i class="fa-solid fa-paper-plane mr-1.5"></i> Kirim Tiket
+    </button>
+  </form>
+
+</div>
+
+<script>
+  document.getElementById('ticketImage').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('imgPreview');
+    if (!file) { preview.classList.add('hidden'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => { preview.src = ev.target.result; preview.classList.remove('hidden'); };
+    reader.readAsDataURL(file);
+  });
+</script>
+
+<%- include('partials/footer') %>
