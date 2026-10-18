@@ -1,0 +1,87 @@
+<%- include('partials/header', { title: 'Profil ' + target.displayName }) %>
+<%- include('partials/story_boot') %>
+<%
+  const _hasStory = group.stories.length > 0;
+  const _allSeen = _hasStory && group.stories.every(function (s) { return s.seen; });
+  const _av = (target.avatarUrl && target.avatarUrl.trim()) ? target.avatarUrl :
+    ('data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#edc531"/><text x="32" y="43" font-size="32" font-family="Arial,sans-serif" font-weight="800" text-anchor="middle" fill="#171717">' + target.username.charAt(0).toUpperCase().replace(/[<>&]/g, '?') + '</text></svg>'));
+  const _editHref = (user && user.role === 'admin') ? '/admin/account' : '/profile';
+%>
+<div class="up-wrap">
+  <section class="up-card">
+    <div class="up-top"<% if (target.bannerUrl) { %> style="padding:0;height:auto;aspect-ratio:3/1"<% } %>>
+      <% if (target.bannerUrl) { %><img src="<%= target.bannerUrl %>" alt="banner profil" style="width:100%;height:100%;object-fit:cover;display:block"><% } %>
+    </div>
+    <div class="up-avwrap" data-uid="<%= target.id %>">
+      <button type="button" id="upAv" class="up-av<%= _hasStory ? ' ring' + (_allSeen ? ' seen' : '') : '' %>" aria-label="<%= _hasStory ? 'Lihat story' : 'Foto profil' %>"><img src="<%= _av %>" alt="foto profil"></button>
+      <i class="rt-dot up-dot"></i>
+    </div>
+    <h1 class="up-name"><%= target.displayName %></h1>
+    <p class="up-user">@<%= target.username %></p>
+    <p class="rt-status up-status" data-rt-status="<%= target.id %>"></p>
+    <span class="st-role <%= target.role %>"><%= target.role %></span>
+    <% if (target.bio) { %><p class="up-bio"><%= target.bio %></p><% } %>
+    <p class="up-meta"><i class="fa-solid fa-calendar-days"></i> Bergabung <%= new Date(target.joinedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+
+    <div class="up-actions">
+      <% if (isSelf) { %>
+        <a class="st-act" href="<%= _editHref %>"><i class="fa-solid fa-pen"></i> Edit Profil</a>
+        <button type="button" class="st-act alt" id="upAdd"><i class="fa-solid fa-plus"></i> Buat Story</button>
+      <% } else { %>
+        <a class="st-act" href="/chat/private/<%= target.id %>"><i class="fa-solid fa-comment-dots"></i> Chat Private</a>
+      <% } %>
+    </div>
+
+    <div class="up-sec">
+      <h4>STORY</h4>
+      <% if (_hasStory) { %>
+        <div class="up-stories" id="upStories"></div>
+      <% } else { %>
+        <p class="st-empty">Belum ada story aktif.</p>
+      <% } %>
+    </div>
+
+    <div class="up-sec">
+      <h4>POSTINGAN</h4>
+      <div class="up-grid" id="upPosts"><p class="st-empty">Memuat postingan...</p></div>
+    </div>
+  </section>
+</div>
+<script>
+  (function () {
+    var group = <%- JSON.stringify(group).replace(/</g, '\\u003c') %>;
+    var box = document.getElementById('upStories');
+    if (box) Story.renderThumbs(box, group, {});
+    var av = document.getElementById('upAv');
+    if (av && group.stories.length) av.addEventListener('click', function () { Story.openGroup(group, Story.startIndex(group)); });
+    // postingan user ini (foto/video/reels), klik untuk buka
+    (function () {
+      var box = document.getElementById('upPosts'); if (!box) return;
+      function msg(t) { box.innerHTML = ''; var p = document.createElement('p'); p.className = 'st-empty'; p.textContent = t; box.appendChild(p); }
+      fetch('/api/social/users/<%= target.id %>', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.success) return msg((j && j.message) || 'Gagal memuat postingan.');
+          if (!j.posts.length) return msg(<%- isSelf ? "'Kamu belum memposting apa pun.'" : "'Belum ada postingan.'" %>);
+          box.innerHTML = '';
+          j.posts.forEach(function (t) {
+            var a = document.createElement('a'); a.className = 'up-tile'; a.href = '/social/p/' + t.id; a.setAttribute('aria-label', 'Buka postingan');
+            if (t.cover) {
+              if (t.cover.kind === 'video') { var v = document.createElement('video'); v.src = t.cover.url + '#t=0.1'; v.muted = true; v.playsInline = true; v.preload = 'metadata'; a.appendChild(v); }
+              else { var im = document.createElement('img'); im.src = t.cover.url; im.alt = ''; im.loading = 'lazy'; a.appendChild(im); }
+            }
+            if (t.count > 1 || (t.cover && t.cover.kind === 'video')) {
+              var b = document.createElement('span'); b.className = 'up-tile-badge';
+              b.innerHTML = '<i class="fa-solid ' + (t.count > 1 ? 'fa-clone' : 'fa-play') + '"></i>'; a.appendChild(b);
+            }
+            var st = document.createElement('span'); st.className = 'up-tile-st'; st.textContent = '\u2665 ' + (t.likeCount || 0) + '   \uD83D\uDCAC ' + (t.commentCount || 0); a.appendChild(st);
+            box.appendChild(a);
+          });
+        })
+        .catch(function () { msg('Gagal memuat postingan.'); });
+    })();
+    var add = document.getElementById('upAdd');
+    if (add) add.addEventListener('click', function () { Story.openComposer(); });
+  })();
+</script>
+<%- include('partials/footer') %>
