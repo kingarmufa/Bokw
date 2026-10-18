@@ -1,0 +1,7 @@
+<%
+  // Memuat CSS + JS story sekali per halaman & memberi tahu JS siapa yang sedang login.
+  const _stMe = (typeof user !== 'undefined' && user) ? { id: String(user._id), role: user.role, username: user.username } : null;
+%>
+<link rel="stylesheet" href="/story-ui.css?v=1" data-comic-owned>
+<script>window.STORY_ME = <%- JSON.stringify(_stMe).replace(/</g, '\\u003c') %>;</script>
+<script src="/story-ui.js?v=2"></script>
