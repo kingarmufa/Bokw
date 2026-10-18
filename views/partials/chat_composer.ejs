@@ -1,0 +1,17 @@
+<button type="button" class="cu-jump" id="cuJump"><i class="fa-solid fa-arrow-down"></i><span>Terbaru</span></button>
+<div class="cu-reply" id="cuReply">
+  <div class="cu-reply-in">
+    <span class="cu-reply-bar"></span>
+    <div class="cu-reply-txt"><b></b><span></span></div>
+    <button type="button" class="cu-x" id="cuReplyX" aria-label="Batal balas"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+</div>
+<div class="cu-preview" id="cuPreview"></div>
+<form class="cu-bar" id="cuForm" autocomplete="off">
+  <label class="cu-ibtn" title="Kirim gambar/video/file" aria-label="Lampiran">
+    <i class="fa-solid fa-paperclip"></i>
+    <input type="file" id="cuFile" class="cu-hidden" accept="image/*,video/*,.pdf,.zip,.doc,.docx,.txt">
+  </label>
+  <textarea id="cuText" rows="1" maxlength="1000" placeholder="<%= placeholder %>" enterkeyhint="send"></textarea>
+  <button type="submit" class="cu-ibtn cu-send" aria-label="Kirim"><i class="fa-solid fa-paper-plane"></i></button>
+</form>
